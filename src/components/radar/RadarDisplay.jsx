@@ -289,13 +289,30 @@ export default function RadarDisplay({ targets, settings, onRadarClick, onTarget
   }, [targets, settings.range, onRadarClick, onTargetClick]);
 
   return (
-    <div className="flex items-center justify-center w-full h-full" style={{ minHeight: 320 }}>
+    <div className="relative flex items-center justify-center w-full h-full" style={{ minHeight: 320 }}>
       <canvas
         ref={canvasRef}
         onClick={handleClick}
         className="cursor-crosshair rounded-full"
         style={{ maxWidth: "100%", maxHeight: "100%" }}
       />
+      {reflImageUrl && (
+        <img
+          src={reflImageUrl}
+          alt="NEXRAD Reflectivity"
+          style={{
+            position: "absolute",
+            top: "50%", left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: canvasRef.current?.width || "100%",
+            height: canvasRef.current?.height || "100%",
+            opacity: 0.7,
+            mixBlendMode: "screen",
+            borderRadius: "50%",
+            pointerEvents: "none",
+          }}
+        />
+      )}
     </div>
   );
 }
