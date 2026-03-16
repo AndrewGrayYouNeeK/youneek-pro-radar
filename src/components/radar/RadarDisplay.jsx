@@ -103,12 +103,22 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
   useEffect(() => {
     if (!leafletMap.current) return;
 
-    // Remove existing velocity layer
-    if (velLayerRef.current)   { leafletMap.current.removeLayer(velLayerRef.current);   velLayerRef.current = null; }
     if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
 
-    // Always add reflectivity layer
-    if (!radarLayerRef.current) {
+    // Remove reflectivity layer if showNexrad is off
+    if (!showNexrad && radarLayerRef.current) {
+      leafletMap.current.removeLayer(radarLayerRef.current);
+      radarLayerRef.current = null;
+    }
+
+    // Remove velocity layer
+    if (velLayerRef.current) {
+      leafletMap.current.removeLayer(velLayerRef.current);
+      velLayerRef.current = null;
+    }
+
+    // Add reflectivity layer if showNexrad is on
+    if (showNexrad && !radarLayerRef.current) {
       radarLayerRef.current = L.tileLayer.wms(
         "https://opengeo.ncep.noaa.gov/geoserver/nowcoast/radar_base_reflectivity_time/wms?",
         {
@@ -122,8 +132,8 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
       ).addTo(leafletMap.current);
     }
 
-    // Velocity layer (conditional)
-    if (settings.showVelocity) {
+    // Add velocity layer if both showNexrad and showVelocity are on
+    if (showNexrad && settings.showVelocity) {
       velLayerRef.current = L.tileLayer.wms(
         "https://nowcoast.noaa.gov/geoserver/observations/weather_radar/wms",
         {
@@ -137,13 +147,17 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
     }
 
     // Auto-refresh every 5 minutes
-    refreshTimerRef.current = setInterval(() => {
-      if (radarLayerRef.current) radarLayerRef.current.redraw();
-      if (velLayerRef.current)   velLayerRef.current.redraw();
-    }, 5 * 60 * 1000);
+    if (showNexrad) {
+      refreshTimerRef.current = setInterval(() => {
+        if (radarLayerRef.current) radarLayerRef.current.redraw();
+        if (velLayerRef.current) velLayerRef.current.redraw();
+      }, 5 * 60 * 1000);
+    }
 
-    return () => clearInterval(refreshTimerRef.current);
-  }, [settings.showVelocity]);
+    return () => {
+      if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
+    };
+  }, [showNexrad, settings.showVelocity]);
 
   const handleSafePing = () => {
     if (contacts.length === 0) {
