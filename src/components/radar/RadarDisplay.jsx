@@ -208,8 +208,26 @@ export default function RadarDisplay({ settings, onSettingsChange, showNexrad, i
     return () => clearInterval(refreshTimerRef.current);
   }, [showNexrad, settings.showVelocity]);
 
+  const toggleRadio = () => {
+    if (!audioRef.current) return;
+
+    if (radioPlaying) {
+      audioRef.current.pause();
+      setRadioPlaying(false);
+      return;
+    }
+
+    const playPromise = audioRef.current.play();
+    if (playPromise?.then) {
+      playPromise.then(() => setRadioPlaying(true)).catch(() => setRadioPlaying(false));
+    } else {
+      setRadioPlaying(true);
+    }
+  };
+
   return (
     <div className="relative w-full h-full" style={{ minHeight: 400 }}>
+      <audio ref={audioRef} preload="none" />
       {/* Tornado warning banner */}
       {isTornadoWarning && (
         <div className="absolute top-2 left-1/2 -translate-x-1/2 z-[1000] bg-yellow-400 text-black text-xs font-mono font-bold px-4 py-1 rounded shadow-lg animate-pulse">
@@ -217,6 +235,28 @@ export default function RadarDisplay({ settings, onSettingsChange, showNexrad, i
         </div>
       )}
       <div ref={mapRef} className="w-full h-full" style={{ minHeight: 400 }} />
+
+      <div className="absolute bottom-4 left-4 right-4 z-[1000] flex items-center justify-between rounded-lg border border-gray-700 bg-gray-900/95 px-4 py-3 shadow-lg backdrop-blur-sm">
+        <label className="flex items-center gap-2 text-xs font-mono text-white">
+          <input
+            type="checkbox"
+            checked={settings.showVelocity}
+            onChange={() => onSettingsChange({ ...settings, showVelocity: !settings.showVelocity })}
+            className="h-4 w-4 accent-cyan-400"
+          />
+          Velocity
+        </label>
+
+        <button
+          onClick={toggleRadio}
+          className={radioPlaying
+            ? "flex h-12 w-12 items-center justify-center rounded-full border border-red-400 bg-red-500 text-xl text-black shadow"
+            : "flex h-12 w-12 items-center justify-center rounded-full border border-green-400 bg-green-400 text-xl text-black shadow"
+          }
+        >
+          {radioPlaying ? "■" : "▶"}
+        </button>
+      </div>
     </div>
   );
 }
