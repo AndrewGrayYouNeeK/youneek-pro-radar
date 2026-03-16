@@ -72,6 +72,13 @@ export default function RadarDisplay({ targets, settings, onRadarClick, onTarget
     ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
     ctx.clip();
 
+    // --- NEXRAD live radar overlay ---
+    if (nexradImgRef.current && nexradLoadedRef.current) {
+      ctx.globalAlpha = 0.75;
+      ctx.drawImage(nexradImgRef.current, cx - radius, cy - radius, radius * 2, radius * 2);
+      ctx.globalAlpha = 1;
+    }
+
     // --- Sweep trail (gradient arc) ---
     const trailLength = Math.PI / 2;
     const gradient = ctx.createConicalGradient
