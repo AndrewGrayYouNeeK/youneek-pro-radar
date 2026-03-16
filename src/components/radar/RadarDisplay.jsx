@@ -6,8 +6,8 @@ const THEME_COLORS = {
   blue:  { sweep: "#00ccff", ring: "#003355", text: "#0099cc", target: "#00ccff", bg: "#000d1a" },
 };
 
-// NOAA RIDGE standard product covers roughly 250nm radius
-const NEXRAD_COVERAGE_NM = 250;
+// NOAA RIDGE standard product covers roughly 230nm radius
+const NEXRAD_COVERAGE_NM = 230;
 
 export default function RadarDisplay({ targets, settings, onRadarClick, onTargetClick, reflImageUrl, velImageUrl, isTornadoWarning }) {
   const canvasRef = useRef(null);
