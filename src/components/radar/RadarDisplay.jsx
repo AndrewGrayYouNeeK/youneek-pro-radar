@@ -94,27 +94,26 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
   useEffect(() => {
     if (!leafletMap.current) return;
 
-    // Remove existing radar layers
-    if (radarLayerRef.current) { leafletMap.current.removeLayer(radarLayerRef.current); radarLayerRef.current = null; }
+    // Remove existing velocity layer
     if (velLayerRef.current)   { leafletMap.current.removeLayer(velLayerRef.current);   velLayerRef.current = null; }
     if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
 
-    if (!showNexrad) return;
+    // Always add reflectivity layer
+    if (!radarLayerRef.current) {
+      radarLayerRef.current = L.tileLayer.wms(
+        "https://opengeo.ncep.noaa.gov/geoserver/nowcoast/radar_base_reflectivity_time/wms?",
+        {
+          layers: "conus_base_reflectivity_mosaic",
+          format: "image/png",
+          transparent: true,
+          opacity: 0.75,
+          version: "1.3.0",
+          attribution: "NOAA/NWS",
+        }
+      ).addTo(leafletMap.current);
+    }
 
-    // NOAA nowCOAST reflectivity mosaic WMS
-    radarLayerRef.current = L.tileLayer.wms(
-      "https://nowcoast.noaa.gov/geoserver/observations/weather_radar/wms",
-      {
-        layers: "conus_base_reflectivity_mosaic",
-        format: "image/png",
-        transparent: true,
-        opacity: 0.75,
-        version: "1.3.0",
-        attribution: "NOAA/NWS",
-      }
-    ).addTo(leafletMap.current);
-
-    // Velocity layer
+    // Velocity layer (conditional)
     if (settings.showVelocity) {
       velLayerRef.current = L.tileLayer.wms(
         "https://nowcoast.noaa.gov/geoserver/observations/weather_radar/wms",
@@ -135,7 +134,7 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
     }, 5 * 60 * 1000);
 
     return () => clearInterval(refreshTimerRef.current);
-  }, [showNexrad, settings.showVelocity]);
+  }, [settings.showVelocity]);
 
   return (
     <div className="relative w-full h-full" style={{ minHeight: 400 }}>
