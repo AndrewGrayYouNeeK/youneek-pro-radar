@@ -6,7 +6,7 @@ const THEME_COLORS = {
   blue:  { sweep: "#00ccff", ring: "#003355", text: "#0099cc", target: "#00ccff", bg: "#000d1a" },
 };
 
-export default function RadarDisplay({ targets, settings, onRadarClick, onTargetClick }) {
+export default function RadarDisplay({ targets, settings, onRadarClick, onTargetClick, nexradImageUrl }) {
   const canvasRef = useRef(null);
   const animRef = useRef(null);
   const sweepAngleRef = useRef(0);
