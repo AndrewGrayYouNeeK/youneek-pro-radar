@@ -10,6 +10,16 @@ function ToggleRow({ label, checked, onCheckedChange }) {
   );
 }
 
+const RADIO_STATIONS = [
+  { value: "WXL58", label: "WXL58 Jackson KY" },
+  { value: "WZ2523", label: "WZ2523 Frankfort KY" },
+  { value: "KIH43", label: "KIH43 Louisville KY" },
+  { value: "WXK99", label: "WXK99 Paducah KY" },
+  { value: "WXL24", label: "WXL24 Fort Campbell KY" },
+  { value: "WXK48", label: "WXK48 Cincinnati OH" },
+  { value: "WXJ23", label: "WXJ23 Nashville TN" },
+];
+
 export default function RadarLayersMenu({
   showNexrad,
   showVelocity,
