@@ -1,6 +1,7 @@
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { RefreshCw, Wifi, WifiOff } from "lucide-react";
 
 const THEMES = [
   { id: "green", label: "GRN", color: "bg-green-500" },
@@ -8,7 +9,20 @@ const THEMES = [
   { id: "blue",  label: "BLU", color: "bg-blue-500" },
 ];
 
-export default function RadarControls({ settings, onSettingsChange }) {
+const STATIONS = [
+  { id: "KLOT", label: "KLOT – Chicago" },
+  { id: "KORD", label: "KORD – O'Hare" },
+  { id: "KATL", label: "KATL – Atlanta" },
+  { id: "KDFW", label: "KDFW – Dallas" },
+  { id: "KNYC", label: "KNYC – New York" },
+  { id: "KMIA", label: "KMIA – Miami" },
+  { id: "KDEN", label: "KDEN – Denver" },
+  { id: "KSEA", label: "KSEA – Seattle" },
+  { id: "KPHX", label: "KPHX – Phoenix" },
+  { id: "KBOS", label: "KBOS – Boston" },
+];
+
+export default function RadarControls({ settings, onSettingsChange, nexradStatus, onRefreshNexrad }) {
   const update = (key, value) => onSettingsChange({ ...settings, [key]: value });
 
   return (
@@ -16,6 +30,59 @@ export default function RadarControls({ settings, onSettingsChange }) {
       {/* Header */}
       <div className="text-xs font-mono font-bold text-gray-400 tracking-widest uppercase">
         Radar Controls
+      </div>
+
+      {/* Live NEXRAD toggle */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label className="text-xs font-mono text-gray-400 flex items-center gap-1">
+            {settings.showNexrad ? <Wifi size={11} className="text-green-400" /> : <WifiOff size={11} />}
+            LIVE NEXRAD
+          </Label>
+          <Switch
+            checked={settings.showNexrad}
+            onCheckedChange={(v) => update("showNexrad", v)}
+          />
+        </div>
+
+        {settings.showNexrad && (
+          <>
+            {/* Station selector */}
+            <div>
+              <Label className="text-xs font-mono text-gray-400 block mb-1">STATION</Label>
+              <select
+                value={settings.station}
+                onChange={(e) => update("station", e.target.value)}
+                className="w-full bg-gray-800 border border-gray-600 text-green-300 font-mono text-xs rounded px-2 py-1"
+              >
+                {STATIONS.map((s) => (
+                  <option key={s.id} value={s.id}>{s.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Status + refresh */}
+            <div className="flex items-center justify-between">
+              <span className={`text-xs font-mono ${
+                nexradStatus === "ok" ? "text-green-400" :
+                nexradStatus === "loading" ? "text-yellow-400" :
+                nexradStatus === "error" ? "text-red-400" : "text-gray-500"
+              }`}>
+                {nexradStatus === "ok" ? "● LIVE" :
+                 nexradStatus === "loading" ? "◌ LOADING" :
+                 nexradStatus === "error" ? "✕ ERROR" : "○ OFFLINE"}
+              </span>
+              <button
+                onClick={onRefreshNexrad}
+                disabled={nexradStatus === "loading"}
+                className="text-gray-400 hover:text-green-400 disabled:opacity-40 transition-colors"
+                title="Refresh radar data"
+              >
+                <RefreshCw size={13} className={nexradStatus === "loading" ? "animate-spin" : ""} />
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Range */}
