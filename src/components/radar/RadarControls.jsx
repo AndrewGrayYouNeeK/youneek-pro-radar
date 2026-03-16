@@ -255,26 +255,6 @@ export default function RadarControls({ settings, onSettingsChange, nexradStatus
         )}
       </div>
 
-      {/* Range */}
-      <div>
-        <div className="flex justify-between items-center mb-1">
-          <Label className="text-xs font-mono text-gray-400">RANGE</Label>
-          <span className="text-xs font-mono text-green-400">{settings.range} nm</span>
-        </div>
-        <Slider min={5} max={200} step={5} value={[settings.range]}
-          onValueChange={([v]) => update("range", v)} className="w-full" />
-      </div>
-
-      {/* Sweep Speed */}
-      <div>
-        <div className="flex justify-between items-center mb-1">
-          <Label className="text-xs font-mono text-gray-400">SWEEP</Label>
-          <span className="text-xs font-mono text-green-400">{settings.sweepSpeed}s/rev</span>
-        </div>
-        <Slider min={1} max={10} step={0.5} value={[settings.sweepSpeed]}
-          onValueChange={([v]) => update("sweepSpeed", v)} className="w-full" />
-      </div>
-
       {/* Labels toggle */}
       <div className="flex items-center justify-between">
         <Label className="text-xs font-mono text-gray-400">LABELS</Label>
