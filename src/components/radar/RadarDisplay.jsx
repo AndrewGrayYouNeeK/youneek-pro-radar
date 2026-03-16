@@ -73,6 +73,9 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const floodLayerRef = useRef(null);
   const winterLayerRef = useRef(null);
   const refreshTimerRef = useRef(null);
+  const loopTimerRef = useRef(null);
+  const loopIndexRef = useRef(0);
+  const loopLayerRef = useRef(null);
   const userLocationMarkerRef = useRef(null);
   const radarLoadStatsRef = useRef({ errors: 0, loaded: 0, usingFallback: false });
   const [menuOpen, setMenuOpen] = useState(false);
@@ -81,6 +84,9 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [showThunderstorm, setShowThunderstorm] = useState(true);
   const [showFlood, setShowFlood] = useState(false);
   const [showWinter, setShowWinter] = useState(false);
+  const [isLooping, setIsLooping] = useState(false);
+  const [loopFrames, setLoopFrames] = useState([]);
+  const [loopFrameIndex, setLoopFrameIndex] = useState(0);
   const alertToggles = {
     tornado: showTornado,
     severe: showThunderstorm,
@@ -313,6 +319,27 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     leafletMap.current.setView([39.5, -98.35], 5);
   };
 
+  const fetchLoopFrames = () => {
+    fetch("https://api.rainviewer.com/public/weather-maps.json")
+      .then((response) => response.json())
+      .then((data) => {
+        const frames = (data?.radar?.past || []).slice(-10).map((item) => item.path).filter(Boolean);
+        setLoopFrames(frames);
+        loopIndexRef.current = 0;
+        setLoopFrameIndex(0);
+      });
+  };
+
+  const handleLoopToggle = () => {
+    if (isLooping) {
+      setIsLooping(false);
+      return;
+    }
+
+    fetchLoopFrames();
+    setIsLooping(true);
+  };
+
   const handleShowNexradChange = (value) => {
     onSettingsChange({ ...settings, showNexrad: value });
   };
@@ -328,6 +355,71 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     if (key === "flood") setShowFlood(value);
     if (key === "winter") setShowWinter(value);
   };
+
+  useEffect(() => {
+    if (!leafletMap.current) return;
+
+    if (!isLooping) {
+      if (loopTimerRef.current) {
+        clearInterval(loopTimerRef.current);
+        loopTimerRef.current = null;
+      }
+      if (loopLayerRef.current) {
+        leafletMap.current.removeLayer(loopLayerRef.current);
+        loopLayerRef.current = null;
+      }
+      if (radarLayerRef.current?.setOpacity) {
+        radarLayerRef.current.setOpacity(0.7);
+      }
+      return;
+    }
+
+    if (!loopFrames.length) {
+      if (radarLayerRef.current?.setOpacity) {
+        radarLayerRef.current.setOpacity(0);
+      }
+      return;
+    }
+
+    if (radarLayerRef.current?.setOpacity) {
+      radarLayerRef.current.setOpacity(0);
+    }
+
+    const renderFrame = () => {
+      const frame = loopFrames[loopIndexRef.current];
+      if (!frame || !leafletMap.current) return;
+
+      if (loopLayerRef.current) {
+        leafletMap.current.removeLayer(loopLayerRef.current);
+      }
+
+      loopLayerRef.current = L.tileLayer(getRainViewerTileUrl(frame), {
+        opacity: 0.7,
+        maxZoom: 18,
+        maxNativeZoom: 12,
+      }).addTo(leafletMap.current);
+
+      setLoopFrameIndex(loopIndexRef.current);
+      loopIndexRef.current = (loopIndexRef.current + 1) % loopFrames.length;
+    };
+
+    renderFrame();
+    loopTimerRef.current = setInterval(renderFrame, 300);
+
+    return () => {
+      if (loopTimerRef.current) {
+        clearInterval(loopTimerRef.current);
+        loopTimerRef.current = null;
+      }
+      if (loopLayerRef.current && leafletMap.current) {
+        leafletMap.current.removeLayer(loopLayerRef.current);
+        loopLayerRef.current = null;
+      }
+      if (radarLayerRef.current?.setOpacity) {
+        radarLayerRef.current.setOpacity(0.7);
+      }
+    };
+  }, [isLooping, loopFrames]);
 
   const handleLocateMe = () => {
     if (!navigator.geolocation) {
@@ -368,6 +460,17 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         >
           🗺️ CONUS
         </button>
+        <button
+          onClick={handleLoopToggle}
+          className="rounded-lg bg-slate-900/80 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90"
+        >
+          {isLooping ? "⏹ Loop" : "▶ Loop"}
+        </button>
+        {isLooping && loopFrames.length > 0 && (
+          <div className="rounded-lg bg-slate-900/70 px-3 py-2 text-xs font-medium text-slate-200 shadow-lg backdrop-blur-sm">
+            Frame {loopFrameIndex + 1}/{loopFrames.length}
+          </div>
+        )}
       </div>
       <RadarLayersMenu
         showNexrad={showNexrad}
