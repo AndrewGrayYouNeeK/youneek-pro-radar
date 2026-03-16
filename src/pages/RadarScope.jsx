@@ -61,7 +61,6 @@ export default function RadarScope() {
         <RadarDisplay
           settings={settings}
           showNexrad={settings.showNexrad}
-          isTornadoWarning={isTornadoWarning}
         />
       </div>
 
