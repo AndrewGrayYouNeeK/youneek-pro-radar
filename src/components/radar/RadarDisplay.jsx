@@ -49,24 +49,6 @@ const STATION_COORDS = {
   KMSX: [47.041, -113.986], KTFX: [47.460, -111.385], KCBX: [43.491, -116.236],
 };
 
-const NoaaProxyTileLayer = L.TileLayer.extend({
-  getTileUrl(coords) {
-    const tileUrl = L.Util.template(this._url, {
-      s: this._getSubdomain(coords),
-      x: coords.x,
-      y: coords.y,
-      z: coords.z,
-      r: L.Browser.retina ? "@2x" : "",
-    });
-
-    return `https://corsproxy.io/?${encodeURIComponent(tileUrl)}`;
-  },
-});
-
-function createProxyTileLayer(urlTemplate, options) {
-  return new NoaaProxyTileLayer(urlTemplate, options);
-}
-
 export default function RadarDisplay({ settings, showNexrad, isTornadoWarning }) {
   const mapRef = useRef(null);
   const leafletMap = useRef(null);
@@ -119,11 +101,14 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
     if (!showNexrad) return;
 
     // Reflectivity overlay
-    radarLayerRef.current = createProxyTileLayer(
-      "https://mapservices.weather.noaa.gov/eventdriven/rest/services/radar/radar_base_reflectivity/MapServer/tile/{z}/{y}/{x}",
+    radarLayerRef.current = L.tileLayer.wms(
+      "https://mapservices.weather.noaa.gov/eventdriven/services/radar/radar_base_reflectivity/MapServer/WMSServer",
       {
-        attribution: "NOAA",
+        layers: "0",
+        format: "image/png",
+        transparent: true,
         opacity: 0.7,
+        attribution: "NOAA NWS Radar",
         maxZoom: 12,
       }
     ).addTo(leafletMap.current);
