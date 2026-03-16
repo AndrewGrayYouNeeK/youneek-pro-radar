@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect, useCallback, useState } from "react";
 
 const THEME_COLORS = {
   green: { sweep: "#00ff88", ring: "#005533", text: "#00cc66", target: "#00ff88", bg: "#001a0d" },
