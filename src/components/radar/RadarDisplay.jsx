@@ -296,56 +296,58 @@ export default function RadarDisplay({ targets, settings, onRadarClick, onTarget
     });
   }, [targets, settings.range, onRadarClick, onTargetClick]);
 
+  const scaleFactor = NEXRAD_COVERAGE_NM / settings.range;
+
   return (
     <div className="relative flex items-center justify-center w-full h-full" style={{ minHeight: 320 }}>
+      {/* Clipped overlay container — sits behind canvas, clips scaled GIF to circle */}
+      {(reflImageUrl || velImageUrl) && (
+        <div style={{
+          position: "absolute",
+          top: "50%", left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: canvasRef.current?.width || 500,
+          height: canvasRef.current?.width || 500,
+          borderRadius: "50%",
+          overflow: "hidden",
+          pointerEvents: "none",
+        }}>
+          {reflImageUrl && (
+            <img
+              src={reflImageUrl}
+              alt="NEXRAD Reflectivity"
+              style={{
+                position: "absolute",
+                top: "50%", left: "50%",
+                transform: `translate(-50%, -50%) scale(${scaleFactor})`,
+                width: "100%", height: "100%",
+                opacity: 0.7,
+                mixBlendMode: "screen",
+              }}
+            />
+          )}
+          {velImageUrl && (
+            <img
+              src={velImageUrl}
+              alt="NEXRAD Velocity"
+              style={{
+                position: "absolute",
+                top: "50%", left: "50%",
+                transform: `translate(-50%, -50%) scale(${scaleFactor})`,
+                width: "100%", height: "100%",
+                opacity: 0.65,
+                mixBlendMode: "screen",
+              }}
+            />
+          )}
+        </div>
+      )}
       <canvas
         ref={canvasRef}
         onClick={handleClick}
         className="cursor-crosshair rounded-full"
-        style={{ maxWidth: "100%", maxHeight: "100%" }}
+        style={{ maxWidth: "100%", maxHeight: "100%", position: "relative", zIndex: 1 }}
       />
-      {reflImageUrl && (() => {
-        const scale = NEXRAD_COVERAGE_NM / settings.range;
-        const size = (canvasRef.current?.width || 500) * scale;
-        return (
-          <img
-            src={reflImageUrl}
-            alt="NEXRAD Reflectivity"
-            style={{
-              position: "absolute",
-              top: "50%", left: "50%",
-              transform: "translate(-50%, -50%)",
-              width: size,
-              height: size,
-              opacity: 0.7,
-              mixBlendMode: "screen",
-              borderRadius: "50%",
-              pointerEvents: "none",
-            }}
-          />
-        );
-      })()}
-      {velImageUrl && (() => {
-        const scale = NEXRAD_COVERAGE_NM / settings.range;
-        const size = (canvasRef.current?.width || 500) * scale;
-        return (
-          <img
-            src={velImageUrl}
-            alt="NEXRAD Velocity"
-            style={{
-              position: "absolute",
-              top: "50%", left: "50%",
-              transform: "translate(-50%, -50%)",
-              width: size,
-              height: size,
-              opacity: 0.65,
-              mixBlendMode: "screen",
-              borderRadius: "50%",
-              pointerEvents: "none",
-            }}
-          />
-        );
-      })()}
     </div>
   );
 }
