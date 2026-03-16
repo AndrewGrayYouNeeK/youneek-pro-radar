@@ -169,12 +169,6 @@ export default function RadarDisplay({ settings, showNexrad }) {
 
   return (
     <div className="relative w-full h-full" style={{ minHeight: 400 }}>
-      {/* Tornado warning banner */}
-      {isTornadoWarning && (
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-[1000] bg-yellow-400 text-black text-xs font-mono font-bold px-4 py-1 rounded shadow-lg animate-pulse">
-          ⚠ TORNADO WARNING ACTIVE
-        </div>
-      )}
       <button
         onClick={handleLocateMe}
         className="absolute bottom-24 right-5 z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700"
