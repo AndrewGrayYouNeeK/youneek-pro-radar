@@ -65,11 +65,7 @@ export default function RadarDisplay({ targets, settings, onRadarClick, onTarget
     const rpm = 1 / s.sweepSpeed;
     sweepAngleRef.current = ((Date.now() / 1000) * rpm * 2 * Math.PI) % (2 * Math.PI);
 
-    // Update trails
-    trailsRef.current.push({ angle: sweepAngleRef.current, opacity: 0.7 });
-    trailsRef.current = trailsRef.current
-      .map((t) => ({ ...t, opacity: t.opacity - dt * 0.6 }))
-      .filter((t) => t.opacity > 0);
+    // Trails are rendered procedurally from sweep angle — no dt needed
 
     // --- Background ---
     ctx.fillStyle = c.bg;
