@@ -14,8 +14,6 @@ const DEFAULT_SETTINGS = {
   showVelocity: false, // show velocity overlay
 };
 
-const REFRESH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
-
 export default function RadarScope() {
   const [targets, setTargets] = useState([]);
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
