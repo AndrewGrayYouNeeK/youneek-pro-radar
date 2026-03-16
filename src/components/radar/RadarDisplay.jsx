@@ -81,6 +81,13 @@ export default function RadarDisplay({ settings, showNexrad }) {
   const [showThunderstorm, setShowThunderstorm] = useState(true);
   const [showFlood, setShowFlood] = useState(false);
   const [showWinter, setShowWinter] = useState(false);
+  const alertToggles = {
+    tornado: showTornado,
+    severe: showThunderstorm,
+    flood: showFlood,
+    winter: showWinter,
+  };
+  const alertTogglesRef = useRef(alertToggles);
 
   useEffect(() => {
     if (leafletMap.current || !mapRef.current) return;
@@ -119,6 +126,10 @@ export default function RadarDisplay({ settings, showNexrad }) {
   useEffect(() => {
     setShowVelocityLocal(settings.showVelocity);
   }, [settings.showVelocity]);
+
+  useEffect(() => {
+    alertTogglesRef.current = alertToggles;
+  }, [alertToggles]);
 
   useEffect(() => {
     if (!leafletMap.current) return;
@@ -161,12 +172,12 @@ export default function RadarDisplay({ settings, showNexrad }) {
       ).addTo(leafletMap.current);
     };
 
-    const refreshAlertLayer = (layerRef, isEnabled, url, color) => {
+    const refreshAlertLayer = (layerRef, toggleKey, url, color) => {
       if (layerRef.current) {
         leafletMap.current.removeLayer(layerRef.current);
         layerRef.current = null;
       }
-      if (!leafletMap.current || !showNexrad || !isEnabled) return;
+      if (!leafletMap.current || !showNexrad || !alertTogglesRef.current[toggleKey]) return;
 
       fetch(url)
         .then((response) => response.json())
@@ -188,25 +199,25 @@ export default function RadarDisplay({ settings, showNexrad }) {
     const refreshAlertLayers = () => {
       refreshAlertLayer(
         tornadoLayerRef,
-        showTornado,
+        "tornado",
         "https://api.weather.gov/alerts/active?event=Tornado+Warning&status=actual",
         "#ef4444"
       );
       refreshAlertLayer(
         thunderLayerRef,
-        showThunderstorm,
+        "severe",
         "https://api.weather.gov/alerts/active?event=Severe+Thunderstorm+Warning&status=actual",
         "#f97316"
       );
       refreshAlertLayer(
         floodLayerRef,
-        showFlood,
+        "flood",
         "https://api.weather.gov/alerts/active?event=Flood+Warning&status=actual",
         "#3b82f6"
       );
       refreshAlertLayer(
         winterLayerRef,
-        showWinter,
+        "winter",
         "https://api.weather.gov/alerts/active?event=Winter+Weather+Advisory&status=actual",
         "#a855f7"
       );
