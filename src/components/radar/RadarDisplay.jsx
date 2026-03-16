@@ -313,6 +313,23 @@ export default function RadarDisplay({ targets, settings, onRadarClick, onTarget
           }}
         />
       )}
+      {velImageUrl && (
+        <img
+          src={velImageUrl}
+          alt="NEXRAD Velocity"
+          style={{
+            position: "absolute",
+            top: "50%", left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: canvasRef.current?.width || "100%",
+            height: canvasRef.current?.height || "100%",
+            opacity: 0.65,
+            mixBlendMode: "screen",
+            borderRadius: "50%",
+            pointerEvents: "none",
+          }}
+        />
+      )}
     </div>
   );
 }
