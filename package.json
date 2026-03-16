@@ -76,7 +76,8 @@
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.171.0",
     "vaul": "^1.1.2",
-    "zod": "^3.24.2"
+    "zod": "^3.24.2",
+    "nexrad-level-3-data": "^0.6.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
