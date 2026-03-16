@@ -70,8 +70,8 @@ export default function RadarScope() {
   }, [settings.showNexrad, settings.station, fetchNexradData]);
 
   const handleRefreshNexrad = useCallback(() => {
-    if (settings.showNexrad) fetchNexradData(settings.station, settings.range);
-  }, [settings.showNexrad, settings.station, settings.range, fetchNexradData]);
+    if (settings.showNexrad) fetchNexradData(settings.station, settings.showVelocity);
+  }, [settings.showNexrad, settings.station, settings.showVelocity, fetchNexradData]);
 
   const handleRadarClick = useCallback((clickData) => {
     setPendingClick(clickData);
