@@ -1,21 +1,18 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
-import parser from 'npm:nexrad-level-3-data@0.6.1';
 
-// List latest files from the NEXRAD Level 3 S3 bucket and return the most recent one
-async function getLatestFileKey(station, product) {
-  const prefix = `${station}_${product}`;
-  const url = `https://unidata-nexrad-level3.s3.amazonaws.com/?list-type=2&prefix=${prefix}&max-keys=5`;
-  const res = await fetch(url);
-  const text = await res.text();
-
-  // Parse XML keys from S3 ListObjectsV2 response
-  const keys = [...text.matchAll(/<Key>([^<]+)<\/Key>/g)].map(m => m[1]);
-  if (keys.length === 0) throw new Error(`No files found for ${station} ${product}`);
-
-  // Sort descending and take the most recent
-  keys.sort((a, b) => b.localeCompare(a));
-  return keys[0];
-}
+// Station coordinates (lat, lon) for bounding box calculation
+const STATIONS = {
+  KLOT: { lat: 41.604, lon: -88.085 },
+  KORD: { lat: 41.979, lon: -87.908 },
+  KATL: { lat: 33.364, lon: -84.428 },
+  KDFW: { lat: 32.573, lon: -97.303 },
+  KNYC: { lat: 40.866, lon: -72.864 },
+  KMIA: { lat: 25.611, lon: -80.413 },
+  KDEN: { lat: 39.787, lon: -104.546 },
+  KSEA: { lat: 47.52,  lon: -122.494 },
+  KPHX: { lat: 33.422, lon: -112.186 },
+  KBOS: { lat: 41.956, lon: -71.137 },
+};
 
 Deno.serve(async (req) => {
   try {
@@ -25,70 +22,45 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const station = (body.station || 'KLOT').toUpperCase();
-    const product = body.product || 'N0R';
+    const rangeNm = body.rangeNm || 100; // nautical miles radius to show
 
-    // Get the latest file key
-    const key = await getLatestFileKey(station, product);
+    const stationInfo = STATIONS[station] || STATIONS.KLOT;
+    const { lat, lon } = stationInfo;
 
-    // Fetch the binary file
-    const fileRes = await fetch(`https://unidata-nexrad-level3.s3.amazonaws.com/${key}`);
-    if (!fileRes.ok) throw new Error(`Failed to fetch file: ${fileRes.status}`);
+    // Convert nautical miles to degrees (approx)
+    const nmToDeg = rangeNm / 60;
+    const bbox = {
+      xmin: lon - nmToDeg * 1.3,
+      ymin: lat - nmToDeg,
+      xmax: lon + nmToDeg * 1.3,
+      ymax: lat + nmToDeg,
+    };
 
-    const arrayBuffer = await fileRes.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    // Fetch radar image from NOAA MRMS MapServer (live, updates every 5-10 min)
+    const exportUrl = new URL('https://mapservices.weather.noaa.gov/eventdriven/rest/services/radar/radar_base_reflectivity/MapServer/export');
+    exportUrl.searchParams.set('bbox', `${bbox.xmin},${bbox.ymin},${bbox.xmax},${bbox.ymax}`);
+    exportUrl.searchParams.set('bboxSR', '4326');
+    exportUrl.searchParams.set('size', '512,512');
+    exportUrl.searchParams.set('imageSR', '4326');
+    exportUrl.searchParams.set('format', 'png32');
+    exportUrl.searchParams.set('transparent', 'true');
+    exportUrl.searchParams.set('f', 'json');
 
-    // Parse with nexrad-level-3-data (suppress console noise)
-    const data = parser(buffer, { logger: false });
+    const metaRes = await fetch(exportUrl.toString());
+    const meta = await metaRes.json();
 
-    // Extract radials from the parsed data
-    // The radial data is in data.data.radials for product 94 (NXQ/N0R digital)
-    // or data.data.packet.radials for older products
-    let radials = null;
-    if (data?.data?.radials) {
-      radials = data.data.radials;
-    } else if (data?.data?.packet?.radials) {
-      radials = data.data.packet.radials;
-    } else if (data?.data?.packets) {
-      // Find first radial packet
-      for (const pkt of data.data.packets) {
-        if (pkt.radials) { radials = pkt.radials; break; }
-      }
+    if (!meta.href) {
+      throw new Error('No image URL returned from NOAA MapServer');
     }
-
-    if (!radials || radials.length === 0) {
-      return Response.json({ error: 'No radial data found', raw: JSON.stringify(data).slice(0, 500) }, { status: 422 });
-    }
-
-    // Build a compact radial array: [{angle, angleWidth, gates:[dBZ values]}]
-    // For product 94 (digital), scale: value * 0.5 - 33  → dBZ
-    // For product 19/20 (N0R legacy), data levels map differently
-    const isDigital = data?.header?.code === 94 || data?.header?.code === 99;
-
-    const compactRadials = radials.map(r => {
-      const gates = (r.gates || r.data || []).map(v => {
-        if (v <= 1) return null; // no data / below threshold
-        return isDigital ? (v * 0.5 - 33) : (v * 0.5 - 33); // same formula for N0R
-      });
-      return {
-        angle: r.startAngle ?? r.angle ?? 0,
-        angleWidth: r.angleDelta ?? r.angleWidth ?? 1,
-        gates,
-      };
-    });
-
-    // Get range info from header
-    const rangeKm = data?.productDescription?.maxDataRange
-      ?? data?.header?.rangeFirstGate
-      ?? 230;
 
     return Response.json({
       station,
-      product,
-      key,
-      timestamp: data?.header?.dateTime ?? null,
-      rangeKm,
-      numGates: compactRadials[0]?.gates?.length ?? 0,
-      radials: compactRadials,
+      lat,
+      lon,
+      rangeNm,
+      bbox,
+      imageUrl: meta.href,
+      timestamp: new Date().toISOString(),
     });
 
   } catch (error) {
