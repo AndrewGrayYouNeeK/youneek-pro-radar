@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import { LocateFixed } from "lucide-react";
-import RadarLayersMenu from "./RadarLayersMenu";
+import { Switch } from "@/components/ui/switch";
 import "leaflet/dist/leaflet.css";
 
 // Fix Leaflet default icon paths
@@ -63,30 +63,24 @@ const invalidateMapSize = (map) => {
   setTimeout(() => map.invalidateSize(), 150);
 };
 
-export default function RadarDisplay({
-  settings,
-  showNexrad,
-  onSettingsChange,
-  showRadio,
-  onToggleRadio,
-}) {
+export default function RadarDisplay({ settings, showNexrad }) {
   const mapRef = useRef(null);
   const leafletMap = useRef(null);
   const radarLayerRef = useRef(null);
   const velLayerRef = useRef(null);
   const tornadoLayerRef = useRef(null);
-  const severeLayerRef = useRef(null);
+  const thunderLayerRef = useRef(null);
   const floodLayerRef = useRef(null);
   const winterLayerRef = useRef(null);
   const refreshTimerRef = useRef(null);
   const userLocationMarkerRef = useRef(null);
   const radarLoadStatsRef = useRef({ errors: 0, loaded: 0, usingFallback: false });
-  const [alertToggles, setAlertToggles] = useState({
-    tornado: true,
-    severe: true,
-    flood: false,
-    winter: false,
-  });
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [showVelocityLocal, setShowVelocityLocal] = useState(settings.showVelocity);
+  const [showTornado, setShowTornado] = useState(true);
+  const [showThunderstorm, setShowThunderstorm] = useState(true);
+  const [showFlood, setShowFlood] = useState(false);
+  const [showWinter, setShowWinter] = useState(false);
 
   useEffect(() => {
     if (leafletMap.current || !mapRef.current) return;
@@ -123,6 +117,10 @@ export default function RadarDisplay({
   }, [settings.station]);
 
   useEffect(() => {
+    setShowVelocityLocal(settings.showVelocity);
+  }, [settings.showVelocity]);
+
+  useEffect(() => {
     if (!leafletMap.current) return;
 
     if (radarLayerRef.current) {
@@ -133,7 +131,7 @@ export default function RadarDisplay({
       leafletMap.current.removeLayer(velLayerRef.current);
       velLayerRef.current = null;
     }
-    [tornadoLayerRef, severeLayerRef, floodLayerRef, winterLayerRef].forEach((layerRef) => {
+    [tornadoLayerRef, thunderLayerRef, floodLayerRef, winterLayerRef].forEach((layerRef) => {
       if (layerRef.current) {
         leafletMap.current.removeLayer(layerRef.current);
         layerRef.current = null;
@@ -146,11 +144,11 @@ export default function RadarDisplay({
     if (!showNexrad) return;
 
     const addVelocityLayer = () => {
-      if (!settings.showVelocity || !leafletMap.current) return;
       if (velLayerRef.current) {
         leafletMap.current.removeLayer(velLayerRef.current);
         velLayerRef.current = null;
       }
+      if (!showVelocityLocal || !leafletMap.current) return;
 
       velLayerRef.current = L.tileLayer.wms(
         "https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0u.cgi",
@@ -190,25 +188,25 @@ export default function RadarDisplay({
     const refreshAlertLayers = () => {
       refreshAlertLayer(
         tornadoLayerRef,
-        alertToggles.tornado,
+        showTornado,
         "https://api.weather.gov/alerts/active?event=Tornado+Warning&status=actual",
         "#ef4444"
       );
       refreshAlertLayer(
-        severeLayerRef,
-        alertToggles.severe,
+        thunderLayerRef,
+        showThunderstorm,
         "https://api.weather.gov/alerts/active?event=Severe+Thunderstorm+Warning&status=actual",
         "#f97316"
       );
       refreshAlertLayer(
         floodLayerRef,
-        alertToggles.flood,
+        showFlood,
         "https://api.weather.gov/alerts/active?event=Flood+Warning&status=actual",
         "#3b82f6"
       );
       refreshAlertLayer(
         winterLayerRef,
-        alertToggles.winter,
+        showWinter,
         "https://api.weather.gov/alerts/active?event=Winter+Weather+Advisory&status=actual",
         "#a855f7"
       );
@@ -285,12 +283,12 @@ export default function RadarDisplay({
     return () => clearInterval(refreshTimerRef.current);
   }, [
     showNexrad,
-    settings.showVelocity,
+    showVelocityLocal,
     settings.station,
-    alertToggles.tornado,
-    alertToggles.severe,
-    alertToggles.flood,
-    alertToggles.winter,
+    showTornado,
+    showThunderstorm,
+    showFlood,
+    showWinter,
   ]);
 
   const handleHookZoneView = () => {
@@ -301,18 +299,6 @@ export default function RadarDisplay({
   const handleConusView = () => {
     if (!leafletMap.current) return;
     leafletMap.current.setView([39.5, -98.35], 5);
-  };
-
-  const handleShowNexradChange = (value) => {
-    onSettingsChange({ ...settings, showNexrad: value });
-  };
-
-  const handleShowVelocityChange = (value) => {
-    onSettingsChange({ ...settings, showVelocity: value });
-  };
-
-  const handleAlertToggleChange = (key, value) => {
-    setAlertToggles((current) => ({ ...current, [key]: value }));
   };
 
   const handleLocateMe = () => {
@@ -355,16 +341,45 @@ export default function RadarDisplay({
           🗺️ CONUS
         </button>
       </div>
-      <RadarLayersMenu
-        showNexrad={showNexrad}
-        showVelocity={settings.showVelocity}
-        showRadio={showRadio}
-        alertToggles={alertToggles}
-        onShowNexradChange={handleShowNexradChange}
-        onShowVelocityChange={handleShowVelocityChange}
-        onShowRadioChange={onToggleRadio}
-        onAlertToggleChange={handleAlertToggleChange}
-      />
+      <div className="absolute right-3 top-3 z-[1000]">
+        <button
+          onClick={() => setMenuOpen((open) => !open)}
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-900/80 text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90"
+          aria-label="Open layers menu"
+        >
+          <span className="text-xl">🗂️</span>
+        </button>
+
+        {menuOpen && (
+          <div className="mt-2 w-72 rounded-2xl border border-white/10 bg-slate-950/85 p-4 shadow-2xl backdrop-blur-md">
+            <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">
+              Layers
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm text-white">📡 Velocity</span>
+                <Switch checked={showVelocityLocal} onCheckedChange={setShowVelocityLocal} />
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm text-white">🌪️ Tornado Warnings</span>
+                <Switch checked={showTornado} onCheckedChange={setShowTornado} />
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm text-white">⛈️ Severe Thunderstorm</span>
+                <Switch checked={showThunderstorm} onCheckedChange={setShowThunderstorm} />
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm text-white">🌊 Flood Warnings</span>
+                <Switch checked={showFlood} onCheckedChange={setShowFlood} />
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm text-white">❄️ Winter Advisories</span>
+                <Switch checked={showWinter} onCheckedChange={setShowWinter} />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
       <button
         onClick={handleLocateMe}
         className="absolute bottom-24 right-5 z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700"
