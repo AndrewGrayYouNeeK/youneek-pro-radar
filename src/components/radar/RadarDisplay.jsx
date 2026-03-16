@@ -106,13 +106,16 @@ export default function RadarDisplay({ settings, showNexrad }) {
     if (!showNexrad) return;
 
     // Reflectivity overlay
-    radarLayerRef.current = L.tileLayer.wms('https://cors-anywhere.herokuapp.com/https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0q.cgi?', {
-      layers: 'nexrad-n0q',
-      format: 'image/png',
-      transparent: true,
-      opacity: 0.7,
-      attribution: 'Iowa Environmental Mesonet'
-    }).addTo(leafletMap.current);
+    radarLayerRef.current = L.tileLayer.wms(
+      "https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0q.cgi?",
+      {
+        layers: "nexrad-n0q",
+        format: "image/png",
+        transparent: true,
+        opacity: 0.7,
+        attribution: "Iowa Environmental Mesonet",
+      }
+    ).addTo(leafletMap.current);
 
     // Velocity overlay
     if (settings.showVelocity) {
