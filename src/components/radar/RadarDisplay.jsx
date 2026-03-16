@@ -238,7 +238,6 @@ export default function RadarDisplay({ targets, settings, onRadarClick, onTarget
   }, [isTornadoWarning]); // stable — all mutable state is read via refs
 
   useEffect(() => {
-    lastTimeRef.current = null;
     animRef.current = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(animRef.current);
   }, [draw]);
