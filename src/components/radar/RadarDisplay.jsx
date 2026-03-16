@@ -122,6 +122,24 @@ export default function RadarDisplay({ settings, showNexrad }) {
 
     if (!showNexrad) return;
 
+    const addVelocityLayer = () => {
+      if (!settings.showVelocity || !leafletMap.current) return;
+      if (velLayerRef.current) {
+        leafletMap.current.removeLayer(velLayerRef.current);
+        velLayerRef.current = null;
+      }
+
+      velLayerRef.current = L.tileLayer.wms(
+        "https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0u.cgi",
+        {
+          layers: "nexrad-n0u",
+          format: "image/png",
+          transparent: true,
+          opacity: 0.6,
+        }
+      ).addTo(leafletMap.current);
+    };
+
     const loadRainViewerFallback = () => {
       if (radarLoadStatsRef.current.usingFallback || !leafletMap.current) return;
       radarLoadStatsRef.current.usingFallback = true;
@@ -145,6 +163,8 @@ export default function RadarDisplay({ settings, showNexrad }) {
             maxNativeZoom: 12,
             crossOrigin: "anonymous",
           }).addTo(leafletMap.current);
+
+          addVelocityLayer();
         });
     };
 
@@ -172,18 +192,7 @@ export default function RadarDisplay({ settings, showNexrad }) {
     });
 
     radarLayerRef.current = iowaLayer.addTo(leafletMap.current);
-
-    if (settings.showVelocity) {
-      velLayerRef.current = L.tileLayer.wms(
-        "https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0u.cgi",
-        {
-          layers: "nexrad-n0u",
-          format: "image/png",
-          transparent: true,
-          opacity: 0.6,
-        }
-      ).addTo(leafletMap.current);
-    }
+    addVelocityLayer();
 
     refreshTimerRef.current = setInterval(() => {
       if (radarLayerRef.current?.setUrl && !radarLoadStatsRef.current.usingFallback) {
@@ -197,7 +206,7 @@ export default function RadarDisplay({ settings, showNexrad }) {
     }, 5 * 60 * 1000);
 
     return () => clearInterval(refreshTimerRef.current);
-  }, [showNexrad, settings.showVelocity]);
+  }, [showNexrad, settings.showVelocity, settings.station]);
 
   const handleHookZoneView = () => {
     if (!leafletMap.current) return;
