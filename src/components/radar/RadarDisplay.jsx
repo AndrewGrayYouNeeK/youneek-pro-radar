@@ -1,6 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import { LocateFixed } from "lucide-react";
+import RadarLayersMenu from "./RadarLayersMenu";
 import "leaflet/dist/leaflet.css";
 
 // Fix Leaflet default icon paths
@@ -62,15 +63,30 @@ const invalidateMapSize = (map) => {
   setTimeout(() => map.invalidateSize(), 150);
 };
 
-export default function RadarDisplay({ settings, showNexrad }) {
+export default function RadarDisplay({
+  settings,
+  showNexrad,
+  onSettingsChange,
+  showRadio,
+  onToggleRadio,
+}) {
   const mapRef = useRef(null);
   const leafletMap = useRef(null);
   const radarLayerRef = useRef(null);
   const velLayerRef = useRef(null);
-  const alertLayerRef = useRef(null);
+  const tornadoLayerRef = useRef(null);
+  const severeLayerRef = useRef(null);
+  const floodLayerRef = useRef(null);
+  const winterLayerRef = useRef(null);
   const refreshTimerRef = useRef(null);
   const userLocationMarkerRef = useRef(null);
   const radarLoadStatsRef = useRef({ errors: 0, loaded: 0, usingFallback: false });
+  const [alertToggles, setAlertToggles] = useState({
+    tornado: true,
+    severe: true,
+    flood: false,
+    winter: false,
+  });
 
   useEffect(() => {
     if (leafletMap.current || !mapRef.current) return;
@@ -117,10 +133,12 @@ export default function RadarDisplay({ settings, showNexrad }) {
       leafletMap.current.removeLayer(velLayerRef.current);
       velLayerRef.current = null;
     }
-    if (alertLayerRef.current) {
-      leafletMap.current.removeLayer(alertLayerRef.current);
-      alertLayerRef.current = null;
-    }
+    [tornadoLayerRef, severeLayerRef, floodLayerRef, winterLayerRef].forEach((layerRef) => {
+      if (layerRef.current) {
+        leafletMap.current.removeLayer(layerRef.current);
+        layerRef.current = null;
+      }
+    });
     if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
 
     radarLoadStatsRef.current = { errors: 0, loaded: 0, usingFallback: false };
@@ -145,33 +163,55 @@ export default function RadarDisplay({ settings, showNexrad }) {
       ).addTo(leafletMap.current);
     };
 
-    const addAlertLayer = () => {
-      if (!leafletMap.current) return;
-      if (alertLayerRef.current) {
-        leafletMap.current.removeLayer(alertLayerRef.current);
-        alertLayerRef.current = null;
+    const refreshAlertLayer = (layerRef, isEnabled, url, color) => {
+      if (layerRef.current) {
+        leafletMap.current.removeLayer(layerRef.current);
+        layerRef.current = null;
       }
+      if (!leafletMap.current || !showNexrad || !isEnabled) return;
 
-      fetch("https://api.weather.gov/alerts/active?event=Tornado+Warning,Severe+Thunderstorm+Warning&status=actual")
+      fetch(url)
         .then((response) => response.json())
         .then((data) => {
           if (!leafletMap.current) return;
 
-          alertLayerRef.current = L.geoJSON(data, {
-            style: (feature) => {
-              const isTornado = feature?.properties?.event === "Tornado Warning";
-              const color = isTornado ? "#ef4444" : "#f97316";
-
-              return {
-                color,
-                weight: 2,
-                opacity: 0.95,
-                fillColor: color,
-                fillOpacity: 0.18,
-              };
+          layerRef.current = L.geoJSON(data, {
+            style: {
+              color,
+              weight: 2,
+              opacity: 0.95,
+              fillColor: color,
+              fillOpacity: 0.18,
             },
           }).addTo(leafletMap.current);
         });
+    };
+
+    const refreshAlertLayers = () => {
+      refreshAlertLayer(
+        tornadoLayerRef,
+        alertToggles.tornado,
+        "https://api.weather.gov/alerts/active?event=Tornado+Warning&status=actual",
+        "#ef4444"
+      );
+      refreshAlertLayer(
+        severeLayerRef,
+        alertToggles.severe,
+        "https://api.weather.gov/alerts/active?event=Severe+Thunderstorm+Warning&status=actual",
+        "#f97316"
+      );
+      refreshAlertLayer(
+        floodLayerRef,
+        alertToggles.flood,
+        "https://api.weather.gov/alerts/active?event=Flood+Warning&status=actual",
+        "#3b82f6"
+      );
+      refreshAlertLayer(
+        winterLayerRef,
+        alertToggles.winter,
+        "https://api.weather.gov/alerts/active?event=Winter+Weather+Advisory&status=actual",
+        "#a855f7"
+      );
     };
 
     const loadRainViewerFallback = () => {
@@ -199,7 +239,7 @@ export default function RadarDisplay({ settings, showNexrad }) {
           }).addTo(leafletMap.current);
 
           addVelocityLayer();
-          addAlertLayer();
+          refreshAlertLayers();
         });
     };
 
@@ -228,7 +268,7 @@ export default function RadarDisplay({ settings, showNexrad }) {
 
     radarLayerRef.current = iowaLayer.addTo(leafletMap.current);
     addVelocityLayer();
-    addAlertLayer();
+    refreshAlertLayers();
 
     refreshTimerRef.current = setInterval(() => {
       if (radarLayerRef.current?.setUrl && !radarLoadStatsRef.current.usingFallback) {
@@ -239,11 +279,19 @@ export default function RadarDisplay({ settings, showNexrad }) {
       if (velLayerRef.current?.redraw) {
         velLayerRef.current.redraw();
       }
-      addAlertLayer();
+      refreshAlertLayers();
     }, 5 * 60 * 1000);
 
     return () => clearInterval(refreshTimerRef.current);
-  }, [showNexrad, settings.showVelocity, settings.station]);
+  }, [
+    showNexrad,
+    settings.showVelocity,
+    settings.station,
+    alertToggles.tornado,
+    alertToggles.severe,
+    alertToggles.flood,
+    alertToggles.winter,
+  ]);
 
   const handleHookZoneView = () => {
     if (!leafletMap.current) return;
@@ -253,6 +301,18 @@ export default function RadarDisplay({ settings, showNexrad }) {
   const handleConusView = () => {
     if (!leafletMap.current) return;
     leafletMap.current.setView([39.5, -98.35], 5);
+  };
+
+  const handleShowNexradChange = (value) => {
+    onSettingsChange({ ...settings, showNexrad: value });
+  };
+
+  const handleShowVelocityChange = (value) => {
+    onSettingsChange({ ...settings, showVelocity: value });
+  };
+
+  const handleAlertToggleChange = (key, value) => {
+    setAlertToggles((current) => ({ ...current, [key]: value }));
   };
 
   const handleLocateMe = () => {
@@ -295,6 +355,16 @@ export default function RadarDisplay({ settings, showNexrad }) {
           🗺️ CONUS
         </button>
       </div>
+      <RadarLayersMenu
+        showNexrad={showNexrad}
+        showVelocity={settings.showVelocity}
+        showRadio={showRadio}
+        alertToggles={alertToggles}
+        onShowNexradChange={handleShowNexradChange}
+        onShowVelocityChange={handleShowVelocityChange}
+        onShowRadioChange={onToggleRadio}
+        onAlertToggleChange={handleAlertToggleChange}
+      />
       <button
         onClick={handleLocateMe}
         className="absolute bottom-24 right-5 z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700"
