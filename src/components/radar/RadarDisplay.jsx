@@ -49,8 +49,9 @@ const STATION_COORDS = {
   KMSX: [47.041, -113.986], KTFX: [47.46, -111.385], KCBX: [43.491, -116.236],
 };
 
+const RIDGE2_URL = "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::USCOMP-N0Q-0/{z}/{x}/{y}.png";
 const getCacheBust = () => Math.floor(Date.now() / 120000);
-const getIowaReflectivityUrl = () => `https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::USCOMP-N0Q-0/{z}/{x}/{y}.png?_cb=${getCacheBust()}`;
+const getIowaReflectivityUrl = () => `${RIDGE2_URL}?_cb=${getCacheBust()}`;
 const getRainViewerTileUrl = (path) => {
   if (!path) return null;
   const normalizedPath = path.startsWith("/v2/radar/") ? path : `/v2/radar/${path}`;
@@ -146,13 +147,16 @@ export default function RadarDisplay({ settings, showNexrad }) {
         });
     };
 
-    const iowaLayer = L.tileLayer(getIowaReflectivityUrl(), {
-      attribution: "Iowa Mesonet",
-      opacity: 0.7,
+    const cb = getCacheBust();
+    const opacity = 0.7;
+    const iowaLayer = L.tileLayer(`${RIDGE2_URL}?_cb=${cb}`, {
+      opacity: opacity,
+      transparent: true,
+      crossOrigin: true,
       tileSize: 256,
       maxZoom: 18,
       maxNativeZoom: 12,
-      crossOrigin: "anonymous",
+      attribution: 'NEXRAD © <a href="https://mesonet.agron.iastate.edu/">Iowa Mesonet</a>',
     });
 
     iowaLayer.on("tileload", () => {
