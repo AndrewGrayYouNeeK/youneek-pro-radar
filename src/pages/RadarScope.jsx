@@ -60,10 +60,10 @@ export default function RadarScope() {
       return;
     }
 
-    fetchNexradData(settings.station, settings.range);
+    fetchNexradData(settings.station, settings.showVelocity);
 
     refreshTimerRef.current = setInterval(() => {
-      fetchNexradData(settings.station, settings.range);
+      fetchNexradData(settings.station, settings.showVelocity);
     }, REFRESH_INTERVAL_MS);
 
     return () => clearInterval(refreshTimerRef.current);
