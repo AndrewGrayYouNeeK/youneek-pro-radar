@@ -1,23 +1,67 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { base44 } from "@/api/base44Client";
 import RadarDisplay from "../components/radar/RadarDisplay";
 import TargetDialog from "../components/radar/TargetDialog";
 import TargetList from "../components/radar/TargetList";
 import RadarControls from "../components/radar/RadarControls";
 
 const DEFAULT_SETTINGS = {
-  range: 50,        // nautical miles
-  sweepSpeed: 4,    // seconds per revolution
+  range: 100,        // nautical miles
+  sweepSpeed: 4,     // seconds per revolution
   showLabels: true,
   showTails: true,
-  theme: "green",   // green | amber | blue
+  theme: "green",    // green | amber | blue
+  showNexrad: false, // live NEXRAD overlay
+  station: "KLOT",   // default station
 };
+
+const REFRESH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
 export default function RadarScope() {
   const [targets, setTargets] = useState([]);
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
-  const [pendingClick, setPendingClick] = useState(null); // {bearing, range, x, y}
+  const [pendingClick, setPendingClick] = useState(null);
   const [selectedTarget, setSelectedTarget] = useState(null);
   const [dialogMode, setDialogMode] = useState(null); // 'create' | 'inspect'
+
+  // NEXRAD state
+  const [nexradImageUrl, setNexradImageUrl] = useState(null);
+  const [nexradStatus, setNexradStatus] = useState("offline"); // offline | loading | ok | error
+  const refreshTimerRef = useRef(null);
+
+  const fetchNexrad = useCallback(async (station, rangeNm) => {
+    setNexradStatus("loading");
+    const res = await base44.functions.invoke("fetchNexrad", { station, rangeNm });
+    if (res.data?.imageUrl) {
+      setNexradImageUrl(res.data.imageUrl);
+      setNexradStatus("ok");
+    } else {
+      setNexradStatus("error");
+    }
+  }, []);
+
+  // Fetch on toggle on or station change
+  useEffect(() => {
+    if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
+
+    if (!settings.showNexrad) {
+      setNexradStatus("offline");
+      setNexradImageUrl(null);
+      return;
+    }
+
+    fetchNexrad(settings.station, settings.range);
+
+    refreshTimerRef.current = setInterval(() => {
+      fetchNexrad(settings.station, settings.range);
+    }, REFRESH_INTERVAL_MS);
+
+    return () => clearInterval(refreshTimerRef.current);
+  }, [settings.showNexrad, settings.station, fetchNexrad]);
+
+  const handleRefreshNexrad = useCallback(() => {
+    if (settings.showNexrad) fetchNexrad(settings.station, settings.range);
+  }, [settings.showNexrad, settings.station, settings.range, fetchNexrad]);
 
   const handleRadarClick = useCallback((clickData) => {
     setPendingClick(clickData);
@@ -61,12 +105,18 @@ export default function RadarScope() {
           settings={settings}
           onRadarClick={handleRadarClick}
           onTargetClick={handleTargetClick}
+          nexradImageUrl={settings.showNexrad ? nexradImageUrl : null}
         />
       </div>
 
       {/* Side Panel */}
       <div className="w-full md:w-72 bg-gray-900 border-t md:border-t-0 md:border-l border-gray-700 flex flex-col">
-        <RadarControls settings={settings} onSettingsChange={setSettings} />
+        <RadarControls
+          settings={settings}
+          onSettingsChange={setSettings}
+          nexradStatus={nexradStatus}
+          onRefreshNexrad={handleRefreshNexrad}
+        />
         <TargetList
           targets={targets}
           settings={settings}
