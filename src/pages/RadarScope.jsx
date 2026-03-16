@@ -17,6 +17,7 @@ const DEFAULT_SETTINGS = {
 export default function RadarScope() {
   const [targets, setTargets] = useState([]);
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+  const [showRadio, setShowRadio] = useState(true);
   const [pendingClick, setPendingClick] = useState(null);
   const [selectedTarget, setSelectedTarget] = useState(null);
   const [dialogMode, setDialogMode] = useState(null); // 'create' | 'inspect'
@@ -61,6 +62,9 @@ export default function RadarScope() {
         <RadarDisplay
           settings={settings}
           showNexrad={settings.showNexrad}
+          onSettingsChange={setSettings}
+          showRadio={showRadio}
+          onToggleRadio={setShowRadio}
         />
       </div>
 
@@ -76,7 +80,7 @@ export default function RadarScope() {
           onTargetClick={handleTargetClick}
           onDeleteTarget={handleDeleteTarget}
         />
-        <RadioPlayer nexradStation={settings.station} />
+        {showRadio && <RadioPlayer nexradStation={settings.station} />}
       </div>
 
       {/* Dialogs */}
