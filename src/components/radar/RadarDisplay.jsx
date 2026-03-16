@@ -67,11 +67,20 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
       attributionControl: true,
     }).setView(coords, 7);
 
-    // Always-visible base map
+    // Always-on background map
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '&copy; OpenStreetMap',
       maxZoom: 18,
     }).addTo(leafletMap.current);
+
+    // Reflectivity (auto-on)
+    L.tileLayer(
+      "https://radar.weather.gov/arcgis/rest/services/radar/radar_base_reflectivity/MapServer/tile/{z}/{y}/{x}",
+      {
+        opacity: 0.8,
+        attribution: "NOAA",
+      }
+    ).addTo(leafletMap.current);
 
     return () => {
       if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
@@ -93,42 +102,26 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
   useEffect(() => {
     if (!leafletMap.current) return;
 
-    // Remove existing radar layers
-    if (radarLayerRef.current) { leafletMap.current.removeLayer(radarLayerRef.current); radarLayerRef.current = null; }
-    if (velLayerRef.current)   { leafletMap.current.removeLayer(velLayerRef.current);   velLayerRef.current = null; }
+    // Remove existing velocity layer
+    if (velLayerRef.current) { leafletMap.current.removeLayer(velLayerRef.current); velLayerRef.current = null; }
     if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
 
-    if (!showNexrad) return;
+    if (!showNexrad || !settings.showVelocity) return;
 
-    // Reflectivity overlay
-    radarLayerRef.current = L.tileLayer.wms(
-      "https://mapservices.weather.noaa.gov/eventdriven/services/radar/radar_base_reflectivity/MapServer/WMSServer",
+    // Velocity overlay
+    velLayerRef.current = L.tileLayer.wms(
+      "https://mapservices.weather.noaa.gov/eventdriven/services/radar/radar_velocity/MapServer/WMSServer",
       {
         layers: "0",
         format: "image/png",
         transparent: true,
-        opacity: 0.7,
-        attribution: "NOAA",
+        opacity: 0.6,
       }
     ).addTo(leafletMap.current);
 
-    // Velocity overlay
-    if (settings.showVelocity) {
-      velLayerRef.current = L.tileLayer.wms(
-        "https://mapservices.weather.noaa.gov/eventdriven/services/radar/radar_velocity/MapServer/WMSServer",
-        {
-          layers: "0",
-          format: "image/png",
-          transparent: true,
-          opacity: 0.6,
-        }
-      ).addTo(leafletMap.current);
-    }
-
     // Auto-refresh every 5 minutes
     refreshTimerRef.current = setInterval(() => {
-      if (radarLayerRef.current) radarLayerRef.current.redraw();
-      if (velLayerRef.current)   velLayerRef.current.redraw();
+      if (velLayerRef.current) velLayerRef.current.redraw();
     }, 5 * 60 * 1000);
 
     return () => clearInterval(refreshTimerRef.current);
