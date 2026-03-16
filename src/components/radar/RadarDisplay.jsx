@@ -6,24 +6,22 @@ const THEME_COLORS = {
   blue:  { sweep: "#00ccff", ring: "#003355", text: "#0099cc", target: "#00ccff", bg: "#000d1a" },
 };
 
-export default function RadarDisplay({ targets, settings, onRadarClick, onTargetClick, nexradImageUrl }) {
+export default function RadarDisplay({ targets, settings, onRadarClick, onTargetClick, reflImageUrl, velImageUrl, isTornadoWarning }) {
   const canvasRef = useRef(null);
   const animRef = useRef(null);
   const sweepAngleRef = useRef(0);
   const lastTimeRef = useRef(null);
-  const trailsRef = useRef([]); // array of {angle, opacity}
-  const nexradImgRef = useRef(null);
-  const nexradLoadedRef = useRef(false);
+  const trailsRef = useRef([]);
+  const [tornadoPulse, setTornadoPulse] = useState(0);
 
-  // Load the NEXRAD overlay image whenever the URL changes
+  // Pulsing sine-wave animation for tornado warning
   useEffect(() => {
-    if (!nexradImageUrl) { nexradImgRef.current = null; nexradLoadedRef.current = false; return; }
-    nexradLoadedRef.current = false;
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = nexradImageUrl;
-    img.onload = () => { nexradImgRef.current = img; nexradLoadedRef.current = true; };
-  }, [nexradImageUrl]);
+    if (!isTornadoWarning) { setTornadoPulse(0); return; }
+    const id = setInterval(() => {
+      setTornadoPulse(Math.sin(Date.now() / 200) * 0.5 + 0.5);
+    }, 50);
+    return () => clearInterval(id);
+  }, [isTornadoWarning]);
 
   const colors = THEME_COLORS[settings.theme] || THEME_COLORS.green;
 
