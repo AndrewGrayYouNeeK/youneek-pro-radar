@@ -111,12 +111,8 @@ export default function RadarScope() {
       {/* Radar Display Area */}
       <div className="flex-1 flex items-center justify-center p-4">
         <RadarDisplay
-          targets={targets}
           settings={settings}
-          onRadarClick={handleRadarClick}
-          onTargetClick={handleTargetClick}
-          reflImageUrl={settings.showNexrad ? reflImageUrl : null}
-          velImageUrl={settings.showNexrad && settings.showVelocity ? velImageUrl : null}
+          showNexrad={settings.showNexrad}
           isTornadoWarning={isTornadoWarning}
         />
       </div>
