@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import L from "leaflet";
+import { LocateFixed } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 
 // Fix Leaflet default icon paths
@@ -55,6 +56,7 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
   const radarLayerRef = useRef(null);
   const velLayerRef = useRef(null);
   const refreshTimerRef = useRef(null);
+  const userLocationMarkerRef = useRef(null);
 
   // Initialize map once
   useEffect(() => {
@@ -135,6 +137,30 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
     return () => clearInterval(refreshTimerRef.current);
   }, [showNexrad, settings.showVelocity]);
 
+  const handleLocateMe = () => {
+    if (!navigator.geolocation) {
+      alert("Browser won't let me find you—turn on location.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        leafletMap.current.setView([latitude, longitude], 12);
+
+        if (userLocationMarkerRef.current) {
+          leafletMap.current.removeLayer(userLocationMarkerRef.current);
+        }
+
+        userLocationMarkerRef.current = L.marker([latitude, longitude])
+          .addTo(leafletMap.current)
+          .bindPopup("You're here!")
+          .openPopup();
+      },
+      () => alert("Couldn't get location—check permissions.")
+    );
+  };
+
   return (
     <div className="relative w-full h-full" style={{ minHeight: 400 }}>
       {/* Tornado warning banner */}
@@ -143,6 +169,13 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
           ⚠ TORNADO WARNING ACTIVE
         </div>
       )}
+      <button
+        onClick={handleLocateMe}
+        className="absolute bottom-24 right-5 z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700"
+        aria-label="Locate me"
+      >
+        <LocateFixed size={24} />
+      </button>
       <div ref={mapRef} className="w-full h-full" style={{ minHeight: 400 }} />
     </div>
   );
