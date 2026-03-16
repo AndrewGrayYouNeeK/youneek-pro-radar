@@ -4,14 +4,14 @@ const STATIONS = {
   KTLX: { lat: 35.333, lon: -97.278, nwsZoneId: "OKZ025" },
   KLOT: { lat: 41.604, lon: -88.085, nwsZoneId: "ILZ003" },
   KORD: { lat: 41.979, lon: -87.908, nwsZoneId: "ILZ003" },
-  KATL: { lat: 33.364, lon: -84.428, nwsZoneId: "GAZ030" },
-  KDFW: { lat: 32.573, lon: -97.303, nwsZoneId: "TXZ119" },
-  KNYC: { lat: 40.866, lon: -72.864, nwsZoneId: "NYZ071" },
-  KMIA: { lat: 25.611, lon: -80.413, nwsZoneId: "FLZ063" },
-  KDEN: { lat: 39.787, lon: -104.546, nwsZoneId: "COZ039" },
-  KSEA: { lat: 47.52,  lon: -122.494, nwsZoneId: "WAZ002" },
-  KPHX: { lat: 33.422, lon: -112.186, nwsZoneId: "AZZ503" },
-  KBOS: { lat: 41.956, lon: -71.137, nwsZoneId: "MAZ009" },
+  KFFC: { lat: 33.364, lon: -84.566, nwsZoneId: "GAZ030" },
+  KFWS: { lat: 32.573, lon: -97.303, nwsZoneId: "TXZ119" },
+  KOKX: { lat: 40.866, lon: -72.864, nwsZoneId: "NYZ071" },
+  KAMX: { lat: 25.611, lon: -80.413, nwsZoneId: "FLZ063" },
+  KFTG: { lat: 39.787, lon: -104.546, nwsZoneId: "COZ039" },
+  KATX: { lat: 47.52,  lon: -122.494, nwsZoneId: "WAZ002" },
+  KIWA: { lat: 33.289, lon: -111.670, nwsZoneId: "AZZ503" },
+  KBOX: { lat: 41.956, lon: -71.137, nwsZoneId: "MAZ009" },
 };
 
 async function fetchGifAsBase64(url) {
