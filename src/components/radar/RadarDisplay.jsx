@@ -258,7 +258,12 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
 
       {/* Safe Button */}
       <button
-        onClick={handleSafePing}
+        onClick={() => {
+          const lat = leafletMap.current.getCenter().lat.toFixed(5);
+          const lon = leafletMap.current.getCenter().lng.toFixed(5);
+          const msg = `I'm safe. Location: ${lat},${lon}`;
+          window.open(`sms:+15551234567?body=${encodeURIComponent(msg)}`, "_blank");
+        }}
         style={{
           position: "fixed",
           bottom: "100px",
@@ -269,8 +274,6 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
           borderRadius: "8px",
           border: "none",
           zIndex: 1000,
-          cursor: "pointer",
-          boxShadow: "0 4px 10px rgba(0,0,0,0.4)",
         }}
       >
         I'm Safe
