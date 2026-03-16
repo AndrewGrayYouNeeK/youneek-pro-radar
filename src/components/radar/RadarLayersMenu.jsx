@@ -24,10 +24,12 @@ export default function RadarLayersMenu({
   showNexrad,
   showVelocity,
   showRadio,
+  selectedStation,
   alertToggles,
   onShowNexradChange,
   onShowVelocityChange,
   onShowRadioChange,
+  onStationChange,
   onAlertToggleChange,
 }) {
   const [isOpen, setIsOpen] = useState(false);
