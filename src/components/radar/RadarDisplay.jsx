@@ -103,15 +103,13 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
     if (!showNexrad) return;
 
     // Reflectivity overlay
-    radarLayerRef.current = L.tileLayer.wms(
-      "https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0q.cgi?",
+    radarLayerRef.current = L.imageOverlay(
+      "https://radar.weather.gov/ridge/standard/KLVX_loop.gif",
+      [[37.0, -86.0], [38.5, -84.0]],
       {
-        layers: "N0Q",
-        format: "image/png",
-        transparent: true,
-        opacity: 0.7,
-        attribution: "Iowa Environmental Mesonet NEXRAD",
-        maxZoom: 16,
+        opacity: 0.65,
+        attribution: "NWS Louisville Radar",
+        interactive: false,
       }
     ).addTo(leafletMap.current);
 
@@ -130,8 +128,12 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
 
     // Auto-refresh every 5 minutes
     refreshTimerRef.current = setInterval(() => {
-      if (radarLayerRef.current) radarLayerRef.current.redraw();
-      if (velLayerRef.current)   velLayerRef.current.redraw();
+      if (radarLayerRef.current?.setUrl) {
+        radarLayerRef.current.setUrl(`https://radar.weather.gov/ridge/standard/KLVX_loop.gif?t=${Date.now()}`);
+      }
+      if (velLayerRef.current?.redraw) {
+        velLayerRef.current.redraw();
+      }
     }, 5 * 60 * 1000);
 
     return () => clearInterval(refreshTimerRef.current);
