@@ -76,6 +76,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const loopTimerRef = useRef(null);
   const loopIndexRef = useRef(0);
   const loopLayerRef = useRef(null);
+  const prevLoopLayerRef = useRef(null);
   const userLocationMarkerRef = useRef(null);
   const radarLoadStatsRef = useRef({ errors: 0, loaded: 0, usingFallback: false });
   const [menuOpen, setMenuOpen] = useState(false);
@@ -323,7 +324,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     fetch("https://api.rainviewer.com/public/weather-maps.json")
       .then((response) => response.json())
       .then((data) => {
-        const frames = (data?.radar?.past || []).slice(-10).map((item) => item.path).filter(Boolean);
+        const frames = (data?.radar?.past || []).slice(-15).map((item) => item.path).filter(Boolean);
         setLoopFrames(frames);
         loopIndexRef.current = 0;
         setLoopFrameIndex(0);
@@ -361,10 +362,14 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
 
     if (!isLooping) {
       if (loopTimerRef.current) {
-        clearInterval(loopTimerRef.current);
+        clearTimeout(loopTimerRef.current);
         loopTimerRef.current = null;
       }
-      if (loopLayerRef.current) {
+      if (prevLoopLayerRef.current && leafletMap.current) {
+        leafletMap.current.removeLayer(prevLoopLayerRef.current);
+        prevLoopLayerRef.current = null;
+      }
+      if (loopLayerRef.current && leafletMap.current) {
         leafletMap.current.removeLayer(loopLayerRef.current);
         loopLayerRef.current = null;
       }
@@ -386,30 +391,60 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     }
 
     const renderFrame = () => {
-      const frame = loopFrames[loopIndexRef.current];
+      const frameIndex = loopIndexRef.current;
+      const frame = loopFrames[frameIndex];
       if (!frame || !leafletMap.current) return;
 
-      if (loopLayerRef.current) {
-        leafletMap.current.removeLayer(loopLayerRef.current);
-      }
-
-      loopLayerRef.current = L.tileLayer(getRainViewerTileUrl(frame), {
-        opacity: 0.7,
+      const incomingLayer = L.tileLayer(getRainViewerTileUrl(frame), {
+        opacity: 0,
         maxZoom: 18,
         maxNativeZoom: 12,
+        crossOrigin: "anonymous",
       }).addTo(leafletMap.current);
 
-      setLoopFrameIndex(loopIndexRef.current);
-      loopIndexRef.current = (loopIndexRef.current + 1) % loopFrames.length;
+      const outgoingLayer = loopLayerRef.current;
+      prevLoopLayerRef.current = outgoingLayer;
+      loopLayerRef.current = incomingLayer;
+      setLoopFrameIndex(frameIndex);
+
+      const fadeStart = performance.now();
+      const fadeFrame = (now) => {
+        const progress = Math.min((now - fadeStart) / 150, 1);
+        incomingLayer.setOpacity(0.7 * progress);
+        if (outgoingLayer?.setOpacity) {
+          outgoingLayer.setOpacity(0.7 * (1 - progress));
+        }
+
+        if (progress < 1) {
+          requestAnimationFrame(fadeFrame);
+          return;
+        }
+
+        if (outgoingLayer && leafletMap.current) {
+          leafletMap.current.removeLayer(outgoingLayer);
+        }
+        if (prevLoopLayerRef.current === outgoingLayer) {
+          prevLoopLayerRef.current = null;
+        }
+      };
+
+      requestAnimationFrame(fadeFrame);
+
+      const isLastFrame = frameIndex === loopFrames.length - 1;
+      loopIndexRef.current = isLastFrame ? 0 : frameIndex + 1;
+      loopTimerRef.current = setTimeout(renderFrame, isLastFrame ? 1200 : 600);
     };
 
     renderFrame();
-    loopTimerRef.current = setInterval(renderFrame, 300);
 
     return () => {
       if (loopTimerRef.current) {
-        clearInterval(loopTimerRef.current);
+        clearTimeout(loopTimerRef.current);
         loopTimerRef.current = null;
+      }
+      if (prevLoopLayerRef.current && leafletMap.current) {
+        leafletMap.current.removeLayer(prevLoopLayerRef.current);
+        prevLoopLayerRef.current = null;
       }
       if (loopLayerRef.current && leafletMap.current) {
         leafletMap.current.removeLayer(loopLayerRef.current);
