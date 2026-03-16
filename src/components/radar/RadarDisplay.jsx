@@ -97,6 +97,7 @@ export default function RadarDisplay({ settings, showNexrad }) {
     leafletMap.current = L.map(mapRef.current, {
       zoomControl: true,
       attributionControl: true,
+      zoomSnap: 0.5,
     }).setView(coords, 8);
 
     L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
