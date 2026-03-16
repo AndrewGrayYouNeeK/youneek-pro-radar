@@ -226,7 +226,7 @@ export default function RadarDisplay({ targets, settings, onRadarClick, onTarget
     ctx.stroke();
 
     animRef.current = requestAnimationFrame(draw);
-  }, [targets, settings, colors]);
+  }, [targets, settings, colors, isTornadoWarning, tornadoPulse]);
 
   useEffect(() => {
     lastTimeRef.current = null;
