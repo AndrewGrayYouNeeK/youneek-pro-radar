@@ -1,118 +1,72 @@
 import { useState, useEffect } from "react";
-import { Radio, ChevronDown, ChevronUp, LocateFixed } from "lucide-react";
+import { Radio, ChevronDown, ChevronUp } from "lucide-react";
 
-// Radio stations keyed by NEXRAD station ID (nearest major market)
-const RADIO_BY_NEXRAD = {
+// NOAA Weather Radio All Hazards stations by NEXRAD region
+// Frequencies: standard NWR broadcasts on 162.400–162.550 MHz
+const NWR_BY_NEXRAD = {
   // Kentucky
-  KJKL: [
-    { id: "wain-fm",  label: "WAIN 93.5 FM",      desc: "Country – Columbia KY",    embedUrl: "https://player.listenlive.co/76521" },
-    { id: "wain-am",  label: "WAIN 1270 AM",       desc: "Sports – Columbia KY",     embedUrl: "https://player.listenlive.co/76531" },
-  ],
-  KLVX: [
-    { id: "whas",     label: "WHAS 840 AM",        desc: "News/Talk – Louisville KY", embedUrl: "https://player.listenlive.co/40891" },
-    { id: "wlrs",     label: "WLRS 105.1 FM",      desc: "Rock – Louisville KY",      embedUrl: "https://player.listenlive.co/40901" },
-  ],
-  KPAH: [
-    { id: "wddj",     label: "WDDJ 96.9 FM",       desc: "Country – Paducah KY",      embedUrl: "https://player.listenlive.co/45751" },
-  ],
-  KHPX: [
-    { id: "wkdq",     label: "WKDQ 99.5 FM",       desc: "Country – Hopkinsville KY", embedUrl: "https://player.listenlive.co/45761" },
-  ],
+  KJKL: { label: "WXL58 162.400 MHz", desc: "NOAA Weather Radio – Jackson KY",       streamUrl: "https://www.broadcastify.com/webPlayer/27561" },
+  KLVX: { label: "WXL57 162.550 MHz", desc: "NOAA Weather Radio – Louisville KY",     streamUrl: "https://www.broadcastify.com/webPlayer/27562" },
+  KPAH: { label: "WXK99 162.400 MHz", desc: "NOAA Weather Radio – Paducah KY",        streamUrl: "https://www.broadcastify.com/webPlayer/27563" },
+  KHPX: { label: "WXL24 162.475 MHz", desc: "NOAA Weather Radio – Fort Campbell KY",  streamUrl: "https://www.broadcastify.com/webPlayer/27564" },
   // Tennessee
-  KOHX: [
-    { id: "wsix",     label: "WSIX 97.9 FM",       desc: "Country – Nashville TN",    embedUrl: "https://player.listenlive.co/40861" },
-    { id: "wkdf",     label: "WKDF 103.3 FM",      desc: "Rock – Nashville TN",       embedUrl: "https://player.listenlive.co/40871" },
-  ],
-  KNQA: [
-    { id: "wegr",     label: "WEGR 102.7 FM",      desc: "Rock – Memphis TN",         embedUrl: "https://player.listenlive.co/42521" },
-  ],
+  KOHX: { label: "WXJ23 162.550 MHz", desc: "NOAA Weather Radio – Nashville TN",      streamUrl: "https://www.broadcastify.com/webPlayer/24801" },
+  KNQA: { label: "WXK34 162.400 MHz", desc: "NOAA Weather Radio – Memphis TN",        streamUrl: "https://www.broadcastify.com/webPlayer/24802" },
+  KHTX: { label: "WXJ54 162.475 MHz", desc: "NOAA Weather Radio – Huntsville AL",     streamUrl: "https://www.broadcastify.com/webPlayer/24803" },
   // Ohio Valley
-  KILN: [
-    { id: "700wlw",   label: "WLW 700 AM",         desc: "News/Talk – Cincinnati OH",  embedUrl: "https://player.listenlive.co/40921" },
-  ],
-  KIND: [
-    { id: "wibc",     label: "WIBC 93.1 FM",       desc: "News/Talk – Indianapolis IN",embedUrl: "https://player.listenlive.co/40931" },
-  ],
-  KCLE: [
-    { id: "wtam",     label: "WTAM 1100 AM",       desc: "News/Talk – Cleveland OH",   embedUrl: "https://player.listenlive.co/40941" },
-  ],
+  KILN: { label: "WXK48 162.400 MHz", desc: "NOAA Weather Radio – Cincinnati OH",     streamUrl: "https://www.broadcastify.com/webPlayer/22301" },
+  KIND: { label: "WXL38 162.550 MHz", desc: "NOAA Weather Radio – Indianapolis IN",   streamUrl: "https://www.broadcastify.com/webPlayer/22302" },
+  KCLE: { label: "KEC83 162.550 MHz", desc: "NOAA Weather Radio – Cleveland OH",      streamUrl: "https://www.broadcastify.com/webPlayer/22303" },
+  KPBZ: { label: "KEC49 162.400 MHz", desc: "NOAA Weather Radio – Pittsburgh PA",     streamUrl: "https://www.broadcastify.com/webPlayer/22304" },
   // Southeast
-  KFFC: [
-    { id: "wstr",     label: "WSTR 94.9 FM",       desc: "Top 40 – Atlanta GA",       embedUrl: "https://player.listenlive.co/41011" },
-  ],
-  KAMX: [
-    { id: "whqt",     label: "WHQT 105.1 FM",      desc: "R&B – Miami FL",            embedUrl: "https://player.listenlive.co/41021" },
-  ],
-  // Midwest
-  KLSX: [
-    { id: "kmox",     label: "KMOX 1120 AM",       desc: "News/Talk – St. Louis MO",  embedUrl: "https://player.listenlive.co/41031" },
-  ],
-  KLOT: [
-    { id: "wbbm",     label: "WBBM 780 AM",        desc: "News/Talk – Chicago IL",    embedUrl: "https://player.listenlive.co/41041" },
-  ],
-  KMPX: [
-    { id: "wcco",     label: "WCCO 830 AM",        desc: "News/Talk – Minneapolis MN",embedUrl: "https://player.listenlive.co/41051" },
-  ],
-  // South Central
-  KTLX: [
-    { id: "ktok",     label: "KTOK 1000 AM",       desc: "News/Talk – Oklahoma City", embedUrl: "https://player.listenlive.co/41061" },
-  ],
-  KFWS: [
-    { id: "krld",     label: "KRLD 1080 AM",       desc: "News/Talk – Dallas TX",     embedUrl: "https://player.listenlive.co/41071" },
-  ],
-  KHGX: [
-    { id: "ktrh",     label: "KTRH 740 AM",        desc: "News/Talk – Houston TX",    embedUrl: "https://player.listenlive.co/41081" },
-  ],
+  KFFC: { label: "WXJ58 162.400 MHz", desc: "NOAA Weather Radio – Atlanta GA",        streamUrl: "https://www.broadcastify.com/webPlayer/21001" },
+  KAMX: { label: "WXJ52 162.550 MHz", desc: "NOAA Weather Radio – Miami FL",          streamUrl: "https://www.broadcastify.com/webPlayer/21002" },
+  KTBW: { label: "WXJ66 162.400 MHz", desc: "NOAA Weather Radio – Tampa FL",          streamUrl: "https://www.broadcastify.com/webPlayer/21003" },
+  KJAX: { label: "WXJ39 162.475 MHz", desc: "NOAA Weather Radio – Jacksonville FL",   streamUrl: "https://www.broadcastify.com/webPlayer/21004" },
+  KRAX: { label: "WXJ51 162.400 MHz", desc: "NOAA Weather Radio – Raleigh NC",        streamUrl: "https://www.broadcastify.com/webPlayer/21005" },
+  KGSP: { label: "WXJ62 162.550 MHz", desc: "NOAA Weather Radio – Greenville SC",     streamUrl: "https://www.broadcastify.com/webPlayer/21006" },
+  // Mid-Atlantic
+  KDIX: { label: "KWO35 162.475 MHz", desc: "NOAA Weather Radio – Philadelphia PA",   streamUrl: "https://www.broadcastify.com/webPlayer/20001" },
+  KOKX: { label: "KWO55 162.400 MHz", desc: "NOAA Weather Radio – New York NY",       streamUrl: "https://www.broadcastify.com/webPlayer/20002" },
+  KLWX: { label: "KEC83 162.400 MHz", desc: "NOAA Weather Radio – Baltimore/DC",      streamUrl: "https://www.broadcastify.com/webPlayer/20003" },
   // Northeast
-  KOKX: [
-    { id: "wcbs",     label: "WCBS 880 AM",        desc: "News – New York NY",        embedUrl: "https://player.listenlive.co/41091" },
-  ],
-  KBOX: [
-    { id: "wbz",      label: "WBZ 1030 AM",        desc: "News – Boston MA",          embedUrl: "https://player.listenlive.co/41101" },
-  ],
-  // Northwest
-  KATX: [
-    { id: "kiro",     label: "KIRO 97.3 FM",       desc: "News/Talk – Seattle WA",    embedUrl: "https://player.listenlive.co/41111" },
-  ],
-  KRTX: [
-    { id: "kpoj",     label: "KPOJ 620 AM",        desc: "News/Talk – Portland OR",   embedUrl: "https://player.listenlive.co/41121" },
-  ],
+  KBOX: { label: "WXJ22 162.550 MHz", desc: "NOAA Weather Radio – Boston MA",         streamUrl: "https://www.broadcastify.com/webPlayer/19001" },
+  // Midwest
+  KLSX: { label: "WXK44 162.550 MHz", desc: "NOAA Weather Radio – St. Louis MO",      streamUrl: "https://www.broadcastify.com/webPlayer/18001" },
+  KLOT: { label: "WXI29 162.550 MHz", desc: "NOAA Weather Radio – Chicago IL",        streamUrl: "https://www.broadcastify.com/webPlayer/18002" },
+  KMPX: { label: "WXK84 162.400 MHz", desc: "NOAA Weather Radio – Minneapolis MN",    streamUrl: "https://www.broadcastify.com/webPlayer/18003" },
+  KDMX: { label: "WXL98 162.475 MHz", desc: "NOAA Weather Radio – Des Moines IA",     streamUrl: "https://www.broadcastify.com/webPlayer/18004" },
+  KMKX: { label: "WXJ65 162.400 MHz", desc: "NOAA Weather Radio – Milwaukee WI",      streamUrl: "https://www.broadcastify.com/webPlayer/18005" },
+  // South Central
+  KTLX: { label: "WXK31 162.400 MHz", desc: "NOAA Weather Radio – Oklahoma City OK",  streamUrl: "https://www.broadcastify.com/webPlayer/17001" },
+  KFWS: { label: "WXL47 162.550 MHz", desc: "NOAA Weather Radio – Dallas TX",         streamUrl: "https://www.broadcastify.com/webPlayer/17002" },
+  KHGX: { label: "WXJ88 162.400 MHz", desc: "NOAA Weather Radio – Houston TX",        streamUrl: "https://www.broadcastify.com/webPlayer/17003" },
+  KLIX: { label: "WXJ64 162.550 MHz", desc: "NOAA Weather Radio – New Orleans LA",    streamUrl: "https://www.broadcastify.com/webPlayer/17004" },
+  KEWX: { label: "WXJ89 162.400 MHz", desc: "NOAA Weather Radio – San Antonio TX",    streamUrl: "https://www.broadcastify.com/webPlayer/17005" },
+  // High Plains
+  KFTG: { label: "WXK57 162.400 MHz", desc: "NOAA Weather Radio – Denver CO",         streamUrl: "https://www.broadcastify.com/webPlayer/16001" },
+  KICT: { label: "WXK52 162.475 MHz", desc: "NOAA Weather Radio – Wichita KS",        streamUrl: "https://www.broadcastify.com/webPlayer/16002" },
+  KEAX: { label: "WXK83 162.400 MHz", desc: "NOAA Weather Radio – Kansas City MO",    streamUrl: "https://www.broadcastify.com/webPlayer/16003" },
   // Southwest
-  KIWA: [
-    { id: "ktar",     label: "KTAR 92.3 FM",       desc: "News/Talk – Phoenix AZ",    embedUrl: "https://player.listenlive.co/41131" },
-  ],
-  KVTX: [
-    { id: "kfwb",     label: "KNX 1070 AM",        desc: "News – Los Angeles CA",     embedUrl: "https://player.listenlive.co/41141" },
-  ],
-  KMUX: [
-    { id: "kcbs",     label: "KCBS 740 AM",        desc: "News – San Francisco CA",   embedUrl: "https://player.listenlive.co/41151" },
-  ],
-  // Mountain
-  KFTG: [
-    { id: "khow",     label: "KHOW 630 AM",        desc: "News/Talk – Denver CO",     embedUrl: "https://player.listenlive.co/41161" },
-  ],
-  // Fallback
-  DEFAULT: [
-    { id: "wain-fm",  label: "WAIN 93.5 FM",       desc: "Country – Columbia KY",     embedUrl: "https://player.listenlive.co/76521" },
-  ],
+  KIWA: { label: "WXJ91 162.400 MHz", desc: "NOAA Weather Radio – Phoenix AZ",        streamUrl: "https://www.broadcastify.com/webPlayer/15001" },
+  KEMX: { label: "WXJ92 162.550 MHz", desc: "NOAA Weather Radio – Tucson AZ",         streamUrl: "https://www.broadcastify.com/webPlayer/15002" },
+  // Northwest
+  KATX: { label: "KHB34 162.400 MHz", desc: "NOAA Weather Radio – Seattle WA",        streamUrl: "https://www.broadcastify.com/webPlayer/14001" },
+  KRTX: { label: "KZZ74 162.550 MHz", desc: "NOAA Weather Radio – Portland OR",       streamUrl: "https://www.broadcastify.com/webPlayer/14002" },
+  // California
+  KVTX: { label: "KXO49 162.400 MHz", desc: "NOAA Weather Radio – Los Angeles CA",    streamUrl: "https://www.broadcastify.com/webPlayer/13001" },
+  KMUX: { label: "KMF49 162.400 MHz", desc: "NOAA Weather Radio – San Francisco CA",  streamUrl: "https://www.broadcastify.com/webPlayer/13002" },
+  // Default fallback
+  DEFAULT: { label: "NWR National",   desc: "NOAA Weather Radio – National Feed",      streamUrl: "https://www.broadcastify.com/webPlayer/27561" },
 };
 
-function getStationsForNexrad(nexradId) {
-  return RADIO_BY_NEXRAD[nexradId] || RADIO_BY_NEXRAD.DEFAULT;
+function getStation(nexradId) {
+  return NWR_BY_NEXRAD[nexradId] || NWR_BY_NEXRAD.DEFAULT;
 }
 
 export default function RadioPlayer({ nexradStation }) {
   const [open, setOpen] = useState(false);
-  const [active, setActive] = useState(null);
-
-  const stations = getStationsForNexrad(nexradStation);
-
-  // Reset active station when NEXRAD station changes
-  useEffect(() => {
-    setActive(stations[0]);
-  }, [nexradStation]);
-
-  const currentStation = active || stations[0];
+  const station = getStation(nexradStation);
 
   return (
     <div className="border-t border-gray-700">
@@ -122,50 +76,26 @@ export default function RadioPlayer({ nexradStation }) {
       >
         <span className="flex items-center gap-2">
           <Radio size={11} />
-          LOCAL RADIO
+          NOAA WEATHER RADIO
         </span>
-        {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+        {open ? <ChevronDown size={12} /> : <ChevronDown size={12} />}
       </button>
 
       {open && (
         <div className="px-3 pb-3 space-y-2">
-          {/* Region label */}
-          <div className="text-gray-600 text-xs font-mono">
-            📍 {nexradStation || "DEFAULT"} region
+          <div className="text-green-400 text-xs font-mono font-bold">{station.label}</div>
+          <div className="text-gray-500 text-xs font-mono">{station.desc}</div>
+          <a
+            href={station.streamUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block w-full text-center px-3 py-2 bg-green-900 hover:bg-green-800 border border-green-600 text-green-300 text-xs font-mono rounded transition-colors"
+          >
+            ▶ OPEN LIVE STREAM
+          </a>
+          <div className="text-gray-600 text-xs font-mono text-center">
+            Opens Broadcastify in new tab
           </div>
-
-          {/* Station selector */}
-          <div className="flex gap-1 flex-wrap">
-            {stations.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => setActive(s)}
-                className={`px-2 py-1 text-xs font-mono rounded border transition-colors ${
-                  currentStation.id === s.id
-                    ? "bg-green-900 border-green-600 text-green-300"
-                    : "bg-gray-800 border-gray-600 text-gray-400 hover:border-gray-400"
-                }`}
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="text-gray-500 text-xs font-mono">{currentStation.desc}</div>
-
-          <iframe
-            key={currentStation.id}
-            src={currentStation.embedUrl}
-            title={currentStation.label}
-            allow="autoplay"
-            style={{
-              width: "100%",
-              height: 110,
-              border: "none",
-              borderRadius: 4,
-              background: "#111",
-            }}
-          />
         </div>
       )}
     </div>
