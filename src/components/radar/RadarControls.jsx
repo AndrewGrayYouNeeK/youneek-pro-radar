@@ -159,7 +159,7 @@ function nearestStation(lat, lon) {
   }, { id: STATIONS[0].id, dist: Infinity }).id;
 }
 
-export default function RadarControls({ settings, onSettingsChange, nexradStatus, onRefreshNexrad }) {
+export default function RadarControls({ settings, onSettingsChange }) {
   const [geoLoading, setGeoLoading] = useState(false);
   const update = (key, value) => onSettingsChange({ ...settings, [key]: value });
 
