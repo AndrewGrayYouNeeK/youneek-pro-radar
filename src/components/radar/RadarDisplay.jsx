@@ -13,7 +13,7 @@ export default function RadarDisplay({ targets, settings, onRadarClick, onTarget
   const canvasRef = useRef(null);
   const animRef = useRef(null);
   const sweepAngleRef = useRef(0);
-  const lastTimeRef = useRef(null);
+
   const trailsRef = useRef([]);
   const settingsRef = useRef(settings);
   const targetsRef = useRef(targets);
