@@ -3,14 +3,12 @@ import { base44 } from "@/api/base44Client";
 import RadarDisplay from "../components/radar/RadarDisplay";
 import TargetDialog from "../components/radar/TargetDialog";
 import TargetList from "../components/radar/TargetList";
-import RadarControls from "../components/radar/RadarControls";
-import RadioPlayer from "../components/radar/RadioPlayer";
 
 const DEFAULT_SETTINGS = {
   showLabels: true,
   showTails: true,
   theme: "green",    // green | amber | blue
-  showNexrad: false, // live NEXRAD overlay
+  showNexrad: true, // live NEXRAD overlay
   station: "KJKL",   // default station (nearest to Columbia, KY)
   showVelocity: false, // show velocity overlay
 };
@@ -110,6 +108,7 @@ export default function RadarScope() {
       <div className="flex-1 relative overflow-hidden">
         <RadarDisplay
           settings={settings}
+          onSettingsChange={setSettings}
           showNexrad={settings.showNexrad}
           isTornadoWarning={isTornadoWarning}
         />
@@ -117,19 +116,12 @@ export default function RadarScope() {
 
       {/* Side Panel */}
       <div className="w-full md:w-72 bg-gray-900 border-t md:border-t-0 md:border-l border-gray-700 flex flex-col">
-        <RadarControls
-          settings={settings}
-          onSettingsChange={setSettings}
-          nexradStatus={nexradStatus}
-          onRefreshNexrad={handleRefreshNexrad}
-        />
         <TargetList
           targets={targets}
           settings={settings}
           onTargetClick={handleTargetClick}
           onDeleteTarget={handleDeleteTarget}
         />
-        <RadioPlayer nexradStation={settings.station} />
       </div>
 
       {/* Dialogs */}

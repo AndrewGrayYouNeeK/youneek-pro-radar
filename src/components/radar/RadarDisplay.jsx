@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -49,12 +49,51 @@ const STATION_COORDS = {
   KMSX: [47.041, -113.986], KTFX: [47.460, -111.385], KCBX: [43.491, -116.236],
 };
 
-export default function RadarDisplay({ settings, showNexrad, isTornadoWarning }) {
+const LOCAL_RADIO_STATIONS = [
+  { lat: 37.591, lon: -83.313, url: "https://radio.weatherusa.net/NWR/WXL58.mp3" },
+  { lat: 38.253, lon: -85.758, url: "https://radio.weatherusa.net/NWR/KIH43.mp3" },
+  { lat: 37.068, lon: -88.772, url: "https://radio.weatherusa.net/NWR/WXK99.mp3" },
+  { lat: 36.668, lon: -87.477, url: "https://radio.weatherusa.net/NWR/WXL24.mp3" },
+  { lat: 39.103, lon: -84.512, url: "https://radio.weatherusa.net/NWR/WXK48.mp3" },
+  { lat: 36.163, lon: -86.782, url: "https://radio.weatherusa.net/NWR/WXJ23.mp3" },
+];
+
+const NEXRAD_RADIO_FALLBACK = {
+  KJKL: "https://radio.weatherusa.net/NWR/WXL58.mp3",
+  KLVX: "https://radio.weatherusa.net/NWR/KIH43.mp3",
+  KPAH: "https://radio.weatherusa.net/NWR/WXK99.mp3",
+  KHPX: "https://radio.weatherusa.net/NWR/WXL24.mp3",
+  KILN: "https://radio.weatherusa.net/NWR/WXK48.mp3",
+  KOHX: "https://radio.weatherusa.net/NWR/WXJ23.mp3",
+};
+
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function getNearestRadioUrl(lat, lon) {
+  return LOCAL_RADIO_STATIONS.reduce((best, station) => {
+    const distance = haversine(lat, lon, station.lat, station.lon);
+    return distance < best.distance ? { url: station.url, distance } : best;
+  }, { url: LOCAL_RADIO_STATIONS[0].url, distance: Infinity }).url;
+}
+
+export default function RadarDisplay({ settings, onSettingsChange, showNexrad, isTornadoWarning }) {
   const mapRef = useRef(null);
   const leafletMap = useRef(null);
   const radarLayerRef = useRef(null);
   const velLayerRef = useRef(null);
   const refreshTimerRef = useRef(null);
+  const audioRef = useRef(null);
+  const [radioPlaying, setRadioPlaying] = useState(false);
+  const [radioUrl, setRadioUrl] = useState(
+    NEXRAD_RADIO_FALLBACK[settings.station] || "https://radio.weatherusa.net/NWR/KIH43.mp3"
+  );
 
   // Initialize map once
   useEffect(() => {
@@ -79,6 +118,38 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
       if (leafletMap.current) {
         leafletMap.current.remove();
         leafletMap.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => setRadioUrl(getNearestRadioUrl(position.coords.latitude, position.coords.longitude)),
+      () => {},
+      { timeout: 8000 }
+    );
+  }, []);
+
+  useEffect(() => {
+    if (!audioRef.current || !radioUrl) return;
+
+    audioRef.current.src = radioUrl;
+    const playPromise = audioRef.current.play();
+
+    if (playPromise?.then) {
+      playPromise.then(() => setRadioPlaying(true)).catch(() => setRadioPlaying(false));
+    } else {
+      setRadioPlaying(true);
+    }
+  }, [radioUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
       }
     };
   }, []);
