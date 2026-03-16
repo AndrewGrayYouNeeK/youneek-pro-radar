@@ -5,6 +5,7 @@ import TargetDialog from "../components/radar/TargetDialog";
 import TargetList from "../components/radar/TargetList";
 import RadarControls from "../components/radar/RadarControls";
 import RadioPlayer from "../components/radar/RadioPlayer";
+import BottomNav from "../components/radar/BottomNav";
 
 const DEFAULT_SETTINGS = {
   showLabels: true,
@@ -105,7 +106,7 @@ export default function RadarScope() {
   }, []);
 
   return (
-    <div className="h-screen bg-gray-950 flex flex-col md:flex-row overflow-hidden">
+    <div className="h-screen bg-gray-950 flex flex-col md:flex-row overflow-hidden pb-16">
       {/* Radar Display Area */}
       <div className="flex-1 relative overflow-hidden">
         <RadarDisplay
@@ -131,6 +132,9 @@ export default function RadarScope() {
         />
         <RadioPlayer nexradStation={settings.station} />
       </div>
+
+      {/* Bottom Navigation */}
+      <BottomNav station={settings.station} isTornadoWarning={isTornadoWarning} />
 
       {/* Dialogs */}
       {dialogMode === "create" && pendingClick && (
