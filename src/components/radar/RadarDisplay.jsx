@@ -67,10 +67,9 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
       attributionControl: true,
     }).setView(coords, 7);
 
-    // Dark base tile layer
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-      attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; OpenStreetMap',
-      subdomains: "abcd",
+    // Always-visible base map
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; OpenStreetMap',
       maxZoom: 18,
     }).addTo(leafletMap.current);
 
@@ -101,29 +100,27 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
 
     if (!showNexrad) return;
 
-    // NOAA nowCOAST reflectivity mosaic WMS
+    // Reflectivity overlay
     radarLayerRef.current = L.tileLayer.wms(
-      "https://nowcoast.noaa.gov/geoserver/observations/weather_radar/wms",
+      "https://mapservices.weather.noaa.gov/eventdriven/services/radar/radar_base_reflectivity/MapServer/WMSServer",
       {
-        layers: "conus_base_reflectivity_mosaic",
+        layers: "0",
         format: "image/png",
         transparent: true,
-        opacity: 0.75,
-        version: "1.3.0",
-        attribution: "NOAA/NWS",
+        opacity: 0.7,
+        attribution: "NOAA",
       }
     ).addTo(leafletMap.current);
 
-    // Velocity layer
+    // Velocity overlay
     if (settings.showVelocity) {
       velLayerRef.current = L.tileLayer.wms(
-        "https://nowcoast.noaa.gov/geoserver/observations/weather_radar/wms",
+        "https://mapservices.weather.noaa.gov/eventdriven/services/radar/radar_velocity/MapServer/WMSServer",
         {
-          layers: "conus_radial_velocity_mosaic",
+          layers: "0",
           format: "image/png",
           transparent: true,
-          opacity: 0.65,
-          version: "1.3.0",
+          opacity: 0.6,
         }
       ).addTo(leafletMap.current);
     }
