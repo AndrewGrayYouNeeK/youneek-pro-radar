@@ -10,7 +10,6 @@ const STATIONS = {
   KMHX: { nwsZoneId: "NCZ196" }, KLTX: { nwsZoneId: "NCZ108" }, KGSP: { nwsZoneId: "SCZ004" },
   KJGX: { nwsZoneId: "GAZ120" }, KEVX: { nwsZoneId: "FLZ108" }, KMLB: { nwsZoneId: "FLZ057" },
   KBYX: { nwsZoneId: "FLZ078" }, KIND: { nwsZoneId: "INZ052" }, KILN: { nwsZoneId: "OHZ052" },
-  // Kentucky — all four confirmed live on RIDGE2
   KLVX: { nwsZoneId: "KYZ044" }, KHPX: { nwsZoneId: "KYZ068" },
   KJKL: { nwsZoneId: "KYZ082" }, KPAH: { nwsZoneId: "KYZ095" },
   KOHX: { nwsZoneId: "TNZ058" }, KNQA: { nwsZoneId: "TNZ086" }, KHTX: { nwsZoneId: "ALZ011" },
@@ -39,6 +38,18 @@ const STATIONS = {
   PHKM: { nwsZoneId: "HIZ021" }, PHWA: { nwsZoneId: "HIZ025" }, TJUA: { nwsZoneId: "PRZ001" },
 };
 
+async function fetchImageAsBase64(url) {
+  const res = await fetch(url, {
+    headers: { "User-Agent": "Mozilla/5.0 NOAA-RIDGE-Proxy/1.0" }
+  });
+  if (!res.ok) throw new Error(`Image fetch failed: ${res.status} ${url}`);
+  const buf = await res.arrayBuffer();
+  const bytes = new Uint8Array(buf);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+  return "data:image/gif;base64," + btoa(binary);
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -47,30 +58,35 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const station = (body.station || 'KTLX').toUpperCase();
+    const showVelocity = body.showVelocity || false;
     const stationInfo = STATIONS[station] || STATIONS.KTLX;
     const { nwsZoneId } = stationInfo;
 
-    // Only check tornado warnings — images load directly from NOAA on the frontend
-    let isTornadoWarning = false;
-    let nwsAlerts = [];
-    try {
-      const alertsRes = await fetch(`https://api.weather.gov/alerts/active?zone=${nwsZoneId}`);
-      if (alertsRes.ok) {
-        const json = await alertsRes.json();
-        nwsAlerts = (json.features || []).filter(a => a.properties.event === "Tornado Warning");
-        isTornadoWarning = nwsAlerts.length > 0;
-      }
-    } catch (e) {
-      console.error("Alerts fetch failed:", e);
-    }
+    const reflUrl = `https://radar.weather.gov/ridge/standard/${station}_0.gif`;
+    const velUrl  = `https://radar.weather.gov/ridge/standard/base_velocity/${station}_0.gif`;
+
+    // Fetch images + alerts in parallel
+    const [reflData, velData, alertsResult] = await Promise.allSettled([
+      fetchImageAsBase64(reflUrl),
+      showVelocity ? fetchImageAsBase64(velUrl) : Promise.resolve(null),
+      (async () => {
+        const r = await fetch(`https://api.weather.gov/alerts/active?zone=${nwsZoneId}`);
+        if (!r.ok) return { isTornadoWarning: false, alerts: [] };
+        const json = await r.json();
+        const tornadoes = (json.features || []).filter(a => a.properties.event === "Tornado Warning");
+        return {
+          isTornadoWarning: tornadoes.length > 0,
+          alerts: tornadoes.map(a => ({ headline: a.properties.headline, expires: a.properties.expires })),
+        };
+      })(),
+    ]);
 
     return Response.json({
       station,
-      isTornadoWarning,
-      nwsAlerts: nwsAlerts.map(a => ({
-        headline: a.properties.headline,
-        expires: a.properties.expires,
-      })),
+      reflImageData: reflData.status === "fulfilled" ? reflData.value : null,
+      velImageData: velData.status === "fulfilled" ? velData.value : null,
+      isTornadoWarning: alertsResult.status === "fulfilled" ? alertsResult.value.isTornadoWarning : false,
+      nwsAlerts: alertsResult.status === "fulfilled" ? alertsResult.value.alerts : [],
       timestamp: new Date().toISOString(),
     });
 
