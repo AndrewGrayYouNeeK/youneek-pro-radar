@@ -142,9 +142,12 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
 
     // Add reflectivity layer if showNexrad is on
     if (showNexrad && !radarLayerRef.current) {
-      radarLayerRef.current = L.tileLayer(
+      radarLayerRef.current = L.tileLayer.wms(
         "https://radar.weather.gov/arcgis/rest/services/radar/radar_base_reflectivity/MapServer/tile/{z}/{y}/{x}",
         {
+          layers: "0",
+          format: "png",
+          transparent: true,
           opacity: 0.7,
           attribution: "NOAA",
         }
