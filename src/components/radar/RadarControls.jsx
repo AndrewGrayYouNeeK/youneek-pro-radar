@@ -11,15 +11,15 @@ const THEMES = [
 
 const STATIONS = [
   { id: "KLOT", label: "KLOT – Chicago" },
-  { id: "KORD", label: "KORD – O'Hare" },
-  { id: "KATL", label: "KATL – Atlanta" },
-  { id: "KDFW", label: "KDFW – Dallas" },
-  { id: "KNYC", label: "KNYC – New York" },
-  { id: "KMIA", label: "KMIA – Miami" },
-  { id: "KDEN", label: "KDEN – Denver" },
-  { id: "KSEA", label: "KSEA – Seattle" },
-  { id: "KPHX", label: "KPHX – Phoenix" },
-  { id: "KBOS", label: "KBOS – Boston" },
+  { id: "KFFC", label: "KFFC – Atlanta" },
+  { id: "KFWS", label: "KFWS – Dallas/Fort Worth" },
+  { id: "KOKX", label: "KOKX – New York" },
+  { id: "KAMX", label: "KAMX – Miami" },
+  { id: "KFTG", label: "KFTG – Denver" },
+  { id: "KATX", label: "KATX – Seattle" },
+  { id: "KIWA", label: "KIWA – Phoenix" },
+  { id: "KBOX", label: "KBOX – Boston" },
+  { id: "KTLX", label: "KTLX – Oklahoma City" },
 ];
 
 export default function RadarControls({ settings, onSettingsChange, nexradStatus, onRefreshNexrad }) {
