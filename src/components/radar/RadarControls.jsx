@@ -47,6 +47,15 @@ export default function RadarControls({ settings, onSettingsChange, nexradStatus
 
         {settings.showNexrad && (
           <>
+            {/* Velocity toggle */}
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-mono text-gray-400">VELOCITY</Label>
+              <Switch
+                checked={settings.showVelocity}
+                onCheckedChange={(v) => update("showVelocity", v)}
+              />
+            </div>
+
             {/* Station selector */}
             <div>
               <Label className="text-xs font-mono text-gray-400 block mb-1">STATION</Label>
