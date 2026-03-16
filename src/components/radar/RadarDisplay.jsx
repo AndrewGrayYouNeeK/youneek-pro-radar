@@ -56,19 +56,14 @@ export default function RadarDisplay({ targets, settings, onRadarClick, onTarget
       return;
     }
 
-    // Delta time
-    if (!lastTimeRef.current) lastTimeRef.current = timestamp;
-    const dt = Math.min((timestamp - lastTimeRef.current) / 1000, 0.1); // cap dt to avoid jumps
-    lastTimeRef.current = timestamp;
-
     const s = settingsRef.current;
     const c = colorsRef.current || THEME_COLORS.green;
     const tgts = targetsRef.current;
     const tPulse = tornadoPulseRef.current;
 
-    // Advance sweep
+    // Absolute time-based sweep angle — immune to dt drift or loop restarts
     const rpm = 1 / s.sweepSpeed;
-    sweepAngleRef.current = (sweepAngleRef.current + dt * rpm * 2 * Math.PI) % (2 * Math.PI);
+    sweepAngleRef.current = ((Date.now() / 1000) * rpm * 2 * Math.PI) % (2 * Math.PI);
 
     // Update trails
     trailsRef.current.push({ angle: sweepAngleRef.current, opacity: 0.7 });
