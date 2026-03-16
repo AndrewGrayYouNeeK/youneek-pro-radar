@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -55,6 +55,15 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
   const radarLayerRef = useRef(null);
   const velLayerRef = useRef(null);
   const refreshTimerRef = useRef(null);
+  const [contacts, setContacts] = useState([]);
+
+  // Load contacts from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("safeContacts");
+    if (saved) {
+      setContacts(JSON.parse(saved));
+    }
+  }, []);
 
   // Initialize map once
   useEffect(() => {
@@ -136,6 +145,24 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
     return () => clearInterval(refreshTimerRef.current);
   }, [settings.showVelocity]);
 
+  const handleSafePing = () => {
+    if (contacts.length === 0) {
+      alert("Add contacts in Settings first!");
+      return;
+    }
+
+    const center = leafletMap.current.getCenter();
+    const lat = center.lat.toFixed(6);
+    const lon = center.lng.toFixed(6);
+    const message = `I'm safe after the storm. Location: https://maps.google.com/?q=${lat},${lon}`;
+
+    contacts.forEach((phone) => {
+      window.open(`sms:${phone}?body=${encodeURIComponent(message)}`, "_blank");
+    });
+
+    alert("Sent! Your people know you're good.");
+  };
+
   return (
     <div className="relative w-full h-full" style={{ minHeight: 400 }}>
       {/* Tornado warning banner */}
@@ -144,6 +171,32 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
           ⚠ TORNADO WARNING ACTIVE
         </div>
       )}
+
+      {/* I'm Safe Button */}
+      {isTornadoWarning && (
+        <button
+          onClick={handleSafePing}
+          style={{
+            position: "fixed",
+            bottom: "100px",
+            right: "20px",
+            background: "#00cc00",
+            color: "white",
+            padding: "15px 25px",
+            borderRadius: "12px",
+            fontSize: "18px",
+            fontWeight: "bold",
+            boxShadow: "0 4px 10px rgba(0,0,0,0.4)",
+            border: "none",
+            zIndex: 999,
+            cursor: "pointer",
+            fontFamily: "monospace",
+          }}
+        >
+          I'M SAFE
+        </button>
+      )}
+
       <div ref={mapRef} className="w-full h-full" style={{ minHeight: 400 }} />
     </div>
   );
