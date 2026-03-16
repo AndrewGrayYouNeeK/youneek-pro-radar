@@ -68,9 +68,9 @@ export default function BottomNav({ station, isTornadoWarning }) {
           </div>
         </div>
 
-        {/* Radio Button - Direct Link */}
+        {/* Radio Button - Direct Link with Autoplay */}
         <button
-          onClick={() => window.open(`https://www.broadcastify.com/webPlayer/${stationInfo.feedId}`, "_blank")}
+          onClick={() => window.open(`https://www.broadcastify.com/webPlayer/${stationInfo.feedId}?autoplay=true`, "_blank")}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-xs font-bold transition-all cursor-pointer ${
             isTornadoWarning
               ? "bg-red-900 text-red-200 hover:bg-red-800 shadow-[0_0_8px_rgba(220,38,38,0.6)]"
