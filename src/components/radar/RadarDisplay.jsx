@@ -75,6 +75,9 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
       maxZoom: 18,
     }).addTo(leafletMap.current);
 
+    leafletMap.current.invalidateSize();
+    leafletMap.current.setView([37.8, -85.5], 8);
+
     return () => {
       if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
       if (leafletMap.current) {
