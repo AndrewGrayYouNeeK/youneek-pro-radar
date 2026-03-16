@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -49,44 +49,12 @@ const STATION_COORDS = {
   KMSX: [47.041, -113.986], KTFX: [47.460, -111.385], KCBX: [43.491, -116.236],
 };
 
-const RADIO_FEEDS = {
-  KJKL: "27561", KLVX: "27562", KPAH: "27563", KHPX: "27564",
-  KOHX: "24801", KNQA: "24802", KHTX: "24803",
-  KILN: "22301", KIND: "22302", KCLE: "22303", KPBZ: "22304",
-  KFFC: "21001", KAMX: "21002", KTBW: "21003", KJAX: "21004", KRAX: "21005", KGSP: "21006",
-  KDIX: "20001", KOKX: "20002", KLWX: "20003", KBOX: "19001",
-  KLSX: "18001", KLOT: "18002", KMPX: "18003", KDMX: "18004", KMKX: "18005",
-  KTLX: "17001", KFWS: "17002", KHGX: "17003", KLIX: "17004", KEWX: "17005",
-  KFTG: "16001", KICT: "16002", KEAX: "16003",
-  KIWA: "15001", KEMX: "15002",
-  KATX: "14001", KRTX: "14002",
-  KVTX: "13001", KMUX: "13002",
-  DEFAULT: "27561",
-};
-
-function getRadioUrl(station) {
-  const feedId = RADIO_FEEDS[station] || RADIO_FEEDS.DEFAULT;
-  return feedId ? `https://broadcastify.com/listen/feed/${feedId}` : null;
-}
-
 export default function RadarDisplay({ settings, showNexrad, isTornadoWarning }) {
   const mapRef = useRef(null);
   const leafletMap = useRef(null);
   const radarLayerRef = useRef(null);
   const velLayerRef = useRef(null);
   const refreshTimerRef = useRef(null);
-  const [contacts, setContacts] = useState([]);
-  const [radioPlaying, setRadioPlaying] = useState(false);
-  const audioRef = useRef(null);
-  const radioUrl = getRadioUrl(settings.station);
-
-  // Load contacts from localStorage on mount
-  useEffect(() => {
-    const saved = localStorage.getItem("safeContacts");
-    if (saved) {
-      setContacts(JSON.parse(saved));
-    }
-  }, []);
 
   // Initialize map once
   useEffect(() => {
@@ -126,36 +94,28 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
   useEffect(() => {
     if (!leafletMap.current) return;
 
+    // Remove existing radar layers
+    if (radarLayerRef.current) { leafletMap.current.removeLayer(radarLayerRef.current); radarLayerRef.current = null; }
+    if (velLayerRef.current)   { leafletMap.current.removeLayer(velLayerRef.current);   velLayerRef.current = null; }
     if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
 
-    // Remove reflectivity layer if showNexrad is off
-    if (!showNexrad && radarLayerRef.current) {
-      leafletMap.current.removeLayer(radarLayerRef.current);
-      radarLayerRef.current = null;
-    }
+    if (!showNexrad) return;
 
-    // Remove velocity layer
-    if (velLayerRef.current) {
-      leafletMap.current.removeLayer(velLayerRef.current);
-      velLayerRef.current = null;
-    }
+    // NOAA nowCOAST reflectivity mosaic WMS
+    radarLayerRef.current = L.tileLayer.wms(
+      "https://nowcoast.noaa.gov/geoserver/observations/weather_radar/wms",
+      {
+        layers: "conus_base_reflectivity_mosaic",
+        format: "image/png",
+        transparent: true,
+        opacity: 0.75,
+        version: "1.3.0",
+        attribution: "NOAA/NWS",
+      }
+    ).addTo(leafletMap.current);
 
-    // Add reflectivity layer if showNexrad is on
-    if (showNexrad && !radarLayerRef.current) {
-      radarLayerRef.current = L.tileLayer.wms(
-        "https://radar.weather.gov/arcgis/rest/services/radar/radar_base_reflectivity/MapServer/tile/{z}/{y}/{x}",
-        {
-          layers: "0",
-          format: "png",
-          transparent: true,
-          opacity: 0.7,
-          attribution: "NOAA",
-        }
-      ).addTo(leafletMap.current);
-    }
-
-    // Add velocity layer if both showNexrad and showVelocity are on
-    if (showNexrad && settings.showVelocity) {
+    // Velocity layer
+    if (settings.showVelocity) {
       velLayerRef.current = L.tileLayer.wms(
         "https://nowcoast.noaa.gov/geoserver/observations/weather_radar/wms",
         {
@@ -169,52 +129,13 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
     }
 
     // Auto-refresh every 5 minutes
-    if (showNexrad) {
-      refreshTimerRef.current = setInterval(() => {
-        if (radarLayerRef.current) radarLayerRef.current.redraw();
-        if (velLayerRef.current) velLayerRef.current.redraw();
-      }, 5 * 60 * 1000);
-    }
+    refreshTimerRef.current = setInterval(() => {
+      if (radarLayerRef.current) radarLayerRef.current.redraw();
+      if (velLayerRef.current)   velLayerRef.current.redraw();
+    }, 5 * 60 * 1000);
 
-    return () => {
-      if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
-    };
+    return () => clearInterval(refreshTimerRef.current);
   }, [showNexrad, settings.showVelocity]);
-
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-    }
-
-    setRadioPlaying(false);
-
-    if (radioUrl) {
-      audioRef.current = new Audio(radioUrl);
-      audioRef.current.crossOrigin = "anonymous";
-      audioRef.current.preload = "metadata";
-    }
-
-    return () => audioRef.current?.pause();
-  }, [radioUrl]);
-
-  const handleSafePing = () => {
-    if (contacts.length === 0) {
-      alert("Add contacts in Settings first!");
-      return;
-    }
-
-    const center = leafletMap.current.getCenter();
-    const lat = center.lat.toFixed(6);
-    const lon = center.lng.toFixed(6);
-    const message = `I'm safe after the storm. Location: https://maps.google.com/?q=${lat},${lon}`;
-
-    contacts.forEach((phone) => {
-      window.open(`sms:${phone}?body=${encodeURIComponent(message)}`, "_blank");
-    });
-
-    alert("Sent! Your people know you're good.");
-  };
 
   return (
     <div className="relative w-full h-full" style={{ minHeight: 400 }}>
@@ -224,61 +145,6 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
           ⚠ TORNADO WARNING ACTIVE
         </div>
       )}
-
-      {/* Radio Button */}
-      <button
-        onClick={() => {
-          if (!audioRef.current) return alert("No stream for this station");
-          if (radioPlaying) {
-            audioRef.current.pause();
-          } else {
-            audioRef.current.play().catch(() => alert("Tap twice—browser blocks autoplay"));
-          }
-          setRadioPlaying(!radioPlaying);
-        }}
-        style={{
-          position: "fixed",
-          bottom: "20px",
-          left: "50%",
-          transform: "translateX(-50%)",
-          background: radioPlaying ? "#ff3333" : "#00ff00",
-          color: "white",
-          border: "none",
-          borderRadius: "50%",
-          width: "60px",
-          height: "60px",
-          fontSize: "24px",
-          zIndex: 1000,
-          cursor: "pointer",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.35)",
-        }}
-      >
-        {radioPlaying ? "■" : "▶"}
-      </button>
-
-      {/* Safe Button */}
-      <button
-        onClick={() => {
-          const lat = leafletMap.current.getCenter().lat.toFixed(5);
-          const lon = leafletMap.current.getCenter().lng.toFixed(5);
-          const msg = `I'm safe. Location: ${lat},${lon}`;
-          window.open(`sms:+15551234567?body=${encodeURIComponent(msg)}`, "_blank");
-        }}
-        style={{
-          position: "fixed",
-          bottom: "100px",
-          right: "20px",
-          background: "#00aa00",
-          color: "white",
-          padding: "12px 20px",
-          borderRadius: "8px",
-          border: "none",
-          zIndex: 1000,
-        }}
-      >
-        I'm Safe
-      </button>
-
       <div ref={mapRef} className="w-full h-full" style={{ minHeight: 400 }} />
     </div>
   );

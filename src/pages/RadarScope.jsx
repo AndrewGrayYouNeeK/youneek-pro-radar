@@ -4,7 +4,7 @@ import RadarDisplay from "../components/radar/RadarDisplay";
 import TargetDialog from "../components/radar/TargetDialog";
 import TargetList from "../components/radar/TargetList";
 import RadarControls from "../components/radar/RadarControls";
-import ContactsDialog from "../components/radar/ContactsDialog";
+import RadioPlayer from "../components/radar/RadioPlayer";
 
 const DEFAULT_SETTINGS = {
   showLabels: true,
@@ -23,7 +23,6 @@ export default function RadarScope() {
   const [pendingClick, setPendingClick] = useState(null);
   const [selectedTarget, setSelectedTarget] = useState(null);
   const [dialogMode, setDialogMode] = useState(null); // 'create' | 'inspect'
-  const [showContactsDialog, setShowContactsDialog] = useState(false);
 
   // NEXRAD state
   const [reflImageUrl, setReflImageUrl] = useState(null);
@@ -72,8 +71,6 @@ export default function RadarScope() {
     if (settings.showNexrad) fetchNexradData(settings.station, settings.showVelocity);
   }, [settings.showNexrad, settings.station, settings.showVelocity, fetchNexradData]);
 
-  const radarDisplayRef = useRef(null);
-
   const handleRadarClick = useCallback((clickData) => {
     setPendingClick(clickData);
     setDialogMode("create");
@@ -110,7 +107,7 @@ export default function RadarScope() {
   return (
     <div className="h-screen bg-gray-950 flex flex-col md:flex-row overflow-hidden">
       {/* Radar Display Area */}
-      <div className="flex-1 relative overflow-hidden" ref={radarDisplayRef}>
+      <div className="flex-1 relative overflow-hidden">
         <RadarDisplay
           settings={settings}
           showNexrad={settings.showNexrad}
@@ -125,7 +122,6 @@ export default function RadarScope() {
           onSettingsChange={setSettings}
           nexradStatus={nexradStatus}
           onRefreshNexrad={handleRefreshNexrad}
-          onOpenSettings={() => setShowContactsDialog(true)}
         />
         <TargetList
           targets={targets}
@@ -133,10 +129,8 @@ export default function RadarScope() {
           onTargetClick={handleTargetClick}
           onDeleteTarget={handleDeleteTarget}
         />
+        <RadioPlayer nexradStation={settings.station} />
       </div>
-
-      {/* Contacts Dialog */}
-      <ContactsDialog isOpen={showContactsDialog} onClose={() => setShowContactsDialog(false)} />
 
       {/* Dialogs */}
       {dialogMode === "create" && pendingClick && (

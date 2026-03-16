@@ -2,8 +2,7 @@ import { useState } from "react";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { RefreshCw, Wifi, WifiOff, LocateFixed, Settings } from "lucide-react";
+import { RefreshCw, Wifi, WifiOff, LocateFixed } from "lucide-react";
 
 const THEMES = [
   { id: "green", label: "GRN", color: "bg-green-500" },
@@ -160,7 +159,7 @@ function nearestStation(lat, lon) {
   }, { id: STATIONS[0].id, dist: Infinity }).id;
 }
 
-export default function RadarControls({ settings, onSettingsChange, nexradStatus, onRefreshNexrad, onOpenSettings }) {
+export default function RadarControls({ settings, onSettingsChange, nexradStatus, onRefreshNexrad }) {
   const [geoLoading, setGeoLoading] = useState(false);
   const update = (key, value) => onSettingsChange({ ...settings, [key]: value });
 
@@ -200,17 +199,6 @@ export default function RadarControls({ settings, onSettingsChange, nexradStatus
           />
         </div>
       )}
-
-      {/* Settings Button */}
-      <Button
-        onClick={onOpenSettings}
-        variant="outline"
-        size="sm"
-        className="w-full border-gray-600 text-gray-300 font-mono text-xs flex items-center gap-2 justify-center"
-      >
-        <Settings size={12} />
-        Emergency Contacts
-      </Button>
     </div>
   );
 }
