@@ -51,7 +51,9 @@ function getStation(nexradId) {
 }
 
 export default function BottomNav({ station, isTornadoWarning }) {
+  const [showPlayer, setShowPlayer] = useState(false);
   const stationInfo = getStation(station);
+  const playerUrl = `https://www.broadcastify.com/webPlayer/${stationInfo.feedId}`;
 
   return (
     <>
@@ -68,9 +70,9 @@ export default function BottomNav({ station, isTornadoWarning }) {
           </div>
         </div>
 
-        {/* Radio Button - Direct Link with Autoplay */}
+        {/* Radio Button - Inline Player */}
         <button
-          onClick={() => window.open(`https://www.broadcastify.com/webPlayer/${stationInfo.feedId}?autoplay=true`, "_blank")}
+          onClick={() => setShowPlayer(true)}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-xs font-bold transition-all cursor-pointer ${
             isTornadoWarning
               ? "bg-red-900 text-red-200 hover:bg-red-800 shadow-[0_0_8px_rgba(220,38,38,0.6)]"
@@ -82,6 +84,28 @@ export default function BottomNav({ station, isTornadoWarning }) {
           {isTornadoWarning && <span className="text-red-500 text-lg animate-pulse">●</span>}
         </button>
       </div>
+
+      {showPlayer && (
+        <div className="fixed inset-x-4 bottom-20 z-50 rounded-xl border border-gray-700 bg-gray-950 shadow-2xl overflow-hidden">
+          <div className="flex items-center justify-between border-b border-gray-800 px-3 py-2">
+            <div className="text-xs font-mono text-green-400">
+              {stationInfo.label} — {stationInfo.desc}
+            </div>
+            <button
+              onClick={() => setShowPlayer(false)}
+              className="text-gray-400 hover:text-white transition-colors"
+            >
+              <X size={16} />
+            </button>
+          </div>
+          <iframe
+            title="NOAA Weather Radio"
+            src={playerUrl}
+            className="h-[240px] w-full bg-black"
+            allow="autoplay"
+          />
+        </div>
+      )}
 
       {/* Spacer to prevent content overlap */}
       <div className="h-16"></div>
