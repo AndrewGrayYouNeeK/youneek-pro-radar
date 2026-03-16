@@ -107,13 +107,13 @@ export default function RadarDisplay({ settings, showNexrad }) {
 
     // Reflectivity overlay
     radarLayerRef.current = L.tileLayer.wms(
-      "https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0q.cgi?",
+      "https://mapservices.weather.noaa.gov/eventdriven/services/radar/radar_base_reflectivity/MapServer/WMSServer",
       {
-        layers: "nexrad-n0q",
+        layers: "0",
         format: "image/png",
         transparent: true,
         opacity: 0.7,
-        attribution: "Iowa Mesonet",
+        attribution: "NOAA NWS Radar",
       }
     ).addTo(leafletMap.current);
 
