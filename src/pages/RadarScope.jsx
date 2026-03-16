@@ -4,6 +4,7 @@ import RadarDisplay from "../components/radar/RadarDisplay";
 import TargetDialog from "../components/radar/TargetDialog";
 import TargetList from "../components/radar/TargetList";
 import RadarControls from "../components/radar/RadarControls";
+import RadioPlayer from "../components/radar/RadioPlayer";
 
 const DEFAULT_SETTINGS = {
   range: 100,        // nautical miles
