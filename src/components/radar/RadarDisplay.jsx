@@ -67,6 +67,7 @@ export default function RadarDisplay({ settings, showNexrad }) {
   const leafletMap = useRef(null);
   const radarLayerRef = useRef(null);
   const velLayerRef = useRef(null);
+  const alertLayerRef = useRef(null);
   const refreshTimerRef = useRef(null);
   const userLocationMarkerRef = useRef(null);
   const radarLoadStatsRef = useRef({ errors: 0, loaded: 0, usingFallback: false });
@@ -116,6 +117,10 @@ export default function RadarDisplay({ settings, showNexrad }) {
       leafletMap.current.removeLayer(velLayerRef.current);
       velLayerRef.current = null;
     }
+    if (alertLayerRef.current) {
+      leafletMap.current.removeLayer(alertLayerRef.current);
+      alertLayerRef.current = null;
+    }
     if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
 
     radarLoadStatsRef.current = { errors: 0, loaded: 0, usingFallback: false };
@@ -136,6 +141,24 @@ export default function RadarDisplay({ settings, showNexrad }) {
           format: "image/png",
           transparent: true,
           opacity: 0.6,
+        }
+      ).addTo(leafletMap.current);
+    };
+
+    const addAlertLayer = () => {
+      if (!leafletMap.current) return;
+      if (alertLayerRef.current) {
+        leafletMap.current.removeLayer(alertLayerRef.current);
+        alertLayerRef.current = null;
+      }
+
+      alertLayerRef.current = L.tileLayer.wms(
+        "https://mapservices.weather.noaa.gov/eventdriven/services/WWA/watch_warn_adv/MapServer/WMSServer",
+        {
+          layers: "0",
+          format: "image/png",
+          transparent: true,
+          opacity: 0.8,
         }
       ).addTo(leafletMap.current);
     };
@@ -165,6 +188,7 @@ export default function RadarDisplay({ settings, showNexrad }) {
           }).addTo(leafletMap.current);
 
           addVelocityLayer();
+          addAlertLayer();
         });
     };
 
@@ -193,6 +217,7 @@ export default function RadarDisplay({ settings, showNexrad }) {
 
     radarLayerRef.current = iowaLayer.addTo(leafletMap.current);
     addVelocityLayer();
+    addAlertLayer();
 
     refreshTimerRef.current = setInterval(() => {
       if (radarLayerRef.current?.setUrl && !radarLoadStatsRef.current.usingFallback) {
