@@ -104,14 +104,14 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
 
     // Reflectivity overlay
     radarLayerRef.current = L.tileLayer.wms(
-      "https://mapservices.weather.noaa.gov/eventdriven/services/radar/radar_base_reflectivity/MapServer/WMSServer",
+      "https://opengeo.ncep.noaa.gov/geoserver/conus/conus_bref_qcd/ows",
       {
-        layers: "0",
+        layers: "conus_bref_qcd",
         format: "image/png",
         transparent: true,
-        opacity: 0.7,
-        attribution: "NOAA NWS Radar",
-        maxZoom: 12,
+        opacity: 0.8,
+        attribution: "NOAA NCEP",
+        maxZoom: 16,
       }
     ).addTo(leafletMap.current);
 
