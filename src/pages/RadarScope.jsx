@@ -107,7 +107,7 @@ export default function RadarScope() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col md:flex-row overflow-hidden">
+    <div className="h-screen bg-gray-950 flex flex-col md:flex-row overflow-hidden">
       {/* Radar Display Area */}
       <div className="flex-1 relative overflow-hidden">
         <RadarDisplay
