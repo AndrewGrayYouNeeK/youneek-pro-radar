@@ -297,20 +297,29 @@ export default function RadarDisplay({ targets, settings, onRadarClick, onTarget
   }, [targets, settings.range, onRadarClick, onTargetClick]);
 
   const scaleFactor = NEXRAD_COVERAGE_NM / settings.range;
+  const canvasSize = canvasRef.current?.width || 500;
 
   return (
     <div className="relative flex items-center justify-center w-full h-full" style={{ minHeight: 320 }}>
-      {/* Clipped overlay container — sits behind canvas, clips scaled GIF to circle */}
+      {/* Canvas renders first (z-index 0) */}
+      <canvas
+        ref={canvasRef}
+        onClick={handleClick}
+        className="cursor-crosshair rounded-full"
+        style={{ maxWidth: "100%", maxHeight: "100%" }}
+      />
+      {/* NEXRAD overlay sits on top via z-index, pointer-events none so clicks pass through */}
       {(reflImageUrl || velImageUrl) && (
         <div style={{
           position: "absolute",
           top: "50%", left: "50%",
           transform: "translate(-50%, -50%)",
-          width: canvasRef.current?.width || 500,
-          height: canvasRef.current?.width || 500,
+          width: canvasSize,
+          height: canvasSize,
           borderRadius: "50%",
           overflow: "hidden",
           pointerEvents: "none",
+          zIndex: 2,
         }}>
           {reflImageUrl && (
             <img
@@ -342,12 +351,6 @@ export default function RadarDisplay({ targets, settings, onRadarClick, onTarget
           )}
         </div>
       )}
-      <canvas
-        ref={canvasRef}
-        onClick={handleClick}
-        className="cursor-crosshair rounded-full"
-        style={{ maxWidth: "100%", maxHeight: "100%", position: "relative", zIndex: 1 }}
-      />
     </div>
   );
 }
