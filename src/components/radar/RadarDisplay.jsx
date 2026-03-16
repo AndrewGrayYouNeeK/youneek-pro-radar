@@ -103,12 +103,15 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
     if (!showNexrad) return;
 
     // Reflectivity overlay
-    radarLayerRef.current = L.tileLayer(
-      "https://mesonet.agron.iastate.edu/data/gis/images/4326/USCOMP/{z}/{x}/{y}.png",
+    radarLayerRef.current = L.tileLayer.wms(
+      "https://opengeo.ncep.noaa.gov/geoserver/conus/conus_bref_qcd/ows",
       {
-        attribution: "Iowa Environmental Mesonet NEXRAD",
-        opacity: 0.7,
-        maxZoom: 14,
+        layers: "conus_bref_qcd",
+        format: "image/png",
+        transparent: true,
+        opacity: 0.8,
+        attribution: "NOAA NCEP",
+        maxZoom: 16,
       }
     ).addTo(leafletMap.current);
 
