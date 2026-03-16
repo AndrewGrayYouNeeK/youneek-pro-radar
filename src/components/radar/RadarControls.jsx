@@ -178,109 +178,27 @@ export default function RadarControls({ settings, onSettingsChange, nexradStatus
   };
 
   return (
-    <div className="p-4 border-b border-gray-700 space-y-4">
-      <div className="text-xs font-mono font-bold text-gray-400 tracking-widest uppercase">
-        Radar Controls
+    <div className="p-4 border-b border-gray-700 space-y-3">
+      <div className="flex items-center justify-between">
+        <Label className="text-xs font-mono text-gray-400 flex items-center gap-1">
+          {settings.showNexrad ? <Wifi size={11} className="text-green-400" /> : <WifiOff size={11} />}
+          LIVE NEXRAD
+        </Label>
+        <Switch
+          checked={settings.showNexrad}
+          onCheckedChange={(v) => update("showNexrad", v)}
+        />
       </div>
 
-      {/* Live NEXRAD toggle */}
-      <div className="space-y-2">
+      {settings.showNexrad && (
         <div className="flex items-center justify-between">
-          <Label className="text-xs font-mono text-gray-400 flex items-center gap-1">
-            {settings.showNexrad ? <Wifi size={11} className="text-green-400" /> : <WifiOff size={11} />}
-            LIVE NEXRAD
-          </Label>
+          <Label className="text-xs font-mono text-gray-400">VELOCITY</Label>
           <Switch
-            checked={settings.showNexrad}
-            onCheckedChange={(v) => update("showNexrad", v)}
+            checked={settings.showVelocity}
+            onCheckedChange={(v) => update("showVelocity", v)}
           />
         </div>
-
-        {settings.showNexrad && (
-          <>
-            {/* Velocity toggle */}
-            <div className="flex items-center justify-between">
-              <Label className="text-xs font-mono text-gray-400">VELOCITY</Label>
-              <Switch
-                checked={settings.showVelocity}
-                onCheckedChange={(v) => update("showVelocity", v)}
-              />
-            </div>
-
-            {/* Station selector + geo button */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <Label className="text-xs font-mono text-gray-400">STATION</Label>
-                <button
-                  onClick={handleGeolocate}
-                  disabled={geoLoading}
-                  title="Auto-select nearest station"
-                  className="text-gray-500 hover:text-green-400 disabled:opacity-40 transition-colors"
-                >
-                  <LocateFixed size={12} className={geoLoading ? "animate-pulse" : ""} />
-                </button>
-              </div>
-              <select
-                value={settings.station}
-                onChange={(e) => update("station", e.target.value)}
-                className="w-full bg-gray-800 border border-gray-600 text-green-300 font-mono text-xs rounded px-2 py-1"
-              >
-                {STATIONS.map((s) => (
-                  <option key={s.id} value={s.id}>{s.label}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Status + refresh */}
-            <div className="flex items-center justify-between">
-              <span className={`text-xs font-mono ${
-                nexradStatus === "ok" ? "text-green-400" :
-                nexradStatus === "loading" ? "text-yellow-400" :
-                nexradStatus === "error" ? "text-red-400" : "text-gray-500"
-              }`}>
-                {nexradStatus === "ok" ? "● LIVE" :
-                 nexradStatus === "loading" ? "◌ LOADING" :
-                 nexradStatus === "error" ? "✕ ERROR" : "○ OFFLINE"}
-              </span>
-              <button
-                onClick={onRefreshNexrad}
-                disabled={nexradStatus === "loading"}
-                className="text-gray-400 hover:text-green-400 disabled:opacity-40 transition-colors"
-                title="Refresh radar data"
-              >
-                <RefreshCw size={13} className={nexradStatus === "loading" ? "animate-spin" : ""} />
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Labels toggle */}
-      <div className="flex items-center justify-between">
-        <Label className="text-xs font-mono text-gray-400">LABELS</Label>
-        <Switch checked={settings.showLabels} onCheckedChange={(v) => update("showLabels", v)} />
-      </div>
-
-      {/* Theme */}
-      <div>
-        <Label className="text-xs font-mono text-gray-400 block mb-2">PHOSPHOR</Label>
-        <div className="flex gap-2">
-          {THEMES.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => update("theme", t.id)}
-              className={`flex items-center gap-1 px-2 py-1 rounded border text-xs font-mono transition-colors ${
-                settings.theme === t.id
-                  ? "border-gray-400 text-white"
-                  : "border-gray-700 text-gray-500 hover:border-gray-500"
-              }`}
-            >
-              <span className={`w-2 h-2 rounded-full ${t.color}`} />
-              {t.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      )}
     </div>
   );
 }
