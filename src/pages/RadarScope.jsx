@@ -21,53 +21,6 @@ export default function RadarScope() {
   const [selectedTarget, setSelectedTarget] = useState(null);
   const [dialogMode, setDialogMode] = useState(null); // 'create' | 'inspect'
 
-  // NEXRAD state
-  const [reflImageUrl, setReflImageUrl] = useState(null);
-  const [velImageUrl, setVelImageUrl] = useState(null);
-  const [isTornadoWarning, setIsTornadoWarning] = useState(false);
-  const [nexradStatus, setNexradStatus] = useState("offline");
-  const refreshTimerRef = useRef(null);
-
-  const fetchNexradData = useCallback(async (station, showVelocity) => {
-    setNexradStatus("loading");
-    try {
-      const res = await base44.functions.invoke("fetchNexrad", { station, showVelocity });
-      if (res.data?.error) throw new Error(res.data.error);
-      setReflImageUrl(res.data.reflImageData || null);
-      setVelImageUrl(res.data.velImageData || null);
-      setIsTornadoWarning(!!res.data.isTornadoWarning);
-      setNexradStatus("ok");
-    } catch (e) {
-      console.error("NEXRAD fetch failed:", e);
-      setNexradStatus("error");
-    }
-  }, []);
-
-  // Fetch on toggle on or station change
-  useEffect(() => {
-    if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
-
-    if (!settings.showNexrad) {
-      setNexradStatus("offline");
-      setReflImageUrl(null);
-      setVelImageUrl(null);
-      setIsTornadoWarning(false);
-      return;
-    }
-
-    fetchNexradData(settings.station, settings.showVelocity);
-
-    refreshTimerRef.current = setInterval(() => {
-      fetchNexradData(settings.station, settings.showVelocity);
-    }, REFRESH_INTERVAL_MS);
-
-    return () => clearInterval(refreshTimerRef.current);
-  }, [settings.showNexrad, settings.station, settings.showVelocity, fetchNexradData]);
-
-  const handleRefreshNexrad = useCallback(() => {
-    if (settings.showNexrad) fetchNexradData(settings.station, settings.showVelocity);
-  }, [settings.showNexrad, settings.station, settings.showVelocity, fetchNexradData]);
-
   const handleRadarClick = useCallback((clickData) => {
     setPendingClick(clickData);
     setDialogMode("create");
