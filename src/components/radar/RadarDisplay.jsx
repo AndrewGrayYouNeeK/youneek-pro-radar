@@ -149,7 +149,8 @@ export default function RadarDisplay({ settings, showNexrad }) {
     const iowaLayer = L.tileLayer(getIowaReflectivityUrl(), {
       attribution: "Iowa Mesonet",
       opacity: 0.7,
-      maxZoom: 12,
+      maxZoom: 18,
+      maxNativeZoom: 12,
       crossOrigin: "anonymous",
     });
 
