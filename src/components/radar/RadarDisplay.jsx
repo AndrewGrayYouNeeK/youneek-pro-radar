@@ -105,10 +105,10 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
     // Reflectivity overlay
     radarLayerRef.current = L.imageOverlay(
       "https://radar.weather.gov/ridge/standard/KLVX_loop.gif",
-      [[37.0, -86.0], [38.5, -84.0]],
+      [[36.8, -86.5], [38.5, -84.5]],
       {
         opacity: 0.65,
-        attribution: "NWS Louisville Radar",
+        attribution: "NWS Louisville",
         interactive: false,
       }
     ).addTo(leafletMap.current);
