@@ -227,8 +227,8 @@ export default function RadarDisplay({ targets, settings, onRadarClick, onTarget
       ctx.shadowBlur = 0;
 
       // Label
-      if (settings.showLabels && target.callsign) {
-        ctx.fillStyle = colors.text;
+      if (s.showLabels && target.callsign) {
+        ctx.fillStyle = c.text;
         ctx.font = "10px monospace";
         ctx.fillText(target.callsign, tx + 8, ty - 4);
       }
