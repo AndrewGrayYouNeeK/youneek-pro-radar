@@ -135,7 +135,7 @@ export default function RadarScope() {
           onTargetClick={handleTargetClick}
           onDeleteTarget={handleDeleteTarget}
         />
-        <RadioPlayer />
+        <RadioPlayer nexradStation={settings.station} />
       </div>
 
       {/* Dialogs */}
