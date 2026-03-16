@@ -7,8 +7,6 @@ import RadarControls from "../components/radar/RadarControls";
 import RadioPlayer from "../components/radar/RadioPlayer";
 
 const DEFAULT_SETTINGS = {
-  range: 100,        // nautical miles
-  sweepSpeed: 4,     // seconds per revolution
   showLabels: true,
   showTails: true,
   theme: "green",    // green | amber | blue
