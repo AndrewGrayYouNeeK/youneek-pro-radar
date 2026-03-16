@@ -35,6 +35,8 @@ const AuthenticatedApp = () => {
   return (
     <Routes>
       {/* Add your page Route elements here */}
+      <Route path="/" element={<RadarScope />} />
+      <Route path="/RadarScope" element={<RadarScope />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
