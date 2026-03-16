@@ -132,8 +132,8 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
 
     // Auto-refresh every 5 minutes
     refreshTimerRef.current = setInterval(() => {
-      if (radarLayerRef.current?.setUrl) {
-        radarLayerRef.current.setUrl(`https://radar.weather.gov/ridge/standard/KLVX_loop.gif?t=${Date.now()}`);
+      if (radarLayerRef.current?.redraw) {
+        radarLayerRef.current.redraw();
       }
       if (velLayerRef.current?.redraw) {
         velLayerRef.current.redraw();
