@@ -56,22 +56,24 @@ export default function RadarScope() {
 
     if (!settings.showNexrad) {
       setNexradStatus("offline");
-      setNexradImageUrl(null);
+      setReflImageUrl(null);
+      setVelImageUrl(null);
+      setIsTornadoWarning(false);
       return;
     }
 
-    fetchNexrad(settings.station, settings.range);
+    fetchNexradData(settings.station, settings.range);
 
     refreshTimerRef.current = setInterval(() => {
-      fetchNexrad(settings.station, settings.range);
+      fetchNexradData(settings.station, settings.range);
     }, REFRESH_INTERVAL_MS);
 
     return () => clearInterval(refreshTimerRef.current);
   }, [settings.showNexrad, settings.station, fetchNexrad]);
 
   const handleRefreshNexrad = useCallback(() => {
-    if (settings.showNexrad) fetchNexrad(settings.station, settings.range);
-  }, [settings.showNexrad, settings.station, settings.range, fetchNexrad]);
+    if (settings.showNexrad) fetchNexradData(settings.station, settings.range);
+  }, [settings.showNexrad, settings.station, settings.range, fetchNexradData]);
 
   const handleRadarClick = useCallback((clickData) => {
     setPendingClick(clickData);
