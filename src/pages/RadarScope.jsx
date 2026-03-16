@@ -69,7 +69,7 @@ export default function RadarScope() {
     }, REFRESH_INTERVAL_MS);
 
     return () => clearInterval(refreshTimerRef.current);
-  }, [settings.showNexrad, settings.station, fetchNexrad]);
+  }, [settings.showNexrad, settings.station, fetchNexradData]);
 
   const handleRefreshNexrad = useCallback(() => {
     if (settings.showNexrad) fetchNexradData(settings.station, settings.range);
