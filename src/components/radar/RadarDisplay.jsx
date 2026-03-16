@@ -141,7 +141,8 @@ export default function RadarDisplay({ settings, showNexrad }) {
           radarLayerRef.current = L.tileLayer(fallbackUrl, {
             attribution: "RainViewer",
             opacity: 0.7,
-            maxZoom: 12,
+            maxZoom: 18,
+            maxNativeZoom: 12,
             crossOrigin: "anonymous",
           }).addTo(leafletMap.current);
         });
