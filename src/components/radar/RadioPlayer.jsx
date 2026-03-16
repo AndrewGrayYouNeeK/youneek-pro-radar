@@ -1,24 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Radio, Play, Pause, LocateFixed } from "lucide-react";
-
-const LOCAL_STATIONS = [
-  { id: "WXL58", label: "Jackson, KY", lat: 37.591, lon: -83.313, streamUrl: "https://radio.weatherusa.net/NWR/WXL58.mp3" },
-  { id: "WZ2523", label: "Frankfort, KY", lat: 38.2, lon: -84.873, streamUrl: "https://wxradio.org/KY-Frankfort-WZ2523" },
-  { id: "KIH43", label: "Louisville, KY", lat: 38.253, lon: -85.758, streamUrl: "https://radio.weatherusa.net/NWR/KIH43.mp3" },
-  { id: "WXK99", label: "Paducah, KY", lat: 37.068, lon: -88.772, streamUrl: "https://radio.weatherusa.net/NWR/WXK99.mp3" },
-  { id: "WXL24", label: "Fort Campbell, KY", lat: 36.668, lon: -87.477, streamUrl: "https://radio.weatherusa.net/NWR/WXL24.mp3" },
-  { id: "WXK48", label: "Cincinnati, OH", lat: 39.103, lon: -84.512, streamUrl: "https://radio.weatherusa.net/NWR/WXK48.mp3" },
-  { id: "WXJ23", label: "Nashville, TN", lat: 36.163, lon: -86.782, streamUrl: "https://radio.weatherusa.net/NWR/WXJ23.mp3" },
-];
-
-const NEXRAD_FALLBACK = {
-  KJKL: "WXL58",
-  KLVX: "KIH43",
-  KPAH: "WXK99",
-  KHPX: "WXL24",
-  KILN: "WXK48",
-  KOHX: "WXJ23",
-};
+import { LOCAL_STATIONS } from "./radioStations";
 
 function haversine(lat1, lon1, lat2, lon2) {
   const R = 6371;
@@ -36,11 +18,11 @@ function getNearestStation(lat, lon) {
   }, { station: LOCAL_STATIONS[0], distance: Infinity }).station;
 }
 
-export default function RadioPlayer({ nexradStation }) {
+export default function RadioPlayer() {
   const audioRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLocating, setIsLocating] = useState(true);
-  const [stationId, setStationId] = useState(NEXRAD_FALLBACK[nexradStation] || "WXL58");
+  const [stationId, setStationId] = useState(LOCAL_STATIONS[0].id);
 
   const station = useMemo(
     () => LOCAL_STATIONS.find((item) => item.id === stationId) || LOCAL_STATIONS[0],
@@ -63,12 +45,6 @@ export default function RadioPlayer({ nexradStation }) {
       { timeout: 8000 }
     );
   }, []);
-
-  useEffect(() => {
-    if (!isLocating && NEXRAD_FALLBACK[nexradStation]) {
-      setStationId((current) => current || NEXRAD_FALLBACK[nexradStation]);
-    }
-  }, [isLocating, nexradStation]);
 
   useEffect(() => {
     if (!audioRef.current) return;

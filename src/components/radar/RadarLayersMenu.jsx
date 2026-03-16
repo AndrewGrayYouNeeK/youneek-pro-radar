@@ -1,25 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Radio, Play, Pause, LocateFixed } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-
-const RADIO_STATIONS = [
-  { id: "WXL58", label: "WXL58 Jackson KY", lat: 37.591, lon: -83.313, streamUrl: "https://radio.weatherusa.net/NWR/WXL58.mp3" },
-  { id: "WZ2523", label: "WZ2523 Frankfort KY", lat: 38.2, lon: -84.873, streamUrl: "https://wxradio.org/KY-Frankfort-WZ2523" },
-  { id: "KIH43", label: "KIH43 Louisville KY", lat: 38.253, lon: -85.758, streamUrl: "https://radio.weatherusa.net/NWR/KIH43.mp3" },
-  { id: "WXK99", label: "WXK99 Paducah KY", lat: 37.068, lon: -88.772, streamUrl: "https://radio.weatherusa.net/NWR/WXK99.mp3" },
-  { id: "WXL24", label: "WXL24 Fort Campbell KY", lat: 36.668, lon: -87.477, streamUrl: "https://radio.weatherusa.net/NWR/WXL24.mp3" },
-  { id: "WXK48", label: "WXK48 Cincinnati OH", lat: 39.103, lon: -84.512, streamUrl: "https://radio.weatherusa.net/NWR/WXK48.mp3" },
-  { id: "WXJ23", label: "WXJ23 Nashville TN", lat: 36.163, lon: -86.782, streamUrl: "https://radio.weatherusa.net/NWR/WXJ23.mp3" },
-];
-
-const NEXRAD_FALLBACK = {
-  KJKL: "WXL58",
-  KLVX: "KIH43",
-  KPAH: "WXK99",
-  KHPX: "WXL24",
-  KILN: "WXK48",
-  KOHX: "WXJ23",
-};
+import { LOCAL_STATIONS } from "./radioStations";
 
 function ToggleRow({ label, checked, onCheckedChange }) {
   return (
@@ -40,10 +22,10 @@ function haversine(lat1, lon1, lat2, lon2) {
 }
 
 function getNearestStation(lat, lon) {
-  return RADIO_STATIONS.reduce((best, station) => {
+  return LOCAL_STATIONS.reduce((best, station) => {
     const distance = haversine(lat, lon, station.lat, station.lon);
     return distance < best.distance ? { station, distance } : best;
-  }, { station: RADIO_STATIONS[0], distance: Infinity }).station;
+  }, { station: LOCAL_STATIONS[0], distance: Infinity }).station;
 }
 
 export default function RadarLayersMenu({
@@ -61,10 +43,10 @@ export default function RadarLayersMenu({
   const audioRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLocating, setIsLocating] = useState(true);
-  const [stationId, setStationId] = useState(NEXRAD_FALLBACK[nexradStation] || "WXL58");
+  const [stationId, setStationId] = useState(LOCAL_STATIONS[0].id);
 
   const station = useMemo(
-    () => RADIO_STATIONS.find((item) => item.id === stationId) || RADIO_STATIONS[0],
+    () => LOCAL_STATIONS.find((item) => item.id === stationId) || LOCAL_STATIONS[0],
     [stationId]
   );
 
@@ -183,7 +165,7 @@ export default function RadarLayersMenu({
                     onChange={(e) => setStationId(e.target.value)}
                     className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white outline-none"
                   >
-                    {RADIO_STATIONS.map((item) => (
+                    {LOCAL_STATIONS.map((item) => (
                       <option key={item.id} value={item.id}>
                         {item.label}
                       </option>
