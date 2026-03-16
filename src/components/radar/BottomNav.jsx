@@ -51,7 +51,6 @@ function getStation(nexradId) {
 }
 
 export default function BottomNav({ station, isTornadoWarning }) {
-  const [showPlayer, setShowPlayer] = useState(false);
   const stationInfo = getStation(station);
 
   return (
@@ -69,10 +68,12 @@ export default function BottomNav({ station, isTornadoWarning }) {
           </div>
         </div>
 
-        {/* Radio Button */}
-        <button
-          onClick={() => setShowPlayer(true)}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-xs font-bold transition-all ${
+        {/* Radio Button - Direct Link */}
+        <a
+          href={`https://www.broadcastify.com/webPlayer/${stationInfo.feedId}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-xs font-bold transition-all no-underline ${
             isTornadoWarning
               ? "bg-red-900 text-red-200 hover:bg-red-800 shadow-[0_0_8px_rgba(220,38,38,0.6)]"
               : "bg-gray-800 text-gray-300 hover:bg-gray-700"
@@ -81,98 +82,8 @@ export default function BottomNav({ station, isTornadoWarning }) {
           <Radio size={14} />
           LISTEN
           {isTornadoWarning && <span className="text-red-500 text-lg animate-pulse">●</span>}
-        </button>
+        </a>
       </div>
-
-      {/* Player Modal */}
-      {showPlayer && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(0, 0, 0, 0.9)",
-            zIndex: 9999,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "20px",
-          }}
-          onClick={() => setShowPlayer(false)}
-        >
-          <div
-            style={{
-              width: "100%",
-              maxWidth: "500px",
-              background: "#1a1a1a",
-              padding: "20px",
-              borderRadius: "12px",
-              border: "1px solid #333",
-              boxShadow: "0 10px 40px rgba(0,0,0,0.8)",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "12px",
-              }}
-            >
-              <div>
-                <div style={{ fontSize: "12px", color: "#888", fontFamily: "monospace" }}>
-                  NOAA WEATHER RADIO
-                </div>
-                <div
-                  style={{
-                    fontSize: "14px",
-                    color: "#4ade80",
-                    fontWeight: "bold",
-                    fontFamily: "monospace",
-                  }}
-                >
-                  {stationInfo.label}
-                </div>
-                <div style={{ fontSize: "11px", color: "#666", fontFamily: "monospace" }}>
-                  {stationInfo.desc}
-                </div>
-              </div>
-              <button
-                onClick={() => setShowPlayer(false)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: "#888",
-                  cursor: "pointer",
-                  padding: "0",
-                  fontSize: "18px",
-                }}
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Broadcastify Player */}
-            <iframe
-              src={`https://www.broadcastify.com/webPlayer/${stationInfo.feedId}`}
-              width="100%"
-              height="280"
-              frameBorder="0"
-              allow="autoplay; encrypted-media"
-              style={{ borderRadius: "8px", marginBottom: "12px" }}
-            />
-
-            {/* Info */}
-            <div style={{ fontSize: "10px", color: "#888", fontFamily: "monospace", textAlign: "center" }}>
-              Full player controls available • Click outside to close
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Spacer to prevent content overlap */}
       <div className="h-16"></div>
