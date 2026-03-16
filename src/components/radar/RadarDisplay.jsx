@@ -6,12 +6,19 @@ const THEME_COLORS = {
   blue:  { sweep: "#00ccff", ring: "#003355", text: "#0099cc", target: "#00ccff", bg: "#000d1a" },
 };
 
+// NOAA RIDGE standard product covers roughly 250nm radius
+const NEXRAD_COVERAGE_NM = 250;
+
 export default function RadarDisplay({ targets, settings, onRadarClick, onTargetClick, reflImageUrl, velImageUrl, isTornadoWarning }) {
   const canvasRef = useRef(null);
   const animRef = useRef(null);
   const sweepAngleRef = useRef(0);
   const lastTimeRef = useRef(null);
   const trailsRef = useRef([]);
+  const settingsRef = useRef(settings);
+  const targetsRef = useRef(targets);
+  const colorsRef = useRef(null);
+  const tornadoPulseRef = useRef(0);
   const [tornadoPulse, setTornadoPulse] = useState(0);
 
   // Pulsing sine-wave animation for tornado warning
