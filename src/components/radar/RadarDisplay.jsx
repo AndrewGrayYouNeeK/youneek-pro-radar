@@ -50,7 +50,7 @@ const STATION_COORDS = {
   KMSX: [47.041, -113.986], KTFX: [47.460, -111.385], KCBX: [43.491, -116.236],
 };
 
-export default function RadarDisplay({ settings, showNexrad, isTornadoWarning }) {
+export default function RadarDisplay({ settings, showNexrad }) {
   const mapRef = useRef(null);
   const leafletMap = useRef(null);
   const radarLayerRef = useRef(null);
