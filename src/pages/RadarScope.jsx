@@ -13,6 +13,7 @@ const DEFAULT_SETTINGS = {
   theme: "green",    // green | amber | blue
   showNexrad: false, // live NEXRAD overlay
   station: "KLOT",   // default station
+  showVelocity: false, // show velocity overlay
 };
 
 const REFRESH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
