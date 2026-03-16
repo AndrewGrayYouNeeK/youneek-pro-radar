@@ -30,6 +30,12 @@ export default function RadarDisplay({ targets, settings, onRadarClick, onTarget
     return () => clearInterval(id);
   }, [isTornadoWarning]);
 
+  // Keep refs in sync so draw loop always has latest values without restarting
+  useEffect(() => { settingsRef.current = settings; }, [settings]);
+  useEffect(() => { targetsRef.current = targets; }, [targets]);
+  useEffect(() => { colorsRef.current = THEME_COLORS[settings.theme] || THEME_COLORS.green; }, [settings.theme]);
+  useEffect(() => { tornadoPulseRef.current = tornadoPulse; }, [tornadoPulse]);
+
   const colors = THEME_COLORS[settings.theme] || THEME_COLORS.green;
 
   const draw = useCallback((timestamp) => {
