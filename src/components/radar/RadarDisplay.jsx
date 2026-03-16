@@ -1,356 +1,151 @@
-import { useRef, useEffect, useCallback, useState } from "react";
+import { useEffect, useRef } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
-const THEME_COLORS = {
-  green: { sweep: "#00ff88", ring: "#005533", text: "#00cc66", target: "#00ff88", bg: "#001a0d" },
-  amber: { sweep: "#ffbb00", ring: "#553d00", text: "#cc9900", target: "#ffbb00", bg: "#1a1000" },
-  blue:  { sweep: "#00ccff", ring: "#003355", text: "#0099cc", target: "#00ccff", bg: "#000d1a" },
+// Fix Leaflet default icon paths
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+});
+
+// NEXRAD station coordinates for centering the map
+const STATION_COORDS = {
+  KOKX: [40.866, -72.864], KBOX: [41.956, -71.137], KBGM: [42.200, -75.985],
+  KBUF: [42.949, -78.737], KENX: [42.586, -74.064], KPBZ: [40.532, -80.218],
+  KCCX: [40.923, -78.004], KDIX: [39.947, -74.411], KCBW: [46.039, -67.806],
+  KGYX: [43.891, -70.257], KDOX: [38.826, -75.440], KAKQ: [36.984, -77.007],
+  KLWX: [38.975, -77.478], KFCX: [37.024, -80.274], KRNK: [37.000, -80.271],
+  KFFC: [33.364, -84.566], KAMX: [25.611, -80.413], KTBW: [27.705, -82.402],
+  KJAX: [30.485, -81.702], KCLX: [32.656, -81.042], KRAX: [35.665, -78.490],
+  KMHX: [34.776, -76.876], KLTX: [33.989, -78.429], KGSP: [34.883, -82.220],
+  KJGX: [32.675, -83.351], KVAX: [30.890, -83.002], KEVX: [30.564, -85.922],
+  KMLB: [28.113, -80.654], KBYX: [24.597, -81.703], KIND: [39.708, -86.280],
+  KILN: [39.420, -83.822], KLVX: [37.975, -85.944], KHPX: [36.737, -87.645],
+  KJKL: [37.590, -83.313], KPAH: [37.068, -88.772], KOHX: [36.247, -86.563],
+  KNQA: [35.345, -89.873], KHTX: [34.931, -86.084], KBMX: [33.172, -86.770],
+  KGWX: [33.897, -88.329], KIWX: [41.408, -85.700], KLOT: [41.604, -88.085],
+  KGRR: [42.894, -85.545], KAPX: [44.907, -84.720], KMKX: [42.968, -88.551],
+  KDTX: [42.700, -83.472], KCLE: [41.413, -81.860], KDVN: [41.612, -90.581],
+  KILX: [40.151, -89.337], KLSX: [38.699, -90.683], KEAX: [38.810, -94.264],
+  KTWX: [38.997, -96.232], KICT: [37.655, -97.443], KDMX: [41.731, -93.723],
+  KARX: [43.823, -91.191], KMPX: [44.849, -93.566], KDLH: [46.837, -92.210],
+  KLZK: [34.836, -92.262], KTLX: [35.333, -97.278], KINX: [36.175, -95.565],
+  KFWS: [32.573, -97.303], KSHV: [32.451, -93.841], KPOE: [31.155, -92.976],
+  KLIX: [30.337, -89.825], KMOB: [30.679, -88.240], KSJT: [31.371, -100.493],
+  KEWX: [29.704, -98.029], KCRP: [27.784, -97.511], KBRO: [25.916, -97.419],
+  KHGX: [29.472, -95.079], KLCH: [30.125, -93.216], KABR: [45.456, -98.413],
+  KBIS: [46.771, -100.760], KMBX: [48.393, -100.865], KFSD: [43.588, -96.729],
+  KUEX: [40.321, -98.442], KOAX: [41.320, -96.367], KDDC: [37.761, -99.969],
+  KAMA: [35.234, -101.709], KLBB: [33.654, -101.814], KMAF: [31.943, -102.189],
+  KUDX: [44.125, -102.830], KGGW: [48.206, -106.625], KFTG: [39.787, -104.546],
+  KPUX: [38.460, -104.182], KGJX: [39.062, -108.214], KIWA: [33.289, -111.670],
+  KEMX: [31.894, -110.630], KABX: [35.150, -106.824], KFSX: [34.574, -111.198],
+  KESX: [35.701, -114.891], KVTX: [34.412, -119.179], KHNX: [36.314, -119.632],
+  KMUX: [37.155, -121.898], KBBX: [39.496, -121.632], KBHX: [40.498, -124.292],
+  KMAX: [42.081, -122.717], KLGX: [47.117, -124.106], KATX: [47.520, -122.494],
+  KRTX: [45.715, -122.965], KPDT: [45.691, -118.853], KOTX: [47.681, -117.627],
+  KMSX: [47.041, -113.986], KTFX: [47.460, -111.385], KCBX: [43.491, -116.236],
 };
 
-// NOAA RIDGE standard product covers roughly 230nm radius
-const NEXRAD_COVERAGE_NM = 230;
+export default function RadarDisplay({ settings, showNexrad, isTornadoWarning }) {
+  const mapRef = useRef(null);
+  const leafletMap = useRef(null);
+  const radarLayerRef = useRef(null);
+  const velLayerRef = useRef(null);
+  const refreshTimerRef = useRef(null);
 
-export default function RadarDisplay({ targets, settings, onRadarClick, onTargetClick, reflImageUrl, velImageUrl, isTornadoWarning }) {
-  const canvasRef = useRef(null);
-  const animRef = useRef(null);
-  const sweepAngleRef = useRef(0);
-
-  const trailsRef = useRef([]);
-  const settingsRef = useRef(settings);
-  const targetsRef = useRef(targets);
-  const colorsRef = useRef(null);
-  const tornadoPulseRef = useRef(0);
-  const [tornadoPulse, setTornadoPulse] = useState(0);
-
-  // Pulsing sine-wave animation for tornado warning
+  // Initialize map once
   useEffect(() => {
-    if (!isTornadoWarning) { setTornadoPulse(0); return; }
-    const id = setInterval(() => {
-      setTornadoPulse(Math.sin(Date.now() / 200) * 0.5 + 0.5);
-    }, 50);
-    return () => clearInterval(id);
-  }, [isTornadoWarning]);
+    if (leafletMap.current) return;
 
-  // Keep refs in sync so draw loop always has latest values without restarting
-  useEffect(() => { settingsRef.current = settings; }, [settings]);
-  useEffect(() => { targetsRef.current = targets; }, [targets]);
-  useEffect(() => { colorsRef.current = THEME_COLORS[settings.theme] || THEME_COLORS.green; }, [settings.theme]);
-  useEffect(() => { tornadoPulseRef.current = tornadoPulse; }, [tornadoPulse]);
+    const coords = STATION_COORDS[settings.station] || [39.83, -98.58];
 
-  const colors = THEME_COLORS[settings.theme] || THEME_COLORS.green;
+    leafletMap.current = L.map(mapRef.current, {
+      zoomControl: true,
+      attributionControl: true,
+    }).setView(coords, 7);
 
-  const draw = useCallback((timestamp) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    const W = canvas.width;
-    const H = canvas.height;
-    if (W === 0 || H === 0) {
-      animRef.current = requestAnimationFrame(draw);
-      return;
-    }
-    const cx = W / 2;
-    const cy = H / 2;
-    const radius = Math.min(W, H) / 2 - 4;
-    if (radius <= 0) {
-      animRef.current = requestAnimationFrame(draw);
-      return;
-    }
+    // Dark base tile layer
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+      attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; OpenStreetMap',
+      subdomains: "abcd",
+      maxZoom: 18,
+    }).addTo(leafletMap.current);
 
-    const s = settingsRef.current;
-    const c = colorsRef.current || THEME_COLORS.green;
-    const tgts = targetsRef.current;
-    const tPulse = tornadoPulseRef.current;
-
-    // Absolute time-based sweep angle — immune to dt drift or loop restarts
-    const rpm = 1 / s.sweepSpeed;
-    sweepAngleRef.current = ((Date.now() / 1000) * rpm * 2 * Math.PI) % (2 * Math.PI);
-
-    // Trails are rendered procedurally from sweep angle — no dt needed
-
-    // --- Background ---
-    ctx.fillStyle = c.bg;
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
-    ctx.fill();
-
-    // Clip to circle
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
-    ctx.clip();
-
-    // NEXRAD overlay is rendered as an <img> tag in JSX below — no canvas drawing needed here.
-
-    // --- Sweep trail (gradient arc) ---
-    const trailLength = Math.PI / 2;
-    const gradient = ctx.createConicalGradient
-      ? null // not standard; we do it manually
-      : null;
-
-    // Draw sweep trail as thin filled arcs
-    for (let i = 0; i < 30; i++) {
-      const fraction = i / 30;
-      const startA = sweepAngleRef.current - trailLength * (1 - fraction) - Math.PI / 2;
-      const endA = sweepAngleRef.current - trailLength * (1 - (i + 1) / 30) - Math.PI / 2;
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.arc(cx, cy, radius, startA, endA);
-      ctx.closePath();
-      ctx.fillStyle = `${c.sweep}${Math.floor(fraction * 40).toString(16).padStart(2, "0")}`;
-      ctx.fill();
-    }
-
-    // --- Sweep line ---
-    const sweepX = cx + radius * Math.cos(sweepAngleRef.current - Math.PI / 2);
-    const sweepY = cy + radius * Math.sin(sweepAngleRef.current - Math.PI / 2);
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.lineTo(sweepX, sweepY);
-    ctx.strokeStyle = c.sweep;
-    ctx.lineWidth = 1.5;
-    ctx.shadowColor = c.sweep;
-    ctx.shadowBlur = 8;
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-
-    // --- Range rings ---
-    const numRings = 4;
-    for (let i = 1; i <= numRings; i++) {
-      const r = (radius / numRings) * i;
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, 2 * Math.PI);
-      ctx.strokeStyle = c.ring;
-      ctx.lineWidth = 1;
-      ctx.stroke();
-
-      // Range label
-      const rangeVal = Math.round((s.range / numRings) * i);
-      ctx.fillStyle = c.text;
-      ctx.font = "10px monospace";
-      ctx.fillText(`${rangeVal}nm`, cx + 4, cy - r + 12);
-    }
-
-    // --- Bearing lines (every 30°) ---
-    for (let deg = 0; deg < 360; deg += 30) {
-      const rad = (deg - 90) * (Math.PI / 180);
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(cx + radius * Math.cos(rad), cy + radius * Math.sin(rad));
-      ctx.strokeStyle = c.ring;
-      ctx.lineWidth = 0.5;
-      ctx.stroke();
-
-      // Bearing labels at outer edge
-      const labelR = radius - 14;
-      ctx.fillStyle = c.text;
-      ctx.font = "10px monospace";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(`${deg}°`, cx + labelR * Math.cos(rad), cy + labelR * Math.sin(rad));
-    }
-    ctx.textAlign = "left";
-    ctx.textBaseline = "alphabetic";
-
-    // --- Center dot ---
-    ctx.beginPath();
-    ctx.arc(cx, cy, 3, 0, 2 * Math.PI);
-    ctx.fillStyle = c.sweep;
-    ctx.fill();
-
-    // --- Tornado warning pulse ring ---
-    if (isTornadoWarning && tPulse > 0) {
-      ctx.beginPath();
-      ctx.arc(cx, cy, 18 + tPulse * 10, 0, 2 * Math.PI);
-      ctx.strokeStyle = `rgba(255, 220, 0, ${tPulse * 0.9})`;
-      ctx.lineWidth = 2.5;
-      ctx.shadowColor = "rgba(255, 200, 0, 0.8)";
-      ctx.shadowBlur = 12;
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-    }
-
-    // --- Targets ---
-    tgts.forEach((target) => {
-      const bearingRad = (target.bearing - 90) * (Math.PI / 180);
-      const r = (target.range / s.range) * radius;
-      const tx = cx + r * Math.cos(bearingRad);
-      const ty = cy + r * Math.sin(bearingRad);
-
-      // Glow
-      ctx.shadowColor = c.target;
-      ctx.shadowBlur = 12;
-
-      // Symbol based on type
-      ctx.fillStyle = c.target;
-      ctx.strokeStyle = c.target;
-      ctx.lineWidth = 1.5;
-
-      const type = target.type || "unknown";
-      if (type === "surface") {
-        ctx.beginPath();
-        ctx.rect(tx - 5, ty - 5, 10, 10);
-        ctx.stroke();
-      } else if (type === "air") {
-        ctx.beginPath();
-        ctx.moveTo(tx, ty - 6);
-        ctx.lineTo(tx + 5, ty + 4);
-        ctx.lineTo(tx - 5, ty + 4);
-        ctx.closePath();
-        ctx.stroke();
-      } else if (type === "subsurface") {
-        ctx.beginPath();
-        ctx.moveTo(tx, ty + 6);
-        ctx.lineTo(tx + 5, ty - 4);
-        ctx.lineTo(tx - 5, ty - 4);
-        ctx.closePath();
-        ctx.stroke();
-      } else {
-        // unknown - diamond
-        ctx.beginPath();
-        ctx.moveTo(tx, ty - 6);
-        ctx.lineTo(tx + 5, ty);
-        ctx.lineTo(tx, ty + 6);
-        ctx.lineTo(tx - 5, ty);
-        ctx.closePath();
-        ctx.stroke();
+    return () => {
+      if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
+      if (leafletMap.current) {
+        leafletMap.current.remove();
+        leafletMap.current = null;
       }
-
-      ctx.shadowBlur = 0;
-
-      // Label
-      if (s.showLabels && target.callsign) {
-        ctx.fillStyle = c.text;
-        ctx.font = "10px monospace";
-        ctx.fillText(target.callsign, tx + 8, ty - 4);
-      }
-    });
-
-    ctx.restore();
-
-    // --- Outer ring border ---
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
-    ctx.strokeStyle = colors.ring;
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    animRef.current = requestAnimationFrame(draw);
-  }, [isTornadoWarning]); // stable — all mutable state is read via refs
-
-  useEffect(() => {
-    animRef.current = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(animRef.current);
-  }, [draw]);
-
-  // Resize canvas to fill container
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const resize = () => {
-      const size = Math.min(canvas.parentElement.clientWidth, canvas.parentElement.clientHeight, 700);
-      canvas.width = size;
-      canvas.height = size;
     };
-    resize();
-    window.addEventListener("resize", resize);
-    return () => window.removeEventListener("resize", resize);
   }, []);
 
-  const handleClick = useCallback((e) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    const x = (e.clientX - rect.left) * scaleX;
-    const y = (e.clientY - rect.top) * scaleY;
-    const cx = canvas.width / 2;
-    const cy = canvas.height / 2;
-    const radius = Math.min(canvas.width, canvas.height) / 2 - 4;
-    const dx = x - cx;
-    const dy = y - cy;
-    const dist = Math.sqrt(dx * dx + dy * dy);
+  // Pan map when station changes
+  useEffect(() => {
+    if (!leafletMap.current) return;
+    const coords = STATION_COORDS[settings.station];
+    if (coords) leafletMap.current.setView(coords, 7);
+  }, [settings.station]);
 
-    if (dist > radius) return;
+  // Add/remove radar WMS layers
+  useEffect(() => {
+    if (!leafletMap.current) return;
 
-    const rangeVal = (dist / radius) * settings.range;
-    let bearingRad = Math.atan2(dy, dx) + Math.PI / 2;
-    if (bearingRad < 0) bearingRad += 2 * Math.PI;
-    const bearingDeg = (bearingRad * 180) / Math.PI;
+    // Remove existing radar layers
+    if (radarLayerRef.current) { leafletMap.current.removeLayer(radarLayerRef.current); radarLayerRef.current = null; }
+    if (velLayerRef.current)   { leafletMap.current.removeLayer(velLayerRef.current);   velLayerRef.current = null; }
+    if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
 
-    // Check if clicking near a target
-    for (const target of targets) {
-      const tBearingRad = (target.bearing - 90) * (Math.PI / 180);
-      const tR = (target.range / settings.range) * radius;
-      const tx = cx + tR * Math.cos(tBearingRad);
-      const ty = cy + tR * Math.sin(tBearingRad);
-      if (Math.sqrt((x - tx) ** 2 + (y - ty) ** 2) < 14) {
-        onTargetClick(target);
-        return;
+    if (!showNexrad) return;
+
+    // NOAA nowCOAST reflectivity mosaic WMS
+    radarLayerRef.current = L.tileLayer.wms(
+      "https://nowcoast.noaa.gov/geoserver/observations/weather_radar/wms",
+      {
+        layers: "conus_base_reflectivity_mosaic",
+        format: "image/png",
+        transparent: true,
+        opacity: 0.75,
+        version: "1.3.0",
+        attribution: "NOAA/NWS",
       }
+    ).addTo(leafletMap.current);
+
+    // Velocity layer
+    if (settings.showVelocity) {
+      velLayerRef.current = L.tileLayer.wms(
+        "https://nowcoast.noaa.gov/geoserver/observations/weather_radar/wms",
+        {
+          layers: "conus_radial_velocity_mosaic",
+          format: "image/png",
+          transparent: true,
+          opacity: 0.65,
+          version: "1.3.0",
+        }
+      ).addTo(leafletMap.current);
     }
 
-    onRadarClick({
-      bearing: Math.round(bearingDeg) % 360,
-      range: Math.round(rangeVal * 10) / 10,
-    });
-  }, [targets, settings.range, onRadarClick, onTargetClick]);
+    // Auto-refresh every 5 minutes
+    refreshTimerRef.current = setInterval(() => {
+      if (radarLayerRef.current) radarLayerRef.current.redraw();
+      if (velLayerRef.current)   velLayerRef.current.redraw();
+    }, 5 * 60 * 1000);
 
-  const scaleFactor = NEXRAD_COVERAGE_NM / settings.range;
-  const canvasSize = canvasRef.current?.width || 500;
+    return () => clearInterval(refreshTimerRef.current);
+  }, [showNexrad, settings.showVelocity]);
 
   return (
-    <div className="relative flex items-center justify-center w-full h-full" style={{ minHeight: 320 }}>
-      {/* Canvas renders first (z-index 0) */}
-      <canvas
-        ref={canvasRef}
-        onClick={handleClick}
-        className="cursor-crosshair rounded-full"
-        style={{ maxWidth: "100%", maxHeight: "100%" }}
-      />
-      {/* NEXRAD overlay sits on top via z-index, pointer-events none so clicks pass through */}
-      {(reflImageUrl || velImageUrl) && (
-        <div style={{
-          position: "absolute",
-          top: "50%", left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: canvasSize,
-          height: canvasSize,
-          borderRadius: "50%",
-          overflow: "hidden",
-          pointerEvents: "none",
-          zIndex: 2,
-        }}>
-          {reflImageUrl && (
-            <img
-              src={reflImageUrl}
-              alt="NEXRAD Reflectivity"
-              style={{
-                position: "absolute",
-                top: "50%", left: "50%",
-                transform: `translate(-50%, -50%) scale(${scaleFactor})`,
-                width: "100%", height: "100%",
-                opacity: 0.7,
-                mixBlendMode: "screen",
-              }}
-            />
-          )}
-          {velImageUrl && (
-            <img
-              src={velImageUrl}
-              alt="NEXRAD Velocity"
-              style={{
-                position: "absolute",
-                top: "50%", left: "50%",
-                transform: `translate(-50%, -50%) scale(${scaleFactor})`,
-                width: "100%", height: "100%",
-                opacity: 0.65,
-                mixBlendMode: "screen",
-              }}
-            />
-          )}
+    <div className="relative w-full h-full" style={{ minHeight: 400 }}>
+      {/* Tornado warning banner */}
+      {isTornadoWarning && (
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-[1000] bg-yellow-400 text-black text-xs font-mono font-bold px-4 py-1 rounded shadow-lg animate-pulse">
+          ⚠ TORNADO WARNING ACTIVE
         </div>
       )}
+      <div ref={mapRef} className="w-full h-full" style={{ minHeight: 400 }} />
     </div>
   );
 }
