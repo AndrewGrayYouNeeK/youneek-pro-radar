@@ -21,11 +21,8 @@ export const STATIONS = [
   { id: "KPBZ", label: "KPBZ – Pittsburgh",         lat: 40.532, lon: -80.218 },
   { id: "KCCX", label: "KCCX – State College",      lat: 40.923, lon: -78.004 },
   { id: "KDIX", label: "KDIX – Philadelphia",       lat: 39.947, lon: -74.411 },
-  { id: "KBGM", label: "KBGM – Binghamton",         lat: 42.200, lon: -75.985 },
   { id: "KCBW", label: "KCBW – Caribou ME",         lat: 46.039, lon: -67.806 },
   { id: "KGYX", label: "KGYX – Portland ME",        lat: 43.891, lon: -70.257 },
-  { id: "KBGM", label: "KBGM – Binghamton NY",      lat: 42.200, lon: -75.985 },
-  { id: "KALY", label: "KALY – Albany NY",           lat: 42.586, lon: -74.064 },
   // Mid-Atlantic
   { id: "KDOX", label: "KDOX – Dover DE",           lat: 38.826, lon: -75.440 },
   { id: "KAKQ", label: "KAKQ – Norfolk/Richmond",   lat: 36.984, lon: -77.007 },
