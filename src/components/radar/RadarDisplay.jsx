@@ -321,6 +321,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     };
   }, [
     showNexrad,
+    settings.showVelocity,
     showVelocityLocal,
     settings.station,
     showTornado,
