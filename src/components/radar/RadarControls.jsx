@@ -63,7 +63,6 @@ export const STATIONS = [
   { id: "KMKX", label: "KMKX – Milwaukee",          lat: 42.968, lon: -88.551 },
   { id: "KDTX", label: "KDTX – Detroit",            lat: 42.700, lon: -83.472 },
   { id: "KCLE", label: "KCLE – Cleveland",          lat: 41.413, lon: -81.860 },
-  { id: "KPBZ", label: "KPBZ – Pittsburgh",         lat: 40.532, lon: -80.218 },
   // Midwest
   { id: "KDVN", label: "KDVN – Quad Cities",        lat: 41.612, lon: -90.581 },
   { id: "KILX", label: "KILX – Lincoln IL",         lat: 40.151, lon: -89.337 },
