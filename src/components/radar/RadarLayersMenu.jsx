@@ -73,6 +73,24 @@ export default function RadarLayersMenu({
               onCheckedChange={(value) => onAlertToggleChange("winter", value)}
             />
             <ToggleRow label="📻 Radio" checked={showRadio} onCheckedChange={onShowRadioChange} />
+            {showRadio && (
+              <div className="space-y-2 rounded-xl border border-white/10 bg-white/5 p-3">
+                <label className="block text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">
+                  Radio Station
+                </label>
+                <select
+                  value={selectedStation}
+                  onChange={(e) => onStationChange(e.target.value)}
+                  className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white outline-none"
+                >
+                  {RADIO_STATIONS.map((station) => (
+                    <option key={station.value} value={station.value}>
+                      {station.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
         </div>
       )}
