@@ -118,6 +118,15 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
 
     return () => {
       if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
+      if (loopTimerRef.current) clearTimeout(loopTimerRef.current);
+      if (prevLoopLayerRef.current && leafletMap.current) {
+        leafletMap.current.removeLayer(prevLoopLayerRef.current);
+        prevLoopLayerRef.current = null;
+      }
+      if (loopLayerRef.current && leafletMap.current) {
+        leafletMap.current.removeLayer(loopLayerRef.current);
+        loopLayerRef.current = null;
+      }
       if (leafletMap.current) {
         leafletMap.current.remove();
         leafletMap.current = null;
@@ -299,7 +308,17 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       refreshAlertLayers();
     }, 5 * 60 * 1000);
 
-    return () => clearInterval(refreshTimerRef.current);
+    return () => {
+      clearInterval(refreshTimerRef.current);
+      if (prevLoopLayerRef.current && leafletMap.current) {
+        leafletMap.current.removeLayer(prevLoopLayerRef.current);
+        prevLoopLayerRef.current = null;
+      }
+      if (loopLayerRef.current && leafletMap.current) {
+        leafletMap.current.removeLayer(loopLayerRef.current);
+        loopLayerRef.current = null;
+      }
+    };
   }, [
     showNexrad,
     showVelocityLocal,
@@ -381,7 +400,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
 
     if (!loopFrames.length) {
       if (radarLayerRef.current?.setOpacity) {
-        radarLayerRef.current.setOpacity(0);
+        radarLayerRef.current.setOpacity(0.7);
       }
       return;
     }
