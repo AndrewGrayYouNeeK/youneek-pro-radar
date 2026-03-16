@@ -58,11 +58,16 @@ export default function RadarDisplay({ targets, settings, onRadarClick, onTarget
 
     // Delta time
     if (!lastTimeRef.current) lastTimeRef.current = timestamp;
-    const dt = (timestamp - lastTimeRef.current) / 1000;
+    const dt = Math.min((timestamp - lastTimeRef.current) / 1000, 0.1); // cap dt to avoid jumps
     lastTimeRef.current = timestamp;
 
+    const s = settingsRef.current;
+    const c = colorsRef.current || THEME_COLORS.green;
+    const tgts = targetsRef.current;
+    const tPulse = tornadoPulseRef.current;
+
     // Advance sweep
-    const rpm = 1 / settings.sweepSpeed;
+    const rpm = 1 / s.sweepSpeed;
     sweepAngleRef.current = (sweepAngleRef.current + dt * rpm * 2 * Math.PI) % (2 * Math.PI);
 
     // Update trails
@@ -72,7 +77,7 @@ export default function RadarDisplay({ targets, settings, onRadarClick, onTarget
       .filter((t) => t.opacity > 0);
 
     // --- Background ---
-    ctx.fillStyle = colors.bg;
+    ctx.fillStyle = c.bg;
     ctx.beginPath();
     ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
     ctx.fill();
