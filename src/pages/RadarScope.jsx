@@ -119,7 +119,7 @@ export default function RadarScope() {
           onRadarClick={handleRadarClick}
           onTargetClick={handleTargetClick}
           reflImageUrl={settings.showNexrad ? reflImageUrl : null}
-          velImageUrl={settings.showNexrad ? velImageUrl : null}
+          velImageUrl={settings.showNexrad && settings.showVelocity ? velImageUrl : null}
           isTornadoWarning={isTornadoWarning}
         />
       </div>
