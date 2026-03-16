@@ -105,7 +105,7 @@ export default function RadarDisplay({ targets, settings, onRadarClick, onTarget
       ctx.moveTo(cx, cy);
       ctx.arc(cx, cy, radius, startA, endA);
       ctx.closePath();
-      ctx.fillStyle = `${colors.sweep}${Math.floor(fraction * 40).toString(16).padStart(2, "0")}`;
+      ctx.fillStyle = `${c.sweep}${Math.floor(fraction * 40).toString(16).padStart(2, "0")}`;
       ctx.fill();
     }
 
@@ -115,9 +115,9 @@ export default function RadarDisplay({ targets, settings, onRadarClick, onTarget
     ctx.beginPath();
     ctx.moveTo(cx, cy);
     ctx.lineTo(sweepX, sweepY);
-    ctx.strokeStyle = colors.sweep;
+    ctx.strokeStyle = c.sweep;
     ctx.lineWidth = 1.5;
-    ctx.shadowColor = colors.sweep;
+    ctx.shadowColor = c.sweep;
     ctx.shadowBlur = 8;
     ctx.stroke();
     ctx.shadowBlur = 0;
@@ -128,13 +128,13 @@ export default function RadarDisplay({ targets, settings, onRadarClick, onTarget
       const r = (radius / numRings) * i;
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, 2 * Math.PI);
-      ctx.strokeStyle = colors.ring;
+      ctx.strokeStyle = c.ring;
       ctx.lineWidth = 1;
       ctx.stroke();
 
       // Range label
-      const rangeVal = Math.round((settings.range / numRings) * i);
-      ctx.fillStyle = colors.text;
+      const rangeVal = Math.round((s.range / numRings) * i);
+      ctx.fillStyle = c.text;
       ctx.font = "10px monospace";
       ctx.fillText(`${rangeVal}nm`, cx + 4, cy - r + 12);
     }
@@ -145,13 +145,13 @@ export default function RadarDisplay({ targets, settings, onRadarClick, onTarget
       ctx.beginPath();
       ctx.moveTo(cx, cy);
       ctx.lineTo(cx + radius * Math.cos(rad), cy + radius * Math.sin(rad));
-      ctx.strokeStyle = colors.ring;
+      ctx.strokeStyle = c.ring;
       ctx.lineWidth = 0.5;
       ctx.stroke();
 
       // Bearing labels at outer edge
       const labelR = radius - 14;
-      ctx.fillStyle = colors.text;
+      ctx.fillStyle = c.text;
       ctx.font = "10px monospace";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
@@ -160,17 +160,17 @@ export default function RadarDisplay({ targets, settings, onRadarClick, onTarget
     ctx.textAlign = "left";
     ctx.textBaseline = "alphabetic";
 
-    // --- Center dot (pulses yellow during tornado warning) ---
+    // --- Center dot ---
     ctx.beginPath();
     ctx.arc(cx, cy, 3, 0, 2 * Math.PI);
-    ctx.fillStyle = colors.sweep;
+    ctx.fillStyle = c.sweep;
     ctx.fill();
 
     // --- Tornado warning pulse ring ---
-    if (isTornadoWarning && tornadoPulse > 0) {
+    if (isTornadoWarning && tPulse > 0) {
       ctx.beginPath();
-      ctx.arc(cx, cy, 18 + tornadoPulse * 10, 0, 2 * Math.PI);
-      ctx.strokeStyle = `rgba(255, 220, 0, ${tornadoPulse * 0.9})`;
+      ctx.arc(cx, cy, 18 + tPulse * 10, 0, 2 * Math.PI);
+      ctx.strokeStyle = `rgba(255, 220, 0, ${tPulse * 0.9})`;
       ctx.lineWidth = 2.5;
       ctx.shadowColor = "rgba(255, 200, 0, 0.8)";
       ctx.shadowBlur = 12;
@@ -179,9 +179,9 @@ export default function RadarDisplay({ targets, settings, onRadarClick, onTarget
     }
 
     // --- Targets ---
-    targets.forEach((target) => {
+    tgts.forEach((target) => {
       const bearingRad = (target.bearing - 90) * (Math.PI / 180);
-      const r = (target.range / settings.range) * radius;
+      const r = (target.range / s.range) * radius;
       const tx = cx + r * Math.cos(bearingRad);
       const ty = cy + r * Math.sin(bearingRad);
 
