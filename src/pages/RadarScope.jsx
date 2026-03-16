@@ -32,22 +32,20 @@ export default function RadarScope() {
   const [nexradStatus, setNexradStatus] = useState("offline");
   const refreshTimerRef = useRef(null);
 
-  const fetchNexradData = useCallback(async (station, rangeNm) => {
+  const fetchNexradData = useCallback(async (station) => {
     setNexradStatus("loading");
+    // Images load directly from NOAA — no backend needed, no credits used
+    const ts = Date.now(); // cache-bust
+    setReflImageUrl(`https://radar.weather.gov/ridge/standard/${station}_0.gif?_=${ts}`);
+    setVelImageUrl(`https://radar.weather.gov/ridge/standard/base_velocity/${station}_0.gif?_=${ts}`);
+    setNexradStatus("ok");
+
+    // Backend only for tornado alert check (tiny, no image data)
     try {
-      const res = await base44.functions.invoke("fetchNexrad", { station, rangeNm });
-      if (res.data) {
-        const d = res.data;
-        setReflImageUrl(d.reflBase64 ? `data:image/gif;base64,${d.reflBase64}` : d.reflUrl);
-        setVelImageUrl(d.velBase64 ? `data:image/gif;base64,${d.velBase64}` : d.velUrl);
-        setIsTornadoWarning(!!d.isTornadoWarning);
-        setNexradStatus("ok");
-      } else {
-        setNexradStatus("error");
-      }
+      const res = await base44.functions.invoke("fetchNexrad", { station });
+      if (res.data) setIsTornadoWarning(!!res.data.isTornadoWarning);
     } catch (e) {
-      console.error("NEXRAD fetch failed:", e);
-      setNexradStatus("error");
+      console.error("Tornado alert check failed:", e);
     }
   }, []);
 
