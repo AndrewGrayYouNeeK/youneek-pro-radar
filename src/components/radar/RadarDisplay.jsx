@@ -106,13 +106,14 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
     if (!showNexrad) return;
 
     // Reflectivity overlay
-    radarLayerRef.current = L.imageOverlay(
-      "https://radar.weather.gov/ridge/standard/KLVX_loop.gif",
-      [[36.8, -86.5], [38.5, -84.5]],
+    radarLayerRef.current = L.tileLayer.wms(
+      "https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0q.cgi?",
       {
-        opacity: 0.65,
-        attribution: "NWS Louisville",
-        interactive: false,
+        layers: "nexrad-n0q",
+        format: "image/png",
+        transparent: true,
+        opacity: 0.7,
+        attribution: "Iowa Mesonet",
       }
     ).addTo(leafletMap.current);
 
