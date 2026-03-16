@@ -106,16 +106,11 @@ export default function RadarDisplay({ settings, showNexrad }) {
     if (!showNexrad) return;
 
     // Reflectivity overlay
-    radarLayerRef.current = L.tileLayer.wms(
-      "https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0q.cgi?",
-      {
-        layers: "nexrad-n0q",
-        format: "image/png",
-        transparent: true,
-        opacity: 0.7,
-        attribution: "Iowa Environmental Mesonet",
-      }
-    ).addTo(leafletMap.current);
+    radarLayerRef.current = L.tileLayer("https://radar.weather.gov/ridge/standard/{z}/{x}/{y}.png", {
+      attribution: "NOAA RIDGE",
+      opacity: 0.7,
+      maxZoom: 12,
+    }).addTo(leafletMap.current);
 
     // Velocity overlay
     if (settings.showVelocity) {
