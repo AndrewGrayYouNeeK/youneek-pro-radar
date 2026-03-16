@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import { LocateFixed } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
+import RadarLayersMenu from "./RadarLayersMenu";
 import "leaflet/dist/leaflet.css";
 
 // Fix Leaflet default icon paths
@@ -63,7 +63,7 @@ const invalidateMapSize = (map) => {
   setTimeout(() => map.invalidateSize(), 150);
 };
 
-export default function RadarDisplay({ settings, showNexrad }) {
+export default function RadarDisplay({ settings, showNexrad, onSettingsChange, showRadio, onToggleRadio }) {
   const mapRef = useRef(null);
   const leafletMap = useRef(null);
   const radarLayerRef = useRef(null);
@@ -313,6 +313,22 @@ export default function RadarDisplay({ settings, showNexrad }) {
     leafletMap.current.setView([39.5, -98.35], 5);
   };
 
+  const handleShowNexradChange = (value) => {
+    onSettingsChange({ ...settings, showNexrad: value });
+  };
+
+  const handleShowVelocityChange = (value) => {
+    setShowVelocityLocal(value);
+    onSettingsChange({ ...settings, showVelocity: value });
+  };
+
+  const handleAlertToggleChange = (key, value) => {
+    if (key === "tornado") setShowTornado(value);
+    if (key === "severe") setShowThunderstorm(value);
+    if (key === "flood") setShowFlood(value);
+    if (key === "winter") setShowWinter(value);
+  };
+
   const handleLocateMe = () => {
     if (!navigator.geolocation) {
       alert("Browser won't let me find you—turn on location.");
@@ -353,45 +369,17 @@ export default function RadarDisplay({ settings, showNexrad }) {
           🗺️ CONUS
         </button>
       </div>
-      <div className="absolute right-3 top-3 z-[1000]">
-        <button
-          onClick={() => setMenuOpen((open) => !open)}
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-900/80 text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90"
-          aria-label="Open layers menu"
-        >
-          <span className="text-xl">🗂️</span>
-        </button>
-
-        {menuOpen && (
-          <div className="mt-2 w-72 rounded-2xl border border-white/10 bg-slate-950/85 p-4 shadow-2xl backdrop-blur-md">
-            <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">
-              Layers
-            </div>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-sm text-white">📡 Velocity</span>
-                <Switch checked={showVelocityLocal} onCheckedChange={setShowVelocityLocal} />
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-sm text-white">🌪️ Tornado Warnings</span>
-                <Switch checked={showTornado} onCheckedChange={setShowTornado} />
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-sm text-white">⛈️ Severe Thunderstorm</span>
-                <Switch checked={showThunderstorm} onCheckedChange={setShowThunderstorm} />
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-sm text-white">🌊 Flood Warnings</span>
-                <Switch checked={showFlood} onCheckedChange={setShowFlood} />
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-sm text-white">❄️ Winter Advisories</span>
-                <Switch checked={showWinter} onCheckedChange={setShowWinter} />
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      <RadarLayersMenu
+        showNexrad={showNexrad}
+        showVelocity={showVelocityLocal}
+        showRadio={showRadio}
+        nexradStation={settings.station}
+        alertToggles={alertToggles}
+        onShowNexradChange={handleShowNexradChange}
+        onShowVelocityChange={handleShowVelocityChange}
+        onShowRadioChange={onToggleRadio}
+        onAlertToggleChange={handleAlertToggleChange}
+      />
       <button
         onClick={handleLocateMe}
         className="absolute bottom-24 right-5 z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700"
