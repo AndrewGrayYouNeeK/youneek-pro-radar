@@ -70,12 +70,7 @@ export default function RadarDisplay({ targets, settings, onRadarClick, onTarget
     ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
     ctx.clip();
 
-    // --- NEXRAD live radar overlay ---
-    if (nexradImgRef.current && nexradLoadedRef.current) {
-      ctx.globalAlpha = 0.75;
-      ctx.drawImage(nexradImgRef.current, cx - radius, cy - radius, radius * 2, radius * 2);
-      ctx.globalAlpha = 1;
-    }
+    // NEXRAD overlay is rendered as an <img> tag in JSX below — no canvas drawing needed here.
 
     // --- Sweep trail (gradient arc) ---
     const trailLength = Math.PI / 2;
@@ -147,11 +142,23 @@ export default function RadarDisplay({ targets, settings, onRadarClick, onTarget
     ctx.textAlign = "left";
     ctx.textBaseline = "alphabetic";
 
-    // --- Center dot ---
+    // --- Center dot (pulses yellow during tornado warning) ---
     ctx.beginPath();
     ctx.arc(cx, cy, 3, 0, 2 * Math.PI);
     ctx.fillStyle = colors.sweep;
     ctx.fill();
+
+    // --- Tornado warning pulse ring ---
+    if (isTornadoWarning && tornadoPulse > 0) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, 18 + tornadoPulse * 10, 0, 2 * Math.PI);
+      ctx.strokeStyle = `rgba(255, 220, 0, ${tornadoPulse * 0.9})`;
+      ctx.lineWidth = 2.5;
+      ctx.shadowColor = "rgba(255, 200, 0, 0.8)";
+      ctx.shadowBlur = 12;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
 
     // --- Targets ---
     targets.forEach((target) => {
