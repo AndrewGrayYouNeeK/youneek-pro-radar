@@ -51,6 +51,15 @@ const STATION_COORDS = {
 
 const getCacheBust = () => Math.floor(Date.now() / 120000);
 const getIowaReflectivityUrl = () => `https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::USCOMP-N0Q-0/{z}/{x}/{y}.png?_cb=${getCacheBust()}`;
+const getRainViewerTileUrl = (path) => {
+  if (!path) return null;
+  const normalizedPath = path.startsWith("/v2/radar/") ? path : `/v2/radar/${path}`;
+  return `https://tilecache.rainviewer.com${normalizedPath}/256/{z}/{x}/{y}/2/1_1.png`;
+};
+const invalidateMapSize = (map) => {
+  requestAnimationFrame(() => map.invalidateSize());
+  setTimeout(() => map.invalidateSize(), 150);
+};
 
 export default function RadarDisplay({ settings, showNexrad }) {
   const mapRef = useRef(null);
@@ -62,7 +71,7 @@ export default function RadarDisplay({ settings, showNexrad }) {
   const radarLoadStatsRef = useRef({ errors: 0, loaded: 0, usingFallback: false });
 
   useEffect(() => {
-    if (leafletMap.current) return;
+    if (leafletMap.current || !mapRef.current) return;
 
     const coords = STATION_COORDS[settings.station] || [37.8, -85.5];
 
@@ -75,9 +84,10 @@ export default function RadarDisplay({ settings, showNexrad }) {
       attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
       subdomains: "abcd",
       maxZoom: 20,
+      crossOrigin: "anonymous",
     }).addTo(leafletMap.current);
 
-    leafletMap.current.invalidateSize();
+    invalidateMapSize(leafletMap.current);
 
     return () => {
       if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
@@ -86,7 +96,7 @@ export default function RadarDisplay({ settings, showNexrad }) {
         leafletMap.current = null;
       }
     };
-  }, []);
+  }, [settings.station]);
 
   useEffect(() => {
     if (!leafletMap.current) return;
@@ -123,18 +133,16 @@ export default function RadarDisplay({ settings, showNexrad }) {
       fetch("https://api.rainviewer.com/public/weather-maps.json")
         .then((response) => response.json())
         .then((data) => {
-          const latest = data?.radar?.past?.[data.radar.past.length - 1];
-          if (!latest?.path || !leafletMap.current) return;
+          const latestPath = data?.radar?.past?.[data.radar.past.length - 1]?.path;
+          const fallbackUrl = getRainViewerTileUrl(latestPath);
+          if (!fallbackUrl || !leafletMap.current) return;
 
-          radarLayerRef.current = L.tileLayer(
-            `https://tilecache.rainviewer.com/v2/radar/${latest.path}/256/{z}/{x}/{y}/2/1_1.png`,
-            {
-              attribution: "RainViewer",
-              opacity: 0.7,
-              maxZoom: 12,
-              crossOrigin: true,
-            }
-          ).addTo(leafletMap.current);
+          radarLayerRef.current = L.tileLayer(fallbackUrl, {
+            attribution: "RainViewer",
+            opacity: 0.7,
+            maxZoom: 12,
+            crossOrigin: "anonymous",
+          }).addTo(leafletMap.current);
         });
     };
 
@@ -142,7 +150,7 @@ export default function RadarDisplay({ settings, showNexrad }) {
       attribution: "Iowa Mesonet",
       opacity: 0.7,
       maxZoom: 12,
-      crossOrigin: true,
+      crossOrigin: "anonymous",
     });
 
     iowaLayer.on("tileload", () => {
@@ -209,7 +217,7 @@ export default function RadarDisplay({ settings, showNexrad }) {
   };
 
   return (
-    <div className="relative h-full w-full" style={{ minHeight: 400 }}>
+    <div className="relative h-full min-h-[400px] w-full">
       <button
         onClick={handleLocateMe}
         className="absolute bottom-24 right-5 z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700"
@@ -217,7 +225,7 @@ export default function RadarDisplay({ settings, showNexrad }) {
       >
         <LocateFixed size={24} />
       </button>
-      <div ref={mapRef} className="h-full w-full" style={{ minHeight: 400 }} />
+      <div ref={mapRef} className="absolute inset-0 h-full min-h-[400px] w-full" />
     </div>
   );
 }
