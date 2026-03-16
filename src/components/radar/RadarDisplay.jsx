@@ -49,6 +49,26 @@ const STATION_COORDS = {
   KMSX: [47.041, -113.986], KTFX: [47.460, -111.385], KCBX: [43.491, -116.236],
 };
 
+const RADIO_FEEDS = {
+  KJKL: "27561", KLVX: "27562", KPAH: "27563", KHPX: "27564",
+  KOHX: "24801", KNQA: "24802", KHTX: "24803",
+  KILN: "22301", KIND: "22302", KCLE: "22303", KPBZ: "22304",
+  KFFC: "21001", KAMX: "21002", KTBW: "21003", KJAX: "21004", KRAX: "21005", KGSP: "21006",
+  KDIX: "20001", KOKX: "20002", KLWX: "20003", KBOX: "19001",
+  KLSX: "18001", KLOT: "18002", KMPX: "18003", KDMX: "18004", KMKX: "18005",
+  KTLX: "17001", KFWS: "17002", KHGX: "17003", KLIX: "17004", KEWX: "17005",
+  KFTG: "16001", KICT: "16002", KEAX: "16003",
+  KIWA: "15001", KEMX: "15002",
+  KATX: "14001", KRTX: "14002",
+  KVTX: "13001", KMUX: "13002",
+  DEFAULT: "27561",
+};
+
+function getRadioUrl(station) {
+  const feedId = RADIO_FEEDS[station] || RADIO_FEEDS.DEFAULT;
+  return feedId ? `https://www.broadcastify.com/webPlayer/${feedId}?autoplay=true` : null;
+}
+
 export default function RadarDisplay({ settings, showNexrad, isTornadoWarning }) {
   const mapRef = useRef(null);
   const leafletMap = useRef(null);
@@ -56,6 +76,8 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
   const velLayerRef = useRef(null);
   const refreshTimerRef = useRef(null);
   const [contacts, setContacts] = useState([]);
+  const [radioPlaying, setRadioPlaying] = useState(false);
+  const radioUrl = getRadioUrl(settings.station);
 
   // Load contacts from localStorage on mount
   useEffect(() => {
@@ -119,15 +141,11 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
 
     // Add reflectivity layer if showNexrad is on
     if (showNexrad && !radarLayerRef.current) {
-      radarLayerRef.current = L.tileLayer.wms(
-        "https://opengeo.ncep.noaa.gov/geoserver/nowcoast/radar_base_reflectivity_time/wms?",
+      radarLayerRef.current = L.tileLayer(
+        "https://radar.weather.gov/arcgis/rest/services/radar/radar_base_reflectivity/MapServer/tile/{z}/{y}/{x}",
         {
-          layers: "conus_base_reflectivity_mosaic",
-          format: "image/png",
-          transparent: true,
-          opacity: 0.75,
-          version: "1.3.0",
-          attribution: "NOAA/NWS",
+          opacity: 0.7,
+          attribution: "NOAA",
         }
       ).addTo(leafletMap.current);
     }
@@ -186,30 +204,75 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
         </div>
       )}
 
-      {/* I'm Safe Button */}
-      {isTornadoWarning && (
-        <button
-          onClick={handleSafePing}
+      {/* Radio Button */}
+      <button
+        onClick={() => {
+          if (!radioUrl) return alert("No stream for this station");
+          setRadioPlaying((playing) => !playing);
+        }}
+        style={{
+          position: "fixed",
+          bottom: "20px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          background: radioPlaying ? "#ff3333" : "#00ff00",
+          color: "white",
+          border: "none",
+          borderRadius: "50%",
+          width: "60px",
+          height: "60px",
+          fontSize: "24px",
+          zIndex: 1000,
+          cursor: "pointer",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.35)",
+        }}
+      >
+        {radioPlaying ? "■" : "▶"}
+      </button>
+
+      {radioPlaying && radioUrl && (
+        <div
           style={{
             position: "fixed",
-            bottom: "100px",
-            right: "20px",
-            background: "#00cc00",
-            color: "white",
-            padding: "15px 25px",
+            left: "50%",
+            bottom: "96px",
+            transform: "translateX(-50%)",
+            width: "min(92vw, 420px)",
+            height: "110px",
+            zIndex: 1000,
             borderRadius: "12px",
-            fontSize: "18px",
-            fontWeight: "bold",
-            boxShadow: "0 4px 10px rgba(0,0,0,0.4)",
-            border: "none",
-            zIndex: 999,
-            cursor: "pointer",
-            fontFamily: "monospace",
+            overflow: "hidden",
+            boxShadow: "0 12px 28px rgba(0,0,0,0.45)",
           }}
         >
-          I'M SAFE
-        </button>
+          <iframe
+            title="Weather Radio"
+            src={radioUrl}
+            className="w-full h-full bg-black"
+            allow="autoplay"
+          />
+        </div>
       )}
+
+      {/* Safe Button */}
+      <button
+        onClick={handleSafePing}
+        style={{
+          position: "fixed",
+          bottom: "100px",
+          right: "20px",
+          background: "#00aa00",
+          color: "white",
+          padding: "12px 20px",
+          borderRadius: "8px",
+          border: "none",
+          zIndex: 1000,
+          cursor: "pointer",
+          boxShadow: "0 4px 10px rgba(0,0,0,0.4)",
+        }}
+      >
+        I'm Safe
+      </button>
 
       <div ref={mapRef} className="w-full h-full" style={{ minHeight: 400 }} />
     </div>

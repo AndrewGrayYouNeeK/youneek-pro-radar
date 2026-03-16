@@ -4,9 +4,6 @@ import RadarDisplay from "../components/radar/RadarDisplay";
 import TargetDialog from "../components/radar/TargetDialog";
 import TargetList from "../components/radar/TargetList";
 import RadarControls from "../components/radar/RadarControls";
-import RadioPlayer from "../components/radar/RadioPlayer";
-import BottomNav from "../components/radar/BottomNav";
-import SafeButton from "../components/radar/SafeButton";
 import ContactsDialog from "../components/radar/ContactsDialog";
 
 const DEFAULT_SETTINGS = {
@@ -111,7 +108,7 @@ export default function RadarScope() {
   }, []);
 
   return (
-    <div className="h-screen bg-gray-950 flex flex-col md:flex-row overflow-hidden pb-16">
+    <div className="h-screen bg-gray-950 flex flex-col md:flex-row overflow-hidden">
       {/* Radar Display Area */}
       <div className="flex-1 relative overflow-hidden" ref={radarDisplayRef}>
         <RadarDisplay
@@ -136,14 +133,7 @@ export default function RadarScope() {
           onTargetClick={handleTargetClick}
           onDeleteTarget={handleDeleteTarget}
         />
-        <RadioPlayer nexradStation={settings.station} />
       </div>
-
-      {/* Bottom Navigation */}
-      <BottomNav station={settings.station} isTornadoWarning={isTornadoWarning} />
-
-      {/* Safe Button */}
-      <SafeButton isTornadoWarning={isTornadoWarning} mapRef={radarDisplayRef} />
 
       {/* Contacts Dialog */}
       <ContactsDialog isOpen={showContactsDialog} onClose={() => setShowContactsDialog(false)} />
