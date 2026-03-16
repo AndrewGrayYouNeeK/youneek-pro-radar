@@ -128,6 +128,7 @@ export default function RadarScope() {
           onSettingsChange={setSettings}
           nexradStatus={nexradStatus}
           onRefreshNexrad={handleRefreshNexrad}
+          onOpenSettings={() => setShowContactsDialog(true)}
         />
         <TargetList
           targets={targets}
