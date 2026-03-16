@@ -25,17 +25,27 @@ export default function RadarScope() {
   const [dialogMode, setDialogMode] = useState(null); // 'create' | 'inspect'
 
   // NEXRAD state
-  const [nexradImageUrl, setNexradImageUrl] = useState(null);
-  const [nexradStatus, setNexradStatus] = useState("offline"); // offline | loading | ok | error
+  const [reflImageUrl, setReflImageUrl] = useState(null);
+  const [velImageUrl, setVelImageUrl] = useState(null);
+  const [isTornadoWarning, setIsTornadoWarning] = useState(false);
+  const [nexradStatus, setNexradStatus] = useState("offline");
   const refreshTimerRef = useRef(null);
 
-  const fetchNexrad = useCallback(async (station, rangeNm) => {
+  const fetchNexradData = useCallback(async (station, rangeNm) => {
     setNexradStatus("loading");
-    const res = await base44.functions.invoke("fetchNexrad", { station, rangeNm });
-    if (res.data?.imageUrl) {
-      setNexradImageUrl(res.data.imageUrl);
-      setNexradStatus("ok");
-    } else {
+    try {
+      const res = await base44.functions.invoke("fetchNexrad", { station, rangeNm });
+      if (res.data) {
+        const d = res.data;
+        setReflImageUrl(d.reflBase64 ? `data:image/gif;base64,${d.reflBase64}` : d.reflUrl);
+        setVelImageUrl(d.velBase64 ? `data:image/gif;base64,${d.velBase64}` : d.velUrl);
+        setIsTornadoWarning(!!d.isTornadoWarning);
+        setNexradStatus("ok");
+      } else {
+        setNexradStatus("error");
+      }
+    } catch (e) {
+      console.error("NEXRAD fetch failed:", e);
       setNexradStatus("error");
     }
   }, []);

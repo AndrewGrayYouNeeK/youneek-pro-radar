@@ -1,18 +1,35 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 
-// Station coordinates (lat, lon) for bounding box calculation
 const STATIONS = {
-  KLOT: { lat: 41.604, lon: -88.085 },
-  KORD: { lat: 41.979, lon: -87.908 },
-  KATL: { lat: 33.364, lon: -84.428 },
-  KDFW: { lat: 32.573, lon: -97.303 },
-  KNYC: { lat: 40.866, lon: -72.864 },
-  KMIA: { lat: 25.611, lon: -80.413 },
-  KDEN: { lat: 39.787, lon: -104.546 },
-  KSEA: { lat: 47.52,  lon: -122.494 },
-  KPHX: { lat: 33.422, lon: -112.186 },
-  KBOS: { lat: 41.956, lon: -71.137 },
+  KTLX: { lat: 35.333, lon: -97.278, nwsZoneId: "OKZ025" },
+  KLOT: { lat: 41.604, lon: -88.085, nwsZoneId: "ILZ003" },
+  KORD: { lat: 41.979, lon: -87.908, nwsZoneId: "ILZ003" },
+  KATL: { lat: 33.364, lon: -84.428, nwsZoneId: "GAZ030" },
+  KDFW: { lat: 32.573, lon: -97.303, nwsZoneId: "TXZ119" },
+  KNYC: { lat: 40.866, lon: -72.864, nwsZoneId: "NYZ071" },
+  KMIA: { lat: 25.611, lon: -80.413, nwsZoneId: "FLZ063" },
+  KDEN: { lat: 39.787, lon: -104.546, nwsZoneId: "COZ039" },
+  KSEA: { lat: 47.52,  lon: -122.494, nwsZoneId: "WAZ002" },
+  KPHX: { lat: 33.422, lon: -112.186, nwsZoneId: "AZZ503" },
+  KBOS: { lat: 41.956, lon: -71.137, nwsZoneId: "MAZ009" },
 };
+
+async function fetchGifAsBase64(url) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const buffer = await res.arrayBuffer();
+    const uint8Array = new Uint8Array(buffer);
+    let binaryString = '';
+    for (let i = 0; i < uint8Array.byteLength; i++) {
+      binaryString += String.fromCharCode(uint8Array[i]);
+    }
+    return btoa(binaryString);
+  } catch (e) {
+    console.error("Error fetching GIF:", e);
+    return null;
+  }
+}
 
 Deno.serve(async (req) => {
   try {
@@ -21,45 +38,46 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json().catch(() => ({}));
-    const station = (body.station || 'KLOT').toUpperCase();
-    const rangeNm = body.rangeNm || 100; // nautical miles radius to show
+    const station = (body.station || 'KTLX').toUpperCase();
+    const rangeNm = body.rangeNm || 100;
 
-    const stationInfo = STATIONS[station] || STATIONS.KLOT;
-    const { lat, lon } = stationInfo;
+    const stationInfo = STATIONS[station] || STATIONS.KTLX;
+    const { nwsZoneId } = stationInfo;
 
-    // Convert nautical miles to degrees (approx)
-    const nmToDeg = rangeNm / 60;
-    const bbox = {
-      xmin: lon - nmToDeg * 1.3,
-      ymin: lat - nmToDeg,
-      xmax: lon + nmToDeg * 1.3,
-      ymax: lat + nmToDeg,
-    };
+    // Fetch reflectivity and velocity GIFs from NOAA RIDGE2
+    const reflUrl = `https://radar.weather.gov/ridge/standard/${station}_0.gif`;
+    const velUrl  = `https://radar.weather.gov/ridge/standard/base_velocity/${station}_0.gif`;
 
-    // Fetch radar image from NOAA MRMS MapServer (live, updates every 5-10 min)
-    const exportUrl = new URL('https://mapservices.weather.noaa.gov/eventdriven/rest/services/radar/radar_base_reflectivity/MapServer/export');
-    exportUrl.searchParams.set('bbox', `${bbox.xmin},${bbox.ymin},${bbox.xmax},${bbox.ymax}`);
-    exportUrl.searchParams.set('bboxSR', '4326');
-    exportUrl.searchParams.set('size', '512,512');
-    exportUrl.searchParams.set('imageSR', '4326');
-    exportUrl.searchParams.set('format', 'png32');
-    exportUrl.searchParams.set('transparent', 'true');
-    exportUrl.searchParams.set('f', 'json');
+    const [reflBase64, velBase64] = await Promise.all([
+      fetchGifAsBase64(reflUrl),
+      fetchGifAsBase64(velUrl),
+    ]);
 
-    const metaRes = await fetch(exportUrl.toString());
-    const meta = await metaRes.json();
-
-    if (!meta.href) {
-      throw new Error('No image URL returned from NOAA MapServer');
+    // Check for active tornado warnings in the station's zone
+    let isTornadoWarning = false;
+    let nwsAlerts = [];
+    try {
+      const alertsRes = await fetch(`https://api.weather.gov/alerts/active?zone=${nwsZoneId}`);
+      if (alertsRes.ok) {
+        const json = await alertsRes.json();
+        nwsAlerts = (json.features || []).filter(a => a.properties.event === "Tornado Warning");
+        isTornadoWarning = nwsAlerts.length > 0;
+      }
+    } catch (e) {
+      console.error("Alerts fetch failed:", e);
     }
 
     return Response.json({
       station,
-      lat,
-      lon,
-      rangeNm,
-      bbox,
-      imageUrl: meta.href,
+      reflUrl,
+      reflBase64,
+      velUrl,
+      velBase64,
+      isTornadoWarning,
+      nwsAlerts: nwsAlerts.map(a => ({
+        headline: a.properties.headline,
+        expires: a.properties.expires,
+      })),
       timestamp: new Date().toISOString(),
     });
 
