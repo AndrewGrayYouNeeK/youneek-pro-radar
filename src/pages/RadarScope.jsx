@@ -137,6 +137,7 @@ export default function RadarScope() {
           onTargetClick={handleTargetClick}
           onDeleteTarget={handleDeleteTarget}
         />
+        <RadioPlayer />
       </div>
 
       {/* Dialogs */}
