@@ -198,6 +198,16 @@ export default function RadarDisplay({ settings, showNexrad }) {
     return () => clearInterval(refreshTimerRef.current);
   }, [showNexrad, settings.showVelocity]);
 
+  const handleHookZoneView = () => {
+    if (!leafletMap.current) return;
+    leafletMap.current.setView([36.8, -87.3], 9);
+  };
+
+  const handleConusView = () => {
+    if (!leafletMap.current) return;
+    leafletMap.current.setView([39.5, -98.35], 5);
+  };
+
   const handleLocateMe = () => {
     if (!navigator.geolocation) {
       alert("Browser won't let me find you—turn on location.");
@@ -224,6 +234,20 @@ export default function RadarDisplay({ settings, showNexrad }) {
 
   return (
     <div className="relative h-full min-h-[400px] w-full">
+      <div className="absolute left-3 top-20 z-[1000] flex flex-col gap-2">
+        <button
+          onClick={handleHookZoneView}
+          className="rounded-lg bg-slate-900/80 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90"
+        >
+          🌀 Hook Zone
+        </button>
+        <button
+          onClick={handleConusView}
+          className="rounded-lg bg-slate-900/80 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90"
+        >
+          🗺️ CONUS
+        </button>
+      </div>
       <button
         onClick={handleLocateMe}
         className="absolute bottom-24 right-5 z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700"
