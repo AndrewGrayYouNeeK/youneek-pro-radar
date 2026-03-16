@@ -314,40 +314,48 @@ export default function RadarDisplay({ targets, settings, onRadarClick, onTarget
         className="cursor-crosshair rounded-full"
         style={{ maxWidth: "100%", maxHeight: "100%" }}
       />
-      {reflImageUrl && (
-        <img
-          src={reflImageUrl}
-          alt="NEXRAD Reflectivity"
-          style={{
-            position: "absolute",
-            top: "50%", left: "50%",
-            transform: "translate(-50%, -50%)",
-            width: canvasRef.current?.width || "100%",
-            height: canvasRef.current?.height || "100%",
-            opacity: 0.7,
-            mixBlendMode: "screen",
-            borderRadius: "50%",
-            pointerEvents: "none",
-          }}
-        />
-      )}
-      {velImageUrl && (
-        <img
-          src={velImageUrl}
-          alt="NEXRAD Velocity"
-          style={{
-            position: "absolute",
-            top: "50%", left: "50%",
-            transform: "translate(-50%, -50%)",
-            width: canvasRef.current?.width || "100%",
-            height: canvasRef.current?.height || "100%",
-            opacity: 0.65,
-            mixBlendMode: "screen",
-            borderRadius: "50%",
-            pointerEvents: "none",
-          }}
-        />
-      )}
+      {reflImageUrl && (() => {
+        const scale = NEXRAD_COVERAGE_NM / settings.range;
+        const size = (canvasRef.current?.width || 500) * scale;
+        return (
+          <img
+            src={reflImageUrl}
+            alt="NEXRAD Reflectivity"
+            style={{
+              position: "absolute",
+              top: "50%", left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: size,
+              height: size,
+              opacity: 0.7,
+              mixBlendMode: "screen",
+              borderRadius: "50%",
+              pointerEvents: "none",
+            }}
+          />
+        );
+      })()}
+      {velImageUrl && (() => {
+        const scale = NEXRAD_COVERAGE_NM / settings.range;
+        const size = (canvasRef.current?.width || 500) * scale;
+        return (
+          <img
+            src={velImageUrl}
+            alt="NEXRAD Velocity"
+            style={{
+              position: "absolute",
+              top: "50%", left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: size,
+              height: size,
+              opacity: 0.65,
+              mixBlendMode: "screen",
+              borderRadius: "50%",
+              pointerEvents: "none",
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }
