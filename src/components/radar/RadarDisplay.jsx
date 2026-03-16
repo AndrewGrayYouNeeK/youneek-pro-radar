@@ -66,7 +66,7 @@ const RADIO_FEEDS = {
 
 function getRadioUrl(station) {
   const feedId = RADIO_FEEDS[station] || RADIO_FEEDS.DEFAULT;
-  return feedId ? `https://www.broadcastify.com/webPlayer/${feedId}?autoplay=true` : null;
+  return feedId ? `https://broadcastify.com/listen/feed/${feedId}` : null;
 }
 
 export default function RadarDisplay({ settings, showNexrad, isTornadoWarning }) {
@@ -77,6 +77,7 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
   const refreshTimerRef = useRef(null);
   const [contacts, setContacts] = useState([]);
   const [radioPlaying, setRadioPlaying] = useState(false);
+  const audioRef = useRef(null);
   const radioUrl = getRadioUrl(settings.station);
 
   // Load contacts from localStorage on mount
@@ -177,6 +178,23 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
     };
   }, [showNexrad, settings.showVelocity]);
 
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+
+    setRadioPlaying(false);
+
+    if (radioUrl) {
+      audioRef.current = new Audio(radioUrl);
+      audioRef.current.crossOrigin = "anonymous";
+      audioRef.current.preload = "metadata";
+    }
+
+    return () => audioRef.current?.pause();
+  }, [radioUrl]);
+
   const handleSafePing = () => {
     if (contacts.length === 0) {
       alert("Add contacts in Settings first!");
@@ -207,8 +225,13 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
       {/* Radio Button */}
       <button
         onClick={() => {
-          if (!radioUrl) return alert("No stream for this station");
-          setRadioPlaying((playing) => !playing);
+          if (!audioRef.current) return alert("No stream for this station");
+          if (radioPlaying) {
+            audioRef.current.pause();
+          } else {
+            audioRef.current.play().catch(() => alert("Tap twice—browser blocks autoplay"));
+          }
+          setRadioPlaying(!radioPlaying);
         }}
         style={{
           position: "fixed",
@@ -229,30 +252,6 @@ export default function RadarDisplay({ settings, showNexrad, isTornadoWarning })
       >
         {radioPlaying ? "■" : "▶"}
       </button>
-
-      {radioPlaying && radioUrl && (
-        <div
-          style={{
-            position: "fixed",
-            left: "50%",
-            bottom: "96px",
-            transform: "translateX(-50%)",
-            width: "min(92vw, 420px)",
-            height: "110px",
-            zIndex: 1000,
-            borderRadius: "12px",
-            overflow: "hidden",
-            boxShadow: "0 12px 28px rgba(0,0,0,0.45)",
-          }}
-        >
-          <iframe
-            title="Weather Radio"
-            src={radioUrl}
-            className="w-full h-full bg-black"
-            allow="autoplay"
-          />
-        </div>
-      )}
 
       {/* Safe Button */}
       <button
