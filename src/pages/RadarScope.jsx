@@ -1,8 +1,6 @@
 import { useState, useCallback } from "react";
 import RadarDisplay from "../components/radar/RadarDisplay";
 import TargetDialog from "../components/radar/TargetDialog";
-import TargetList from "../components/radar/TargetList";
-import RadarControls from "../components/radar/RadarControls";
 
 const DEFAULT_SETTINGS = {
   showLabels: true,
@@ -55,29 +53,14 @@ export default function RadarScope() {
   }, []);
 
   return (
-    <div className="h-screen bg-gray-950 flex flex-col md:flex-row overflow-hidden">
-      {/* Radar Display Area */}
-      <div className="flex-1 relative overflow-hidden">
+    <div className="h-screen bg-gray-950 overflow-hidden">
+      <div className="relative h-full w-full overflow-hidden">
         <RadarDisplay
           settings={settings}
           showNexrad={settings.showNexrad}
           onSettingsChange={setSettings}
           showRadio={showRadio}
           onToggleRadio={setShowRadio}
-        />
-      </div>
-
-      {/* Side Panel */}
-      <div className="w-full md:w-72 bg-gray-900 border-t md:border-t-0 md:border-l border-gray-700 flex flex-col">
-        <RadarControls
-          settings={settings}
-          onSettingsChange={setSettings}
-        />
-        <TargetList
-          targets={targets}
-          settings={settings}
-          onTargetClick={handleTargetClick}
-          onDeleteTarget={handleDeleteTarget}
         />
       </div>
 
