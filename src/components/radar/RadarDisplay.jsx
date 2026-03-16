@@ -21,9 +21,17 @@ export default function RadarDisplay({ targets, settings, onRadarClick, onTarget
     const ctx = canvas.getContext("2d");
     const W = canvas.width;
     const H = canvas.height;
+    if (W === 0 || H === 0) {
+      animRef.current = requestAnimationFrame(draw);
+      return;
+    }
     const cx = W / 2;
     const cy = H / 2;
     const radius = Math.min(W, H) / 2 - 4;
+    if (radius <= 0) {
+      animRef.current = requestAnimationFrame(draw);
+      return;
+    }
 
     // Delta time
     if (!lastTimeRef.current) lastTimeRef.current = timestamp;
