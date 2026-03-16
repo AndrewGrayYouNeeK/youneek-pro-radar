@@ -69,8 +69,6 @@ export default function RadarScope() {
         <RadarControls
           settings={settings}
           onSettingsChange={setSettings}
-          nexradStatus={nexradStatus}
-          onRefreshNexrad={handleRefreshNexrad}
         />
         <TargetList
           targets={targets}
