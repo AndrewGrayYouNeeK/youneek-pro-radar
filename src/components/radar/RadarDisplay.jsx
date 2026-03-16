@@ -152,15 +152,26 @@ export default function RadarDisplay({ settings, showNexrad }) {
         alertLayerRef.current = null;
       }
 
-      alertLayerRef.current = L.tileLayer.wms(
-        "https://mapservices.weather.noaa.gov/eventdriven/services/WWA/watch_warn_adv/MapServer/WMSServer",
-        {
-          layers: "0",
-          format: "image/png",
-          transparent: true,
-          opacity: 0.8,
-        }
-      ).addTo(leafletMap.current);
+      fetch("https://api.weather.gov/alerts/active?event=Tornado+Warning,Severe+Thunderstorm+Warning&status=actual")
+        .then((response) => response.json())
+        .then((data) => {
+          if (!leafletMap.current) return;
+
+          alertLayerRef.current = L.geoJSON(data, {
+            style: (feature) => {
+              const isTornado = feature?.properties?.event === "Tornado Warning";
+              const color = isTornado ? "#ef4444" : "#f97316";
+
+              return {
+                color,
+                weight: 2,
+                opacity: 0.95,
+                fillColor: color,
+                fillOpacity: 0.18,
+              };
+            },
+          }).addTo(leafletMap.current);
+        });
     };
 
     const loadRainViewerFallback = () => {
@@ -228,6 +239,7 @@ export default function RadarDisplay({ settings, showNexrad }) {
       if (velLayerRef.current?.redraw) {
         velLayerRef.current.redraw();
       }
+      addAlertLayer();
     }, 5 * 60 * 1000);
 
     return () => clearInterval(refreshTimerRef.current);
