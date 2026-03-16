@@ -12,6 +12,18 @@ export default function RadarDisplay({ targets, settings, onRadarClick, onTarget
   const sweepAngleRef = useRef(0);
   const lastTimeRef = useRef(null);
   const trailsRef = useRef([]); // array of {angle, opacity}
+  const nexradImgRef = useRef(null);
+  const nexradLoadedRef = useRef(false);
+
+  // Load the NEXRAD overlay image whenever the URL changes
+  useEffect(() => {
+    if (!nexradImageUrl) { nexradImgRef.current = null; nexradLoadedRef.current = false; return; }
+    nexradLoadedRef.current = false;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = nexradImageUrl;
+    img.onload = () => { nexradImgRef.current = img; nexradLoadedRef.current = true; };
+  }, [nexradImageUrl]);
 
   const colors = THEME_COLORS[settings.theme] || THEME_COLORS.green;
 
