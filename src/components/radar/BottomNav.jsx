@@ -69,11 +69,9 @@ export default function BottomNav({ station, isTornadoWarning }) {
         </div>
 
         {/* Radio Button - Direct Link */}
-        <a
-          href={`https://www.broadcastify.com/webPlayer/${stationInfo.feedId}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-xs font-bold transition-all no-underline ${
+        <button
+          onClick={() => window.open(`https://www.broadcastify.com/webPlayer/${stationInfo.feedId}`, "_blank")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-xs font-bold transition-all cursor-pointer ${
             isTornadoWarning
               ? "bg-red-900 text-red-200 hover:bg-red-800 shadow-[0_0_8px_rgba(220,38,38,0.6)]"
               : "bg-gray-800 text-gray-300 hover:bg-gray-700"
@@ -82,7 +80,7 @@ export default function BottomNav({ station, isTornadoWarning }) {
           <Radio size={14} />
           LISTEN
           {isTornadoWarning && <span className="text-red-500 text-lg animate-pulse">●</span>}
-        </a>
+        </button>
       </div>
 
       {/* Spacer to prevent content overlap */}
