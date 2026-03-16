@@ -186,12 +186,12 @@ export default function RadarDisplay({ targets, settings, onRadarClick, onTarget
       const ty = cy + r * Math.sin(bearingRad);
 
       // Glow
-      ctx.shadowColor = colors.target;
+      ctx.shadowColor = c.target;
       ctx.shadowBlur = 12;
 
       // Symbol based on type
-      ctx.fillStyle = colors.target;
-      ctx.strokeStyle = colors.target;
+      ctx.fillStyle = c.target;
+      ctx.strokeStyle = c.target;
       ctx.lineWidth = 1.5;
 
       const type = target.type || "unknown";
