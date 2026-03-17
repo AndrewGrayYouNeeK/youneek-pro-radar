@@ -100,6 +100,8 @@ function isFeatureNearLocation(feature, userLocation, maxDistanceKm = 150) {
 
 export default function RadarDisplay({ settings, showNexrad, onSettingsChange, showRadio, onToggleRadio }) {
   const mapRef = useRef(null);
+  const pullStartYRef = useRef(null);
+  const pullEnabledRef = useRef(false);
   const leafletMap = useRef(null);
   const radarLayerRef = useRef(null);
   const velLayerRef = useRef(null);
@@ -593,6 +595,36 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     };
   }, [isLooping, loopFrames]);
 
+  const refreshWeatherData = () => {
+    if (radarLayerRef.current?.setUrl && !radarLoadStatsRef.current.usingFallback) {
+      radarLayerRef.current.setUrl(getIowaReflectivityUrl());
+    }
+    if (velLayerRef.current?.redraw) {
+      velLayerRef.current.redraw();
+    }
+  };
+
+  const handleTouchStart = (event) => {
+    if (window.scrollY > 0) return;
+    pullStartYRef.current = event.touches[0]?.clientY || null;
+    pullEnabledRef.current = true;
+  };
+
+  const handleTouchMove = (event) => {
+    if (!pullEnabledRef.current || pullStartYRef.current === null) return;
+    const currentY = event.touches[0]?.clientY || 0;
+    if (currentY - pullStartYRef.current > 90) {
+      refreshWeatherData();
+      pullEnabledRef.current = false;
+      pullStartYRef.current = null;
+    }
+  };
+
+  const handleTouchEnd = () => {
+    pullEnabledRef.current = false;
+    pullStartYRef.current = null;
+  };
+
   const handleLocateMe = () => {
     if (!navigator.geolocation) {
       alert("Browser won't let me find you—turn on location.");
@@ -619,7 +651,12 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   };
 
   return (
-    <div className="relative h-full min-h-[400px] w-full">
+    <div
+      className="relative h-full min-h-[400px] w-full select-none overscroll-none"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       <div className="absolute left-3 top-20 z-[1000] flex flex-col gap-2">
         <button
           onClick={handleHookZoneView}

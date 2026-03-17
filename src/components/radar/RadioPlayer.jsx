@@ -136,17 +136,13 @@ export default function RadioPlayer() {
       </div>
 
       <div className="flex gap-2">
-        <select
-          value={station.id}
-          onChange={(e) => setSelectedStation(LOCAL_STATIONS.find((item) => item.id === e.target.value) || LOCAL_STATIONS[0])}
-          className="flex-1 rounded border border-gray-700 bg-gray-800 px-3 py-2 text-xs font-mono text-green-300 outline-none"
+        <button
+          type="button"
+          className="flex-1 rounded border border-gray-700 bg-gray-800 px-3 py-2 text-left text-xs font-mono text-green-300 outline-none"
+          aria-label="Current radio station"
         >
-          {LOCAL_STATIONS.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.label}
-            </option>
-          ))}
-        </select>
+          {station.label}
+        </button>
         <button
           onClick={useMyLocation}
           className="rounded border border-gray-700 bg-gray-800 px-3 py-2 text-xs font-mono text-gray-300 transition-colors hover:border-gray-500 hover:text-white"

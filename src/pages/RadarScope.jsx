@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import RadarDisplay from "../components/radar/RadarDisplay";
 import TargetDialog from "../components/radar/TargetDialog";
+import BottomTab from "../components/radar/BottomTab";
 
 const DEFAULT_SETTINGS = {
   showLabels: true,
@@ -53,7 +54,7 @@ export default function RadarScope() {
   }, []);
 
   return (
-    <div className="h-screen bg-gray-950 overflow-hidden">
+    <div className="h-screen bg-gray-950 overflow-hidden pb-24">
       <div className="relative h-full w-full overflow-hidden">
         <RadarDisplay
           settings={settings}
@@ -63,6 +64,8 @@ export default function RadarScope() {
           onToggleRadio={setShowRadio}
         />
       </div>
+
+      <BottomTab />
 
       {/* Dialogs */}
       {dialogMode === "create" && pendingClick && (
