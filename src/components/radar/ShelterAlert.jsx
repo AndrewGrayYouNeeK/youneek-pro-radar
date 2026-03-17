@@ -24,4 +24,3 @@ export default function ShelterAlert({ activeTornadoWarning }) {
     </div>
   );
 }
-09:18 pm
