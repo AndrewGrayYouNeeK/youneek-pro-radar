@@ -238,13 +238,16 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       }
       if (!showVelocityLocal || !leafletMap.current) return;
 
-      velLayerRef.current = L.tileLayer.wms(
-        "https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0u.cgi",
+      velLayerRef.current = L.tileLayer(
+        "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::USCOMP-N0U-0/{z}/{x}/{y}.png",
         {
-          layers: "nexrad-n0u",
-          format: "image/png",
+          opacity: 0.65,
           transparent: true,
-          opacity: 0.6,
+          crossOrigin: true,
+          tileSize: 256,
+          maxZoom: 18,
+          maxNativeZoom: 12,
+          attribution: 'NEXRAD Velocity © <a href="https://mesonet.agron.iastate.edu/">Iowa Mesonet</a>',
         }
       ).addTo(leafletMap.current);
     };
