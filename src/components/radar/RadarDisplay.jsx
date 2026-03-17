@@ -126,7 +126,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [loopFrames, setLoopFrames] = useState([]);
   const [loopFrameIndex, setLoopFrameIndex] = useState(0);
   const [userLocation, setUserLocation] = useState(null);
-  const [activeTornadoWarning, setActiveTornadoWarning] = useState(false);
+  const [activeTornadoWarning, setActiveTornadoWarning] = useState(true);
   const alertToggles = {
     tornado: showTornado,
     severe: showThunderstorm,
