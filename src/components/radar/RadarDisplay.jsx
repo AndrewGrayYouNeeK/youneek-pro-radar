@@ -599,6 +599,10 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         <LocateFixed size={24} />
       </button>
       <div ref={mapRef} className="absolute inset-0 h-full min-h-[400px] w-full" />
+      <ShelterAlert
+        activeTornadoWarning={activeTornadoWarning}
+        userLocation={userLocation}
+      />
     </div>
   );
 }
