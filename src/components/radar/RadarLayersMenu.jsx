@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Radio, Play, Pause, LocateFixed } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { LOCAL_STATIONS } from "./radioStations";
+import RadioStationPicker from "./RadioStationPicker";
+import AccountActions from "./AccountActions";
 
 function ToggleRow({ label, checked, onCheckedChange }) {
   return (
@@ -68,6 +70,14 @@ export default function RadarLayersMenu({
   }, []);
 
   useEffect(() => {
+    if (!isOpen) return;
+    window.history.pushState({ radarLayersMenu: true }, "");
+    const onPop = () => setIsOpen(false);
+    window.addEventListener("popstate", onPop, { once: true });
+    return () => window.removeEventListener("popstate", onPop);
+  }, [isOpen]);
+
+  useEffect(() => {
     if (!audioRef.current) return;
     audioRef.current.src = station.streamUrl;
 
@@ -114,7 +124,10 @@ export default function RadarLayersMenu({
   };
 
   return (
-    <div className="absolute right-3 top-3 z-[1000]">
+    <div
+      className="absolute z-[1000]"
+      style={{ top: 'calc(0.75rem + env(safe-area-inset-top))', right: 'calc(0.75rem + env(safe-area-inset-right))' }}
+    >
       <audio ref={audioRef} preload="none" />
       <button
         onClick={() => setIsOpen((open) => !open)}
@@ -160,17 +173,11 @@ export default function RadarLayersMenu({
                   <label className="block text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">
                     Radio Station
                   </label>
-                  <select
-                    value={stationId}
-                    onChange={(e) => setStationId(e.target.value)}
-                    className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white outline-none"
-                  >
-                    {LOCAL_STATIONS.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.label}
-                      </option>
-                    ))}
-                  </select>
+                  <RadioStationPicker
+                    stations={LOCAL_STATIONS}
+                    selectedStationId={stationId}
+                    onStationChange={setStationId}
+                  />
                 </div>
 
                 <div className="flex items-center justify-between">
@@ -188,6 +195,7 @@ export default function RadarLayersMenu({
 
                 <button
                   onClick={togglePlayback}
+                  aria-label={isPlaying ? "Stop radio playback" : "Start radio playback"}
                   className="flex w-full items-center justify-center gap-2 rounded border border-green-600 bg-green-900 px-3 py-2 text-xs font-mono text-green-300 transition-colors hover:bg-green-800"
                 >
                   {isPlaying ? <Pause size={13} /> : <Play size={13} />}
@@ -195,6 +203,8 @@ export default function RadarLayersMenu({
                 </button>
               </div>
             )}
+
+            <AccountActions />
           </div>
         </div>
       )}

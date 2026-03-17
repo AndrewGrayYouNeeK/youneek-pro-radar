@@ -660,7 +660,8 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       />
       <button
         onClick={handleLocateMe}
-        className="absolute bottom-24 right-5 z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700"
+        className="absolute z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700"
+        style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom))', right: 'calc(1.25rem + env(safe-area-inset-right))' }}
         aria-label="Locate me"
       >
         <LocateFixed size={24} />
