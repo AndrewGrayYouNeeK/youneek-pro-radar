@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import { LocateFixed } from "lucide-react";
 import RadarLayersMenu from "./RadarLayersMenu";
+import ShelterAlert from "./ShelterAlert";
 import "leaflet/dist/leaflet.css";
 
 // Fix Leaflet default icon paths
@@ -63,6 +64,31 @@ const invalidateMapSize = (map) => {
   setTimeout(() => map.invalidateSize(), 150);
 };
 
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function getGeometryPoints(geometry) {
+  if (!geometry?.coordinates) return [];
+
+  const flattenCoords = (coords) => {
+    if (!Array.isArray(coords[0])) return [coords];
+    return coords.flatMap(flattenCoords);
+  };
+
+  return flattenCoords(geometry.coordinates).filter((point) => Array.isArray(point) && point.length >= 2);
+}
+
+function isFeatureNearLocation(feature, userLocation, maxDistanceKm = 150) {
+  const points = getGeometryPoints(feature?.geometry);
+  return points.some(([lon, lat]) => haversineKm(lat, lon, userLocation.lat, userLocation.lon) <= maxDistanceKm);
+}
+
 export default function RadarDisplay({ settings, showNexrad, onSettingsChange, showRadio, onToggleRadio }) {
   const mapRef = useRef(null);
   const leafletMap = useRef(null);
@@ -88,6 +114,8 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [isLooping, setIsLooping] = useState(false);
   const [loopFrames, setLoopFrames] = useState([]);
   const [loopFrameIndex, setLoopFrameIndex] = useState(0);
+  const [userLocation, setUserLocation] = useState(null);
+  const [activeTornadoWarning, setActiveTornadoWarning] = useState(false);
   const alertToggles = {
     tornado: showTornado,
     severe: showThunderstorm,
@@ -141,6 +169,17 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   }, [settings.station]);
 
   useEffect(() => {
+    if (!navigator.geolocation) return;
+
+    navigator.geolocation.getCurrentPosition((position) => {
+      setUserLocation({
+        lat: position.coords.latitude,
+        lon: position.coords.longitude,
+      });
+    });
+  }, []);
+
+  useEffect(() => {
     setShowVelocityLocal(settings.showVelocity);
   }, [settings.showVelocity]);
 
@@ -169,7 +208,10 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
 
     radarLoadStatsRef.current = { errors: 0, loaded: 0, usingFallback: false };
 
-    if (!showNexrad) return;
+    if (!showNexrad) {
+      setActiveTornadoWarning(false);
+      return;
+    }
 
     const addVelocityLayer = () => {
       if (velLayerRef.current) {
@@ -194,12 +236,21 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         leafletMap.current.removeLayer(layerRef.current);
         layerRef.current = null;
       }
-      if (!leafletMap.current || !showNexrad || !alertTogglesRef.current[toggleKey]) return;
+      if (!leafletMap.current || !showNexrad) return;
 
       fetch(url)
         .then((response) => response.json())
         .then((data) => {
           if (!leafletMap.current) return;
+
+          if (toggleKey === "tornado") {
+            const features = data?.features || [];
+            setActiveTornadoWarning(
+              Boolean(userLocation) && features.some((feature) => isFeatureNearLocation(feature, userLocation, 150))
+            );
+          }
+
+          if (!alertTogglesRef.current[toggleKey]) return;
 
           layerRef.current = L.geoJSON(data, {
             style: {
@@ -328,6 +379,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     showThunderstorm,
     showFlood,
     showWinter,
+    userLocation,
   ]);
 
   const handleHookZoneView = () => {
