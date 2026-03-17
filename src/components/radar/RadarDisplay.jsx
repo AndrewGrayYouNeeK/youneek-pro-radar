@@ -64,6 +64,15 @@ const invalidateMapSize = (map) => {
   setTimeout(() => map.invalidateSize(), 150);
 };
 
+function formatRainViewerTime(frame) {
+  const timestamp = frame?.time || Number(String(frame?.path || "").match(/(\d{10})/)?.[1]);
+  if (!timestamp) return "";
+  return new Date(timestamp * 1000).toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 function haversineKm(lat1, lon1, lat2, lon2) {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -100,6 +109,8 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const winterLayerRef = useRef(null);
   const refreshTimerRef = useRef(null);
   const loopTimerRef = useRef(null);
+  const loopFadeRef = useRef(null);
+  const loopLayersRef = useRef([]);
   const loopIndexRef = useRef(0);
   const loopLayerRef = useRef(null);
   const prevLoopLayerRef = useRef(null);
@@ -147,6 +158,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     return () => {
       if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
       if (loopTimerRef.current) clearTimeout(loopTimerRef.current);
+      if (loopFadeRef.current) clearInterval(loopFadeRef.current);
       if (prevLoopLayerRef.current && leafletMap.current) {
         leafletMap.current.removeLayer(prevLoopLayerRef.current);
         prevLoopLayerRef.current = null;
@@ -155,6 +167,12 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         leafletMap.current.removeLayer(loopLayerRef.current);
         loopLayerRef.current = null;
       }
+      loopLayersRef.current.forEach((layer) => {
+        if (leafletMap.current?.hasLayer(layer)) {
+          leafletMap.current.removeLayer(layer);
+        }
+      });
+      loopLayersRef.current = [];
       if (leafletMap.current) {
         leafletMap.current.remove();
         leafletMap.current = null;
@@ -392,25 +410,87 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     leafletMap.current.setView([39.5, -98.35], 5);
   };
 
+  const clearLoopLayers = () => {
+    if (loopTimerRef.current) {
+      clearTimeout(loopTimerRef.current);
+      loopTimerRef.current = null;
+    }
+    if (loopFadeRef.current) {
+      clearInterval(loopFadeRef.current);
+      loopFadeRef.current = null;
+    }
+    if (leafletMap.current) {
+      loopLayersRef.current.forEach((layer) => {
+        if (leafletMap.current.hasLayer(layer)) {
+          leafletMap.current.removeLayer(layer);
+        }
+      });
+    }
+    loopLayersRef.current = [];
+    loopLayerRef.current = null;
+    prevLoopLayerRef.current = null;
+    loopIndexRef.current = 0;
+    setLoopFrameIndex(0);
+    if (radarLayerRef.current?.setOpacity) {
+      radarLayerRef.current.setOpacity(0.7);
+    }
+  };
+
   const fetchLoopFrames = () => {
+    if (!leafletMap.current) return;
+
+    clearLoopLayers();
+
     fetch("https://api.rainviewer.com/public/weather-maps.json")
       .then((response) => response.json())
       .then((data) => {
-        const frames = (data?.radar?.past || []).slice(-15).map((item) => item.path).filter(Boolean);
-        setLoopFrames(frames);
-        loopIndexRef.current = 0;
-        setLoopFrameIndex(0);
+        const frames = (data?.radar?.past || [])
+          .filter((item) => item?.path)
+          .map((item) => ({
+            path: item.path,
+            label: formatRainViewerTime(item),
+          }));
+
+        const preloadPromises = frames.map((frame) => new Promise((resolve) => {
+          const layer = L.tileLayer(getRainViewerTileUrl(frame.path), {
+            opacity: 0,
+            maxZoom: 18,
+            maxNativeZoom: 12,
+            crossOrigin: "anonymous",
+          });
+
+          const finish = () => resolve(layer);
+          layer.once("load", finish);
+          layer.once("tileerror", finish);
+          layer.addTo(leafletMap.current);
+        }));
+
+        Promise.all(preloadPromises).then((layers) => {
+          if (!leafletMap.current) return;
+
+          loopLayersRef.current = layers;
+          loopIndexRef.current = 0;
+          setLoopFrames(frames);
+          setLoopFrameIndex(0);
+          layers.forEach((layer, index) => layer.setOpacity(index === 0 ? 0.7 : 0));
+          loopLayerRef.current = layers[0] || null;
+          prevLoopLayerRef.current = null;
+          if (radarLayerRef.current?.setOpacity) {
+            radarLayerRef.current.setOpacity(0);
+          }
+          setIsLooping(true);
+        });
       });
   };
 
   const handleLoopToggle = () => {
     if (isLooping) {
       setIsLooping(false);
+      clearLoopLayers();
       return;
     }
 
     fetchLoopFrames();
-    setIsLooping(true);
   };
 
   const handleShowNexradChange = (value) => {
@@ -430,31 +510,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   };
 
   useEffect(() => {
-    if (!leafletMap.current) return;
-
-    if (!isLooping) {
-      if (loopTimerRef.current) {
-        clearTimeout(loopTimerRef.current);
-        loopTimerRef.current = null;
-      }
-      if (prevLoopLayerRef.current && leafletMap.current) {
-        leafletMap.current.removeLayer(prevLoopLayerRef.current);
-        prevLoopLayerRef.current = null;
-      }
-      if (loopLayerRef.current && leafletMap.current) {
-        leafletMap.current.removeLayer(loopLayerRef.current);
-        loopLayerRef.current = null;
-      }
-      if (radarLayerRef.current?.setOpacity) {
-        radarLayerRef.current.setOpacity(0.7);
-      }
-      return;
-    }
-
-    if (!loopFrames.length) {
-      if (radarLayerRef.current?.setOpacity) {
-        radarLayerRef.current.setOpacity(0.7);
-      }
+    if (!leafletMap.current || !isLooping || !loopFrames.length || !loopLayersRef.current.length) {
       return;
     }
 
@@ -462,68 +518,57 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       radarLayerRef.current.setOpacity(0);
     }
 
-    const renderFrame = () => {
-      const frameIndex = loopIndexRef.current;
-      const frame = loopFrames[frameIndex];
-      if (!frame || !leafletMap.current) return;
+    const animateToNextFrame = () => {
+      const currentIndex = loopIndexRef.current;
+      const nextIndex = (currentIndex + 1) % loopLayersRef.current.length;
+      const outgoingLayer = loopLayersRef.current[currentIndex];
+      const incomingLayer = loopLayersRef.current[nextIndex];
 
-      const incomingLayer = L.tileLayer(getRainViewerTileUrl(frame), {
-        opacity: 0,
-        maxZoom: 18,
-        maxNativeZoom: 12,
-        crossOrigin: "anonymous",
-      }).addTo(leafletMap.current);
+      if (!outgoingLayer || !incomingLayer) return;
 
-      const outgoingLayer = loopLayerRef.current;
       prevLoopLayerRef.current = outgoingLayer;
       loopLayerRef.current = incomingLayer;
-      setLoopFrameIndex(frameIndex);
+      incomingLayer.setOpacity(0);
 
-      const fadeStart = performance.now();
-      const fadeFrame = (now) => {
-        const progress = Math.min((now - fadeStart) / 150, 1);
+      let step = 0;
+      const totalSteps = 8;
+      if (loopFadeRef.current) {
+        clearInterval(loopFadeRef.current);
+      }
+
+      loopFadeRef.current = setInterval(() => {
+        step += 1;
+        const progress = Math.min(step / totalSteps, 1);
+        outgoingLayer.setOpacity(0.7 * (1 - progress));
         incomingLayer.setOpacity(0.7 * progress);
-        if (outgoingLayer?.setOpacity) {
-          outgoingLayer.setOpacity(0.7 * (1 - progress));
-        }
 
-        if (progress < 1) {
-          requestAnimationFrame(fadeFrame);
-          return;
+        if (progress >= 1) {
+          clearInterval(loopFadeRef.current);
+          loopFadeRef.current = null;
+          outgoingLayer.setOpacity(0);
+          incomingLayer.setOpacity(0.7);
         }
+      }, 25);
 
-        if (outgoingLayer && leafletMap.current) {
-          leafletMap.current.removeLayer(outgoingLayer);
-        }
-        if (prevLoopLayerRef.current === outgoingLayer) {
-          prevLoopLayerRef.current = null;
-        }
-      };
-
-      requestAnimationFrame(fadeFrame);
-
-      const isLastFrame = frameIndex === loopFrames.length - 1;
-      loopIndexRef.current = isLastFrame ? 0 : frameIndex + 1;
-      loopTimerRef.current = setTimeout(renderFrame, isLastFrame ? 1200 : 600);
+      loopIndexRef.current = nextIndex;
+      setLoopFrameIndex(nextIndex);
+      const isLastFrame = nextIndex === loopLayersRef.current.length - 1;
+      loopTimerRef.current = setTimeout(animateToNextFrame, isLastFrame ? 1500 : 700);
     };
 
-    renderFrame();
+    loopLayersRef.current.forEach((layer, index) => layer.setOpacity(index === loopIndexRef.current ? 0.7 : 0));
+    setLoopFrameIndex(loopIndexRef.current);
+    const isLastFrame = loopIndexRef.current === loopLayersRef.current.length - 1;
+    loopTimerRef.current = setTimeout(animateToNextFrame, isLastFrame ? 1500 : 700);
 
     return () => {
       if (loopTimerRef.current) {
         clearTimeout(loopTimerRef.current);
         loopTimerRef.current = null;
       }
-      if (prevLoopLayerRef.current && leafletMap.current) {
-        leafletMap.current.removeLayer(prevLoopLayerRef.current);
-        prevLoopLayerRef.current = null;
-      }
-      if (loopLayerRef.current && leafletMap.current) {
-        leafletMap.current.removeLayer(loopLayerRef.current);
-        loopLayerRef.current = null;
-      }
-      if (radarLayerRef.current?.setOpacity) {
-        radarLayerRef.current.setOpacity(0.7);
+      if (loopFadeRef.current) {
+        clearInterval(loopFadeRef.current);
+        loopFadeRef.current = null;
       }
     };
   }, [isLooping, loopFrames]);
@@ -577,6 +622,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         {isLooping && loopFrames.length > 0 && (
           <div className="rounded-lg bg-slate-900/70 px-3 py-2 text-xs font-medium text-slate-200 shadow-lg backdrop-blur-sm">
             Frame {loopFrameIndex + 1}/{loopFrames.length}
+            <div className="mt-1 text-[11px] text-slate-300">{loopFrames[loopFrameIndex]?.label}</div>
           </div>
         )}
       </div>
