@@ -666,6 +666,9 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         <LocateFixed size={24} />
       </button>
       <div ref={mapRef} className="absolute inset-0 h-full min-h-[400px] w-full" />
+      <div style={{ position:'absolute', bottom:'10px', left:'10px', zIndex:999, color:'rgba(255,255,255,0.35)', fontSize:'13px', fontWeight:'600', letterSpacing:'1px', pointerEvents:'none', userSelect:'none' }}>
+        YouNeeK Pro Radar — by Andrew Gray
+      </div>
       <ShelterAlert
         activeTornadoWarning={true}
         userLocation={userLocation}
