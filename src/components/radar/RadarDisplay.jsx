@@ -434,6 +434,9 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     if (radarLayerRef.current?.setOpacity) {
       radarLayerRef.current.setOpacity(0.7);
     }
+    if (velLayerRef.current?.setOpacity) {
+      velLayerRef.current.setOpacity(showVelocityLocal ? 0.6 : 0);
+    }
   };
 
   const fetchLoopFrames = () => {
@@ -444,12 +447,20 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     fetch("https://api.rainviewer.com/public/weather-maps.json")
       .then((response) => response.json())
       .then((data) => {
-        const frames = (data?.radar?.past || [])
+        const reflectivityFrames = (data?.radar?.past || [])
           .filter((item) => item?.path)
           .map((item) => ({
             path: item.path,
             label: formatRainViewerTime(item),
+            typeLabel: "🟢 Reflectivity",
           }));
+
+        const frames = showVelocityLocal
+          ? reflectivityFrames.flatMap((frame) => ([
+              frame,
+              { ...frame, typeLabel: "🔵 Velocity" },
+            ]))
+          : reflectivityFrames;
 
         const preloadPromises = frames.map((frame) => new Promise((resolve) => {
           const layer = L.tileLayer(getRainViewerTileUrl(frame.path), {
@@ -477,6 +488,9 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
           prevLoopLayerRef.current = null;
           if (radarLayerRef.current?.setOpacity) {
             radarLayerRef.current.setOpacity(0);
+          }
+          if (velLayerRef.current?.setOpacity) {
+            velLayerRef.current.setOpacity(0);
           }
           setIsLooping(true);
         });
@@ -516,6 +530,9 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
 
     if (radarLayerRef.current?.setOpacity) {
       radarLayerRef.current.setOpacity(0);
+    }
+    if (velLayerRef.current?.setOpacity) {
+      velLayerRef.current.setOpacity(0);
     }
 
     const animateToNextFrame = () => {
@@ -622,6 +639,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         {isLooping && loopFrames.length > 0 && (
           <div className="rounded-lg bg-slate-900/70 px-3 py-2 text-xs font-medium text-slate-200 shadow-lg backdrop-blur-sm">
             Frame {loopFrameIndex + 1}/{loopFrames.length}
+            <div className="mt-1 text-[11px] text-slate-200">{loopFrames[loopFrameIndex]?.typeLabel}</div>
             <div className="mt-1 text-[11px] text-slate-300">{loopFrames[loopFrameIndex]?.label}</div>
           </div>
         )}
