@@ -1,6 +1,8 @@
 import React from 'react';
 
 export default function ShelterAlert({ activeTornadoWarning }) {
+  const contacts = JSON.parse(localStorage.getItem('shelterContacts') || '[]');
+  if (!contacts || contacts.length === 0) return null;
   if (!activeTornadoWarning) return null;
 
   const handleShelter = () => {
