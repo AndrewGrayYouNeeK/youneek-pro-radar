@@ -83,6 +83,12 @@
   }
 
   body {
-    @apply bg-background text-foreground select-none overscroll-none;
+    @apply bg-background text-foreground overscroll-none;
+  }
+
+  button,
+  svg {
+    user-select: none;
+    -webkit-user-select: none;
   }
 }

@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import RadarDisplay from "../components/radar/RadarDisplay";
 import TargetDialog from "../components/radar/TargetDialog";
 import BottomTab from "../components/radar/BottomTab";
@@ -13,22 +14,37 @@ const DEFAULT_SETTINGS = {
 };
 
 export default function RadarScope() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [targets, setTargets] = useState([]);
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [showRadio, setShowRadio] = useState(true);
-  const [pendingClick, setPendingClick] = useState(null);
-  const [selectedTarget, setSelectedTarget] = useState(null);
-  const [dialogMode, setDialogMode] = useState(null); // 'create' | 'inspect'
+
+  const urlParams = new URLSearchParams(location.search);
+  const dialogMode = urlParams.get("dialog");
+  const selectedTargetId = urlParams.get("targetId");
+  const pendingClick = dialogMode === "create"
+    ? {
+        bearing: Number(urlParams.get("bearing") || 0),
+        range: Number(urlParams.get("range") || 0),
+      }
+    : null;
+  const selectedTarget = targets.find((target) => target.id === selectedTargetId) || null;
 
   const handleRadarClick = useCallback((clickData) => {
-    setPendingClick(clickData);
-    setDialogMode("create");
-  }, []);
+    const params = new URLSearchParams();
+    params.set("dialog", "create");
+    params.set("bearing", String(clickData?.bearing ?? 0));
+    params.set("range", String(clickData?.range ?? 0));
+    navigate(`${location.pathname}?${params.toString()}`);
+  }, [navigate, location.pathname]);
 
   const handleTargetClick = useCallback((target) => {
-    setSelectedTarget(target);
-    setDialogMode("inspect");
-  }, []);
+    const params = new URLSearchParams();
+    params.set("dialog", "inspect");
+    params.set("targetId", target.id);
+    navigate(`${location.pathname}?${params.toString()}`);
+  }, [navigate, location.pathname]);
 
   const handleCreateTarget = useCallback((targetData) => {
     const newTarget = {
@@ -37,21 +53,29 @@ export default function RadarScope() {
       createdAt: new Date().toISOString(),
     };
     setTargets((prev) => [...prev, newTarget]);
-    setPendingClick(null);
-    setDialogMode(null);
-  }, []);
+    if (location.search) {
+      navigate(-1);
+    } else {
+      navigate(location.pathname, { replace: true });
+    }
+  }, [navigate, location.pathname, location.search]);
 
   const handleDeleteTarget = useCallback((id) => {
     setTargets((prev) => prev.filter((t) => t.id !== id));
-    setSelectedTarget(null);
-    setDialogMode(null);
-  }, []);
+    if (location.search) {
+      navigate(-1);
+    } else {
+      navigate(location.pathname, { replace: true });
+    }
+  }, [navigate, location.pathname, location.search]);
 
   const handleCloseDialog = useCallback(() => {
-    setPendingClick(null);
-    setSelectedTarget(null);
-    setDialogMode(null);
-  }, []);
+    if (location.search) {
+      navigate(-1);
+    } else {
+      navigate(location.pathname, { replace: true });
+    }
+  }, [navigate, location.pathname, location.search]);
 
   return (
     <div className="h-screen bg-gray-950 overflow-hidden pb-24">
