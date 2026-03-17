@@ -22,27 +22,65 @@ export default function RadioPlayer() {
   const audioRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLocating, setIsLocating] = useState(true);
-  const [stationId, setStationId] = useState(LOCAL_STATIONS[0].id);
+  const [selectedStation, setSelectedStation] = useState(LOCAL_STATIONS[0]);
 
   const station = useMemo(
-    () => LOCAL_STATIONS.find((item) => item.id === stationId) || LOCAL_STATIONS[0],
-    [stationId]
+    () => selectedStation || LOCAL_STATIONS[0],
+    [selectedStation]
   );
 
-  useEffect(() => {
-    if (!navigator.geolocation) {
-      setIsLocating(false);
-      return;
-    }
-
+  const useMyLocation = () => {
+    if (!navigator.geolocation) return;
+    setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const nearest = getNearestStation(position.coords.latitude, position.coords.longitude);
-        setStationId(nearest.id);
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        let nearest = LOCAL_STATIONS[0];
+        let minDist = Infinity;
+        LOCAL_STATIONS.forEach((station) => {
+          const dist = Math.sqrt(
+            Math.pow(station.lat - latitude, 2) + Math.pow(station.lon - longitude, 2)
+          );
+          if (dist < minDist) {
+            minDist = dist;
+            nearest = station;
+          }
+        });
+        setSelectedStation(nearest);
         setIsLocating(false);
       },
-      () => setIsLocating(false),
-      { timeout: 8000 }
+      () => {
+        setSelectedStation(LOCAL_STATIONS[0]);
+        setIsLocating(false);
+      },
+      { timeout: 8000, maximumAge: 60000 }
+    );
+  };
+
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        let nearest = LOCAL_STATIONS[0];
+        let minDist = Infinity;
+        LOCAL_STATIONS.forEach((station) => {
+          const dist = Math.sqrt(
+            Math.pow(station.lat - latitude, 2) + Math.pow(station.lon - longitude, 2)
+          );
+          if (dist < minDist) {
+            minDist = dist;
+            nearest = station;
+          }
+        });
+        setSelectedStation(nearest);
+        setIsLocating(false);
+      },
+      () => {
+        setSelectedStation(LOCAL_STATIONS[0]);
+        setIsLocating(false);
+      },
+      { timeout: 8000, maximumAge: 60000 }
     );
   }, []);
 
@@ -95,6 +133,26 @@ export default function RadioPlayer() {
           NOAA WEATHER RADIO
         </div>
         {isLocating && <LocateFixed size={12} className="text-green-400 animate-pulse" />}
+      </div>
+
+      <div className="flex gap-2">
+        <select
+          value={station.id}
+          onChange={(e) => setSelectedStation(LOCAL_STATIONS.find((item) => item.id === e.target.value) || LOCAL_STATIONS[0])}
+          className="flex-1 rounded border border-gray-700 bg-gray-800 px-3 py-2 text-xs font-mono text-green-300 outline-none"
+        >
+          {LOCAL_STATIONS.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.label}
+            </option>
+          ))}
+        </select>
+        <button
+          onClick={useMyLocation}
+          className="rounded border border-gray-700 bg-gray-800 px-3 py-2 text-xs font-mono text-gray-300 transition-colors hover:border-gray-500 hover:text-white"
+        >
+          📍 Use My Location
+        </button>
       </div>
 
       <div className="text-green-400 text-xs font-mono font-bold">{station.label}</div>
