@@ -537,6 +537,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
+        setUserLocation({ lat: latitude, lon: longitude });
         leafletMap.current.setView([latitude, longitude], 12);
 
         if (userLocationMarkerRef.current) {
