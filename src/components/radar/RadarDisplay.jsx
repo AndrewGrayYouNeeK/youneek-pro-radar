@@ -65,6 +65,21 @@ const invalidateMapSize = (map) => {
   setTimeout(() => map.invalidateSize(), 150);
 };
 
+const applyLeafletControlAccessibility = (container) => {
+  const zoomInButton = container?.querySelector?.(".leaflet-control-zoom-in");
+  const zoomOutButton = container?.querySelector?.(".leaflet-control-zoom-out");
+
+  if (zoomInButton) {
+    zoomInButton.setAttribute("aria-label", "Zoom in on radar");
+    zoomInButton.setAttribute("aria-description", "Double tap to enlarge the view");
+  }
+
+  if (zoomOutButton) {
+    zoomOutButton.setAttribute("aria-label", "Zoom out on radar");
+    zoomOutButton.setAttribute("aria-description", "Double tap to reduce the view");
+  }
+};
+
 function formatRainViewerTime(frame) {
   const timestamp = frame?.time || Number(String(frame?.path || "").match(/(\d{10})/)?.[1]);
   if (!timestamp) return "";
@@ -155,6 +170,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     }).addTo(leafletMap.current);
 
     invalidateMapSize(leafletMap.current);
+    requestAnimationFrame(() => applyLeafletControlAccessibility(mapRef.current));
 
     return () => {
       if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
@@ -394,14 +410,27 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
 
     return () => {
       clearInterval(refreshTimerRef.current);
-      if (prevLoopLayerRef.current && leafletMap.current) {
-        leafletMap.current.removeLayer(prevLoopLayerRef.current);
-        prevLoopLayerRef.current = null;
-      }
-      if (loopLayerRef.current && leafletMap.current) {
-        leafletMap.current.removeLayer(loopLayerRef.current);
-        loopLayerRef.current = null;
-      }
+      [
+        radarLayerRef,
+        velLayerRef,
+        tornadoLayerRef,
+        thunderLayerRef,
+        floodLayerRef,
+        winterLayerRef,
+        prevLoopLayerRef,
+        loopLayerRef,
+      ].forEach((layerRef) => {
+        if (layerRef.current && leafletMap.current?.hasLayer(layerRef.current)) {
+          leafletMap.current.removeLayer(layerRef.current);
+        }
+        layerRef.current = null;
+      });
+      loopLayersRef.current.forEach((layer) => {
+        if (leafletMap.current?.hasLayer(layer)) {
+          leafletMap.current.removeLayer(layer);
+        }
+      });
+      loopLayersRef.current = [];
     };
   }, [
     showNexrad,
@@ -660,6 +689,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         <button
           onClick={handleHookZoneView}
           aria-label="Jump to Hook Zone"
+          aria-description="Centers the radar on a storm-focused regional view"
           className="rounded-lg bg-slate-900/80 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90"
         >
           🌀 Hook Zone
@@ -667,6 +697,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         <button
           onClick={handleConusView}
           aria-label="Show CONUS view"
+          aria-description="Shows the full continental radar view"
           className="rounded-lg bg-slate-900/80 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90"
         >
           🗺️ CONUS
@@ -674,6 +705,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         <button
           onClick={handleLoopToggle}
           aria-label={isLooping ? "Stop radar loop" : "Start radar loop"}
+          aria-description="Animates recent radar frames in sequence"
           className="rounded-lg bg-slate-900/80 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90"
         >
           {isLooping ? "⏹ Loop" : "▶ Loop"}
@@ -702,6 +734,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         className="absolute z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700"
         style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom))', right: 'calc(1.25rem + env(safe-area-inset-right))' }}
         aria-label="Locate me"
+        aria-description="Centers the radar on your current GPS location"
       >
         <LocateFixed size={24} />
       </button>
