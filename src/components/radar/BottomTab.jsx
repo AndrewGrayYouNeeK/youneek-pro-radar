@@ -1,5 +1,6 @@
 import { Activity, Settings, Users } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import { useNavigationStack } from "@/lib/NavigationStack";
 
 const TABS = [
   { label: "Radar", path: "/RadarScope", icon: Activity },
@@ -9,7 +10,7 @@ const TABS = [
 
 export default function BottomTab() {
   const location = useLocation();
-  const navigate = useNavigate();
+  const { navigateToTab, resetTab } = useNavigationStack();
 
   return (
     <div
@@ -23,7 +24,13 @@ export default function BottomTab() {
             <button
               key={path}
               type="button"
-              onClick={() => navigate(path, { replace: active })}
+              onClick={() => {
+                if (active) {
+                  resetTab(label);
+                } else {
+                  navigateToTab(label);
+                }
+              }}
               aria-label={`Open ${label}`}
               className={`flex min-w-20 flex-col items-center gap-1 rounded-xl px-3 py-2 text-xs font-medium transition-colors ${
                 active ? "bg-white/10 text-white" : "text-slate-400 hover:text-white"

@@ -70,14 +70,6 @@ export default function RadarLayersMenu({
   }, []);
 
   useEffect(() => {
-    if (!isOpen) return;
-    window.history.pushState({ radarLayersMenu: true }, "");
-    const onPop = () => setIsOpen(false);
-    window.addEventListener("popstate", onPop, { once: true });
-    return () => window.removeEventListener("popstate", onPop);
-  }, [isOpen]);
-
-  useEffect(() => {
     if (!audioRef.current) return;
     audioRef.current.src = station.streamUrl;
 

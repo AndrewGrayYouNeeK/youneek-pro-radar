@@ -13,20 +13,6 @@ export default function AccountActions() {
   const [open, setOpen] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
-  useEffect(() => {
-    if (!open && !confirmingDelete) return;
-    window.history.pushState({ radarMenuDialog: true }, "");
-    const onPop = () => {
-      if (confirmingDelete) {
-        setConfirmingDelete(false);
-        return;
-      }
-      setOpen(false);
-    };
-    window.addEventListener("popstate", onPop, { once: true });
-    return () => window.removeEventListener("popstate", onPop);
-  }, [open, confirmingDelete]);
-
   const deleteAccountMutation = useMutation({
     mutationFn: async () => {
       const me = await base44.auth.me();

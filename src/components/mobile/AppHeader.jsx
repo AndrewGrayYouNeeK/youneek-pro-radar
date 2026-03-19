@@ -1,5 +1,6 @@
 import { ChevronLeft } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import { useNavigationStack } from "@/lib/NavigationStack";
 
 const TITLES = {
   "/RadarScope": "Radar",
@@ -9,7 +10,7 @@ const TITLES = {
 
 export default function AppHeader({ title }) {
   const location = useLocation();
-  const navigate = useNavigate();
+  const { goBack } = useNavigationStack();
   const resolvedTitle = title || TITLES[location.pathname] || "YouNeeK Pro Radar";
   const showBack = location.pathname !== "/RadarScope" && location.pathname !== "/";
 
@@ -23,7 +24,7 @@ export default function AppHeader({ title }) {
           {showBack ? (
             <button
               type="button"
-              onClick={() => navigate(-1)}
+              onClick={() => goBack()}
               aria-label="Go back"
               className="flex h-11 w-11 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
             >

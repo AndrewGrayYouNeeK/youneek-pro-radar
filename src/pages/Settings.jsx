@@ -3,8 +3,10 @@ import { useMutation } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import BottomTab from "@/components/radar/BottomTab";
 import AppHeader from "@/components/mobile/AppHeader";
+import useTabPageMemory from "@/hooks/useTabPageMemory";
 
 export default function Settings() {
+  useTabPageMemory("Settings");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const deleteAccountMutation = useMutation({

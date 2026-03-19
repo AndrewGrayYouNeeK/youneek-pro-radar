@@ -10,6 +10,7 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import RadarScope from "./pages/RadarScope";
 import Contacts from "./pages/Contacts";
 import Settings from "./pages/Settings";
+import { NavigationStackProvider } from "@/lib/NavigationStack";
 
 const AuthenticatedApp = () => {
   const location = useLocation();
@@ -66,7 +67,9 @@ function App() {
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
         <Router>
-          <AuthenticatedApp />
+          <NavigationStackProvider>
+            <AuthenticatedApp />
+          </NavigationStackProvider>
         </Router>
         <Toaster />
       </QueryClientProvider>

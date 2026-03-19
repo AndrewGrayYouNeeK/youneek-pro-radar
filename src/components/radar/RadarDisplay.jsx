@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import L from "leaflet";
-import { LocateFixed } from "lucide-react";
-import RadarLayersMenu from "./RadarLayersMenu";
-import ShelterAlert from "./ShelterAlert";
+...
+import usePullToRefresh from "@/hooks/usePullToRefresh";
 import "leaflet/dist/leaflet.css";
 
 // Fix Leaflet default icon paths
@@ -100,8 +98,6 @@ function isFeatureNearLocation(feature, userLocation, maxDistanceKm = 150) {
 
 export default function RadarDisplay({ settings, showNexrad, onSettingsChange, showRadio, onToggleRadio }) {
   const mapRef = useRef(null);
-  const pullStartYRef = useRef(null);
-  const pullEnabledRef = useRef(false);
   const leafletMap = useRef(null);
   const radarLayerRef = useRef(null);
   const velLayerRef = useRef(null);
@@ -129,7 +125,6 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [loopFrameIndex, setLoopFrameIndex] = useState(0);
   const [userLocation, setUserLocation] = useState(null);
   const [activeTornadoWarning, setActiveTornadoWarning] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const alertToggles = {
     tornado: showTornado,
     severe: showThunderstorm,
@@ -597,36 +592,17 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   }, [isLooping, loopFrames]);
 
   const refreshWeatherData = () => {
-    setIsRefreshing(true);
     if (radarLayerRef.current?.setUrl && !radarLoadStatsRef.current.usingFallback) {
       radarLayerRef.current.setUrl(getIowaReflectivityUrl());
     }
     if (velLayerRef.current?.redraw) {
       velLayerRef.current.redraw();
     }
-    setTimeout(() => setIsRefreshing(false), 900);
   };
 
-  const handleTouchStart = (event) => {
-    if (window.scrollY > 0) return;
-    pullStartYRef.current = event.touches[0]?.clientY || null;
-    pullEnabledRef.current = true;
-  };
-
-  const handleTouchMove = (event) => {
-    if (!pullEnabledRef.current || pullStartYRef.current === null) return;
-    const currentY = event.touches[0]?.clientY || 0;
-    if (currentY - pullStartYRef.current > 90) {
-      refreshWeatherData();
-      pullEnabledRef.current = false;
-      pullStartYRef.current = null;
-    }
-  };
-
-  const handleTouchEnd = () => {
-    pullEnabledRef.current = false;
-    pullStartYRef.current = null;
-  };
+  const { isRefreshing, pullToRefreshHandlers } = usePullToRefresh({
+    onRefresh: refreshWeatherData,
+  });
 
   const handleLocateMe = () => {
     if (!navigator.geolocation) {
@@ -656,9 +632,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   return (
     <div
       className="relative h-full min-h-[400px] w-full select-none overscroll-none"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
+      {...pullToRefreshHandlers}
     >
       {isRefreshing && (
         <div

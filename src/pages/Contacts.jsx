@@ -1,30 +1,61 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import BottomTab from "@/components/radar/BottomTab";
 import AppHeader from "@/components/mobile/AppHeader";
+import useTabPageMemory from "@/hooks/useTabPageMemory";
 
 export default function Contacts() {
-  const [contacts, setContacts] = useState([]);
+  useTabPageMemory("Contacts");
+  const queryClient = useQueryClient();
   const [value, setValue] = useState("");
 
-  useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem("shelterContacts") || "[]");
-    setContacts(stored);
-  }, []);
+  const { data: contacts = [] } = useQuery({
+    queryKey: ["shelterContacts"],
+    queryFn: async () => JSON.parse(localStorage.getItem("shelterContacts") || "[]"),
+    initialData: [],
+  });
 
-  const saveContacts = (nextContacts) => {
-    setContacts(nextContacts);
-    localStorage.setItem("shelterContacts", JSON.stringify(nextContacts));
-  };
+  const addContactMutation = useMutation({
+    mutationFn: async (nextContacts) => {
+      localStorage.setItem("shelterContacts", JSON.stringify(nextContacts));
+      return nextContacts;
+    },
+    onMutate: async (contact) => {
+      const previousContacts = queryClient.getQueryData(["shelterContacts"]) || [];
+      const nextContacts = [...previousContacts, contact];
+      queryClient.setQueryData(["shelterContacts"], nextContacts);
+      setValue("");
+      return { previousContacts };
+    },
+    onError: (_error, _contact, context) => {
+      queryClient.setQueryData(["shelterContacts"], context?.previousContacts || []);
+    },
+  });
+
+  const removeContactMutation = useMutation({
+    mutationFn: async (nextContacts) => {
+      localStorage.setItem("shelterContacts", JSON.stringify(nextContacts));
+      return nextContacts;
+    },
+    onMutate: async (contactToRemove) => {
+      const previousContacts = queryClient.getQueryData(["shelterContacts"]) || [];
+      const nextContacts = previousContacts.filter((contact) => contact !== contactToRemove);
+      queryClient.setQueryData(["shelterContacts"], nextContacts);
+      return { previousContacts };
+    },
+    onError: (_error, _contactToRemove, context) => {
+      queryClient.setQueryData(["shelterContacts"], context?.previousContacts || []);
+    },
+  });
 
   const addContact = () => {
     const trimmed = value.trim();
     if (!trimmed) return;
-    saveContacts([...contacts, trimmed]);
-    setValue("");
+    addContactMutation.mutate(trimmed);
   };
 
   const removeContact = (contactToRemove) => {
-    saveContacts(contacts.filter((contact) => contact !== contactToRemove));
+    removeContactMutation.mutate(contactToRemove);
   };
 
   return (

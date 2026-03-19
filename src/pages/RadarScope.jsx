@@ -1,9 +1,12 @@
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import RadarDisplay from "../components/radar/RadarDisplay";
 import TargetDialog from "../components/radar/TargetDialog";
 import BottomTab from "../components/radar/BottomTab";
 import AppHeader from "@/components/mobile/AppHeader";
+import { useNavigationStack } from "@/lib/NavigationStack";
+import useTabPageMemory from "@/hooks/useTabPageMemory";
 
 const DEFAULT_SETTINGS = {
   showLabels: true,
@@ -15,9 +18,16 @@ const DEFAULT_SETTINGS = {
 };
 
 export default function RadarScope() {
+  useTabPageMemory("Radar");
   const navigate = useNavigate();
   const location = useLocation();
-  const [targets, setTargets] = useState([]);
+  const { goBack } = useNavigationStack();
+  const queryClient = useQueryClient();
+  const { data: targets = [] } = useQuery({
+    queryKey: ["radarTargets"],
+    queryFn: async () => [],
+    initialData: [],
+  });
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [showRadio, setShowRadio] = useState(true);
 
@@ -47,36 +57,60 @@ export default function RadarScope() {
     navigate(`${location.pathname}?${params.toString()}`);
   }, [navigate, location.pathname]);
 
+  const createTargetMutation = useMutation({
+    mutationFn: async (targetData) => targetData,
+    onMutate: async (targetData) => {
+      const previousTargets = queryClient.getQueryData(["radarTargets"]) || [];
+      const newTarget = {
+        id: Date.now().toString(),
+        ...targetData,
+        createdAt: new Date().toISOString(),
+      };
+      queryClient.setQueryData(["radarTargets"], [...previousTargets, newTarget]);
+      if (location.search) {
+        goBack(location.pathname);
+      } else {
+        navigate(location.pathname, { replace: true });
+      }
+      return { previousTargets };
+    },
+    onError: (_error, _targetData, context) => {
+      queryClient.setQueryData(["radarTargets"], context?.previousTargets || []);
+    },
+  });
+
+  const deleteTargetMutation = useMutation({
+    mutationFn: async (id) => id,
+    onMutate: async (id) => {
+      const previousTargets = queryClient.getQueryData(["radarTargets"]) || [];
+      queryClient.setQueryData(["radarTargets"], previousTargets.filter((target) => target.id !== id));
+      if (location.search) {
+        goBack(location.pathname);
+      } else {
+        navigate(location.pathname, { replace: true });
+      }
+      return { previousTargets };
+    },
+    onError: (_error, _id, context) => {
+      queryClient.setQueryData(["radarTargets"], context?.previousTargets || []);
+    },
+  });
+
   const handleCreateTarget = useCallback((targetData) => {
-    const newTarget = {
-      id: Date.now().toString(),
-      ...targetData,
-      createdAt: new Date().toISOString(),
-    };
-    setTargets((prev) => [...prev, newTarget]);
-    if (location.search) {
-      navigate(-1);
-    } else {
-      navigate(location.pathname, { replace: true });
-    }
-  }, [navigate, location.pathname, location.search]);
+    createTargetMutation.mutate(targetData);
+  }, [createTargetMutation]);
 
   const handleDeleteTarget = useCallback((id) => {
-    setTargets((prev) => prev.filter((t) => t.id !== id));
-    if (location.search) {
-      navigate(-1);
-    } else {
-      navigate(location.pathname, { replace: true });
-    }
-  }, [navigate, location.pathname, location.search]);
+    deleteTargetMutation.mutate(id);
+  }, [deleteTargetMutation]);
 
   const handleCloseDialog = useCallback(() => {
     if (location.search) {
-      navigate(-1);
+      goBack(location.pathname);
     } else {
       navigate(location.pathname, { replace: true });
     }
-  }, [navigate, location.pathname, location.search]);
+  }, [goBack, navigate, location.pathname, location.search]);
 
   return (
     <div className="safe-screen h-screen bg-gray-950 overflow-hidden pb-24">

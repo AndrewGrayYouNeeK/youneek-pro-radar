@@ -1,27 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer";
-
-export default function RadioStationPicker({ stations, selectedStationId, onStationChange }) {
-  const [open, setOpen] = useState(false);
-
-  const selectedLabel = useMemo(
-    () => stations.find((station) => station.id === selectedStationId)?.label || "Select station",
-    [selectedStationId, stations]
-  );
-
-  useEffect(() => {
-    if (!open) return;
-    window.history.pushState({ radarStationDrawer: true }, "");
-    const onPop = () => setOpen(false);
-    window.addEventListener("popstate", onPop, { once: true });
-    return () => window.removeEventListener("popstate", onPop);
-  }, [open]);
+import { useMemo, useState } from "react";
+...
 
   return (
     <Drawer open={open} onOpenChange={setOpen}>
