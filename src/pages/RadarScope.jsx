@@ -25,7 +25,7 @@ export default function RadarScope() {
   const queryClient = useQueryClient();
   const { data: targets = [] } = useQuery({
     queryKey: ["radarTargets"],
-    queryFn: async () => [],
+    queryFn: async () => JSON.parse(localStorage.getItem("radarTargets") || "[]"),
     initialData: [],
   });
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
@@ -58,8 +58,13 @@ export default function RadarScope() {
   }, [navigate, location.pathname]);
 
   const createTargetMutation = useMutation({
-    mutationFn: async (targetData) => targetData,
+    mutationFn: async () => {
+      const nextTargets = queryClient.getQueryData(["radarTargets"]) || [];
+      localStorage.setItem("radarTargets", JSON.stringify(nextTargets));
+      return nextTargets;
+    },
     onMutate: async (targetData) => {
+      await queryClient.cancelQueries({ queryKey: ["radarTargets"] });
       const previousTargets = queryClient.getQueryData(["radarTargets"]) || [];
       const newTarget = {
         id: Date.now().toString(),
@@ -77,11 +82,19 @@ export default function RadarScope() {
     onError: (_error, _targetData, context) => {
       queryClient.setQueryData(["radarTargets"], context?.previousTargets || []);
     },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["radarTargets"] });
+    },
   });
 
   const deleteTargetMutation = useMutation({
-    mutationFn: async (id) => id,
+    mutationFn: async () => {
+      const nextTargets = queryClient.getQueryData(["radarTargets"]) || [];
+      localStorage.setItem("radarTargets", JSON.stringify(nextTargets));
+      return nextTargets;
+    },
     onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ["radarTargets"] });
       const previousTargets = queryClient.getQueryData(["radarTargets"]) || [];
       queryClient.setQueryData(["radarTargets"], previousTargets.filter((target) => target.id !== id));
       if (location.search) {
@@ -93,6 +106,9 @@ export default function RadarScope() {
     },
     onError: (_error, _id, context) => {
       queryClient.setQueryData(["radarTargets"], context?.previousTargets || []);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["radarTargets"] });
     },
   });
 

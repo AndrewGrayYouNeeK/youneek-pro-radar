@@ -123,7 +123,7 @@ export default function RadarLayersMenu({
       <audio ref={audioRef} preload="none" />
       <button
         onClick={() => setIsOpen((open) => !open)}
-        className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-900/80 text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90"
+        className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-900/80 text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90"
         aria-label="Open layers menu"
       >
         <span className="text-xl">🗂️</span>

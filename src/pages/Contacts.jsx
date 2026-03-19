@@ -16,11 +16,13 @@ export default function Contacts() {
   });
 
   const addContactMutation = useMutation({
-    mutationFn: async (nextContacts) => {
+    mutationFn: async () => {
+      const nextContacts = queryClient.getQueryData(["shelterContacts"]) || [];
       localStorage.setItem("shelterContacts", JSON.stringify(nextContacts));
       return nextContacts;
     },
     onMutate: async (contact) => {
+      await queryClient.cancelQueries({ queryKey: ["shelterContacts"] });
       const previousContacts = queryClient.getQueryData(["shelterContacts"]) || [];
       const nextContacts = [...previousContacts, contact];
       queryClient.setQueryData(["shelterContacts"], nextContacts);
@@ -30,14 +32,19 @@ export default function Contacts() {
     onError: (_error, _contact, context) => {
       queryClient.setQueryData(["shelterContacts"], context?.previousContacts || []);
     },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["shelterContacts"] });
+    },
   });
 
   const removeContactMutation = useMutation({
-    mutationFn: async (nextContacts) => {
+    mutationFn: async () => {
+      const nextContacts = queryClient.getQueryData(["shelterContacts"]) || [];
       localStorage.setItem("shelterContacts", JSON.stringify(nextContacts));
       return nextContacts;
     },
     onMutate: async (contactToRemove) => {
+      await queryClient.cancelQueries({ queryKey: ["shelterContacts"] });
       const previousContacts = queryClient.getQueryData(["shelterContacts"]) || [];
       const nextContacts = previousContacts.filter((contact) => contact !== contactToRemove);
       queryClient.setQueryData(["shelterContacts"], nextContacts);
@@ -45,6 +52,9 @@ export default function Contacts() {
     },
     onError: (_error, _contactToRemove, context) => {
       queryClient.setQueryData(["shelterContacts"], context?.previousContacts || []);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["shelterContacts"] });
     },
   });
 

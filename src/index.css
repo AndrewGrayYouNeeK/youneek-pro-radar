@@ -98,4 +98,9 @@
     user-select: none;
     -webkit-user-select: none;
   }
+
+  button,
+  input {
+    min-height: 44px;
+  }
 }

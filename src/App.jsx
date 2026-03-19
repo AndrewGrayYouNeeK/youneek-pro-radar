@@ -1,3 +1,4 @@
+import { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
@@ -7,9 +8,9 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 // Add page imports here
-import RadarScope from "./pages/RadarScope";
-import Contacts from "./pages/Contacts";
-import Settings from "./pages/Settings";
+const RadarScope = lazy(() => import("./pages/RadarScope"));
+const Contacts = lazy(() => import("./pages/Contacts"));
+const Settings = lazy(() => import("./pages/Settings"));
 import { NavigationStackProvider } from "@/lib/NavigationStack";
 
 const AuthenticatedApp = () => {
@@ -47,14 +48,22 @@ const AuthenticatedApp = () => {
         transition={{ duration: 0.2, ease: "easeOut" }}
         className="h-full"
       >
-        <Routes location={location}>
-          {/* Add your page Route elements here */}
-          <Route path="/" element={<Navigate to="/RadarScope" replace />} />
-          <Route path="/RadarScope" element={<RadarScope />} />
-          <Route path="/Contacts" element={<Contacts />} />
-          <Route path="/Settings" element={<Settings />} />
-          <Route path="*" element={<PageNotFound />} />
-        </Routes>
+        <Suspense
+          fallback={(
+            <div className="fixed inset-0 flex items-center justify-center">
+              <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+            </div>
+          )}
+        >
+          <Routes location={location}>
+            {/* Add your page Route elements here */}
+            <Route path="/" element={<Navigate to="/RadarScope" replace />} />
+            <Route path="/RadarScope" element={<RadarScope />} />
+            <Route path="/Contacts" element={<Contacts />} />
+            <Route path="/Settings" element={<Settings />} />
+            <Route path="*" element={<PageNotFound />} />
+          </Routes>
+        </Suspense>
       </motion.div>
     </AnimatePresence>
   );
