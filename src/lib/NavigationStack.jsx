@@ -41,6 +41,10 @@ export function NavigationStackProvider({ children }) {
       stack.push(currentRoute);
     }
 
+    if (window.history.state?.path !== currentRoute) {
+      window.history.replaceState({ ...(window.history.state || {}), path: currentRoute }, "", currentRoute);
+    }
+
     const tabKey = getTabKey(location.pathname);
     setTabState((current) => ({
       ...current,
@@ -51,6 +55,23 @@ export function NavigationStackProvider({ children }) {
       },
     }));
   }, [location.pathname, location.search, navigationType]);
+
+  useEffect(() => {
+    const handlePopState = (event) => {
+      const targetPath = event.state?.path;
+      if (!targetPath) return;
+      const stack = routeStackRef.current;
+      const existingIndex = stack.lastIndexOf(targetPath);
+      if (existingIndex >= 0) {
+        stack.splice(existingIndex + 1);
+      } else {
+        stack.push(targetPath);
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   const value = useMemo(() => ({
     goBack: (fallbackPath = "/RadarScope") => {
