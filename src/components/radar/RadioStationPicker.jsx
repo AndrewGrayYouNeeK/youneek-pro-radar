@@ -1,5 +1,19 @@
 import { useMemo, useState } from "react";
-...
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
+
+export default function RadioStationPicker({ stations, selectedStationId, onStationChange }) {
+  const [open, setOpen] = useState(false);
+
+  const selectedLabel = useMemo(
+    () => stations.find((station) => station.id === selectedStationId)?.label || "Select station",
+    [selectedStationId, stations]
+  );
 
   return (
     <Drawer open={open} onOpenChange={setOpen}>
