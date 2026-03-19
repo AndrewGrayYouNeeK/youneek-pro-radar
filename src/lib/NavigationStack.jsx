@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useNavigationType } from "react-router-dom";
 
 const NavigationStackContext = createContext(null);
 
@@ -18,21 +18,27 @@ function getTabKey(pathname) {
 export function NavigationStackProvider({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const navigationType = useNavigationType();
   const routeStackRef = useRef([]);
   const [tabState, setTabState] = useState(DEFAULT_TABS);
 
   useEffect(() => {
     const currentRoute = `${location.pathname}${location.search}`;
     const stack = routeStackRef.current;
-    const lastRoute = stack[stack.length - 1];
-    const previousRoute = stack[stack.length - 2];
 
-    if (lastRoute !== currentRoute) {
-      if (previousRoute === currentRoute) {
-        stack.pop();
+    if (stack.length === 0) {
+      stack.push(currentRoute);
+    } else if (navigationType === "POP") {
+      const existingIndex = stack.lastIndexOf(currentRoute);
+      if (existingIndex >= 0) {
+        stack.splice(existingIndex + 1);
       } else {
         stack.push(currentRoute);
       }
+    } else if (navigationType === "REPLACE") {
+      stack[stack.length - 1] = currentRoute;
+    } else if (stack[stack.length - 1] !== currentRoute) {
+      stack.push(currentRoute);
     }
 
     const tabKey = getTabKey(location.pathname);
@@ -44,7 +50,7 @@ export function NavigationStackProvider({ children }) {
         search: location.search || "",
       },
     }));
-  }, [location.pathname, location.search]);
+  }, [location.pathname, location.search, navigationType]);
 
   const value = useMemo(() => ({
     goBack: (fallbackPath = "/RadarScope") => {

@@ -160,20 +160,31 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
       if (loopTimerRef.current) clearTimeout(loopTimerRef.current);
       if (loopFadeRef.current) clearInterval(loopFadeRef.current);
-      if (prevLoopLayerRef.current && leafletMap.current) {
-        leafletMap.current.removeLayer(prevLoopLayerRef.current);
-        prevLoopLayerRef.current = null;
-      }
-      if (loopLayerRef.current && leafletMap.current) {
-        leafletMap.current.removeLayer(loopLayerRef.current);
-        loopLayerRef.current = null;
-      }
+
+      [
+        radarLayerRef,
+        velLayerRef,
+        tornadoLayerRef,
+        thunderLayerRef,
+        floodLayerRef,
+        winterLayerRef,
+        userLocationMarkerRef,
+        prevLoopLayerRef,
+        loopLayerRef,
+      ].forEach((layerRef) => {
+        if (layerRef.current && leafletMap.current?.hasLayer(layerRef.current)) {
+          leafletMap.current.removeLayer(layerRef.current);
+        }
+        layerRef.current = null;
+      });
+
       loopLayersRef.current.forEach((layer) => {
         if (leafletMap.current?.hasLayer(layer)) {
           leafletMap.current.removeLayer(layer);
         }
       });
       loopLayersRef.current = [];
+
       if (leafletMap.current) {
         leafletMap.current.remove();
         leafletMap.current = null;
