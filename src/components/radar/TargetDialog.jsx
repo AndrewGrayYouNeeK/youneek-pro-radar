@@ -127,6 +127,7 @@ export default function TargetDialog({ mode, initialData, target, onConfirm, onD
                   variant="destructive"
                   size="sm"
                   onClick={onDelete}
+                  aria-label="Delete contact"
                   className="min-h-11 flex-1 font-mono text-xs"
                 >
                   <Trash2 size={14} className="mr-1" /> DELETE
@@ -146,6 +147,7 @@ export default function TargetDialog({ mode, initialData, target, onConfirm, onD
                 <Button
                   type="submit"
                   size="sm"
+                  aria-label="Plot contact"
                   className="min-h-11 flex-1 bg-green-800 hover:bg-green-700 text-green-100 font-mono text-xs"
                 >
                   PLOT CONTACT
@@ -155,6 +157,7 @@ export default function TargetDialog({ mode, initialData, target, onConfirm, onD
                   variant="outline"
                   size="sm"
                   onClick={onClose}
+                  aria-label="Cancel new contact"
                   className="min-h-11 font-mono text-xs border-gray-600 text-gray-300"
                 >
                   CANCEL
