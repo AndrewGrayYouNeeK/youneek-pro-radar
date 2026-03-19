@@ -36,8 +36,8 @@ export default function TargetDialog({ mode, initialData, target, onConfirm, onD
           <h2 className="text-green-400 font-mono font-bold text-sm tracking-widest uppercase">
             {isInspect ? "Contact Data" : "New Contact"}
           </h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-300">
-            <X size={16} />
+          <button onClick={onClose} aria-label="Close dialog" className="flex h-11 w-11 items-center justify-center rounded-full text-gray-500 hover:bg-gray-800 hover:text-gray-300">
+            <X size={18} />
           </button>
         </div>
 
@@ -66,7 +66,7 @@ export default function TargetDialog({ mode, initialData, target, onConfirm, onD
                     key={t}
                     type="button"
                     onClick={() => setForm({ ...form, type: t })}
-                    className={`px-2 py-1 text-xs font-mono rounded border transition-colors ${
+                    className={`min-h-11 px-3 py-2 text-xs font-mono rounded border transition-colors ${
                       form.type === t
                         ? "bg-green-900 border-green-500 text-green-300"
                         : "bg-gray-800 border-gray-600 text-gray-400 hover:border-gray-400"
@@ -127,7 +127,7 @@ export default function TargetDialog({ mode, initialData, target, onConfirm, onD
                   variant="destructive"
                   size="sm"
                   onClick={onDelete}
-                  className="flex-1 font-mono text-xs"
+                  className="min-h-11 flex-1 font-mono text-xs"
                 >
                   <Trash2 size={14} className="mr-1" /> DELETE
                 </Button>
@@ -136,7 +136,7 @@ export default function TargetDialog({ mode, initialData, target, onConfirm, onD
                   variant="outline"
                   size="sm"
                   onClick={onClose}
-                  className="flex-1 font-mono text-xs border-gray-600 text-gray-300"
+                  className="min-h-11 flex-1 font-mono text-xs border-gray-600 text-gray-300"
                 >
                   CLOSE
                 </Button>
@@ -146,7 +146,7 @@ export default function TargetDialog({ mode, initialData, target, onConfirm, onD
                 <Button
                   type="submit"
                   size="sm"
-                  className="flex-1 bg-green-800 hover:bg-green-700 text-green-100 font-mono text-xs"
+                  className="min-h-11 flex-1 bg-green-800 hover:bg-green-700 text-green-100 font-mono text-xs"
                 >
                   PLOT CONTACT
                 </Button>
@@ -155,7 +155,7 @@ export default function TargetDialog({ mode, initialData, target, onConfirm, onD
                   variant="outline"
                   size="sm"
                   onClick={onClose}
-                  className="font-mono text-xs border-gray-600 text-gray-300"
+                  className="min-h-11 font-mono text-xs border-gray-600 text-gray-300"
                 >
                   CANCEL
                 </Button>

@@ -84,10 +84,12 @@
 
   body {
     @apply bg-background text-foreground overscroll-none;
+    overscroll-behavior: none;
   }
 
   button,
-  svg {
+  svg,
+  .select-none-ui {
     user-select: none;
     -webkit-user-select: none;
   }

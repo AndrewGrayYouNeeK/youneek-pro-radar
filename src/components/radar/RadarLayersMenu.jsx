@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Radio, Play, Pause, LocateFixed } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { LOCAL_STATIONS } from "./radioStations";
-import RadioStationPicker from "./RadioStationPicker";
+import MobileSelect from "@/components/mobile/MobileSelect";
 import AccountActions from "./AccountActions";
 
 function ToggleRow({ label, checked, onCheckedChange }) {
@@ -173,10 +173,11 @@ export default function RadarLayersMenu({
                   <label className="block text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">
                     Radio Station
                   </label>
-                  <RadioStationPicker
-                    stations={LOCAL_STATIONS}
-                    selectedStationId={stationId}
-                    onStationChange={setStationId}
+                  <MobileSelect
+                    label="Radio Station"
+                    value={stationId}
+                    onChange={setStationId}
+                    options={LOCAL_STATIONS.map((item) => ({ value: item.id, label: item.label }))}
                   />
                 </div>
 

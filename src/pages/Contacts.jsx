@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import BottomTab from "@/components/radar/BottomTab";
+import AppHeader from "@/components/mobile/AppHeader";
 
 export default function Contacts() {
   const [contacts, setContacts] = useState([]);
@@ -27,8 +28,9 @@ export default function Contacts() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 px-4 pb-28 pt-6 text-white">
-      <div className="mx-auto max-w-md space-y-6">
+    <div className="min-h-screen bg-slate-950 pb-28 text-white">
+      <AppHeader title="Contacts" />
+      <div className="mx-auto max-w-md space-y-6 px-4 pt-6">
         <div>
           <h1 className="text-2xl font-semibold">Shelter Contacts</h1>
           <p className="mt-2 text-sm text-slate-400">Add the people you want ready when you tap the shelter alert button.</p>

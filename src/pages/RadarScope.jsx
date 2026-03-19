@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import RadarDisplay from "../components/radar/RadarDisplay";
 import TargetDialog from "../components/radar/TargetDialog";
 import BottomTab from "../components/radar/BottomTab";
+import AppHeader from "@/components/mobile/AppHeader";
 
 const DEFAULT_SETTINGS = {
   showLabels: true,
@@ -79,7 +80,8 @@ export default function RadarScope() {
 
   return (
     <div className="h-screen bg-gray-950 overflow-hidden pb-24">
-      <div className="relative h-full w-full overflow-hidden">
+      <AppHeader title="Radar" />
+      <div className="relative h-[calc(100%-3.5rem-env(safe-area-inset-top))] w-full overflow-hidden">
         <RadarDisplay
           settings={settings}
           showNexrad={settings.showNexrad}
