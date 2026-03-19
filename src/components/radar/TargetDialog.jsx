@@ -29,14 +29,14 @@ export default function TargetDialog({ mode, initialData, target, onConfirm, onD
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-      <div className="bg-gray-900 border border-gray-700 rounded-lg w-80 p-5 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+      <div className="w-80 rounded-lg border border-border bg-card p-5 text-card-foreground shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-green-400 font-mono font-bold text-sm tracking-widest uppercase">
+          <h2 className="text-primary font-mono font-bold text-sm tracking-widest uppercase">
             {isInspect ? "Contact Data" : "New Contact"}
           </h2>
-          <button onClick={onClose} aria-label="Close dialog" className="flex h-11 w-11 items-center justify-center rounded-full text-gray-500 hover:bg-gray-800 hover:text-gray-300">
+          <button onClick={onClose} aria-label="Close dialog" className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground">
             <X size={18} />
           </button>
         </div>
@@ -44,21 +44,21 @@ export default function TargetDialog({ mode, initialData, target, onConfirm, onD
         <form onSubmit={handleSubmit} className="space-y-3">
           {/* Callsign */}
           <div>
-            <Label className="text-gray-400 text-xs font-mono">CALLSIGN</Label>
+            <Label className="text-muted-foreground text-xs font-mono">CALLSIGN</Label>
             <Input
               value={form.callsign}
               onChange={(e) => setForm({ ...form, callsign: e.target.value })}
               placeholder="AUTO"
               readOnly={isInspect}
-              className="bg-gray-800 border-gray-600 text-green-300 font-mono text-sm mt-1"
+              className="bg-background border-border text-foreground font-mono text-sm mt-1"
             />
           </div>
 
           {/* Type */}
           <div>
-            <Label className="text-gray-400 text-xs font-mono">TYPE</Label>
+            <Label className="text-muted-foreground text-xs font-mono">TYPE</Label>
             {isInspect ? (
-              <div className="mt-1 text-green-300 font-mono text-sm uppercase">{form.type}</div>
+              <div className="mt-1 text-foreground font-mono text-sm uppercase">{form.type}</div>
             ) : (
               <div className="flex gap-2 mt-1 flex-wrap">
                 {TARGET_TYPES.map((t) => (
@@ -69,8 +69,8 @@ export default function TargetDialog({ mode, initialData, target, onConfirm, onD
                     onClick={() => setForm({ ...form, type: t })}
                     className={`min-h-11 px-3 py-2 text-xs font-mono rounded border transition-colors ${
                       form.type === t
-                        ? "bg-green-900 border-green-500 text-green-300"
-                        : "bg-gray-800 border-gray-600 text-gray-400 hover:border-gray-400"
+                        ? "bg-primary/15 border-primary text-primary"
+                        : "bg-background border-border text-muted-foreground hover:border-muted-foreground"
                     }`}
                   >
                     {t.toUpperCase()}
@@ -83,7 +83,7 @@ export default function TargetDialog({ mode, initialData, target, onConfirm, onD
           {/* Bearing / Range */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-gray-400 text-xs font-mono">BEARING (°)</Label>
+              <Label className="text-muted-foreground text-xs font-mono">BEARING (°)</Label>
               <Input
                 type="number"
                 min={0}
@@ -91,11 +91,11 @@ export default function TargetDialog({ mode, initialData, target, onConfirm, onD
                 value={form.bearing}
                 onChange={(e) => setForm({ ...form, bearing: e.target.value })}
                 readOnly={isInspect}
-                className="bg-gray-800 border-gray-600 text-green-300 font-mono text-sm mt-1"
+                className="bg-background border-border text-foreground font-mono text-sm mt-1"
               />
             </div>
             <div>
-              <Label className="text-gray-400 text-xs font-mono">RANGE (nm)</Label>
+              <Label className="text-muted-foreground text-xs font-mono">RANGE (nm)</Label>
               <Input
                 type="number"
                 min={0}
@@ -103,19 +103,19 @@ export default function TargetDialog({ mode, initialData, target, onConfirm, onD
                 value={form.range}
                 onChange={(e) => setForm({ ...form, range: e.target.value })}
                 readOnly={isInspect}
-                className="bg-gray-800 border-gray-600 text-green-300 font-mono text-sm mt-1"
+                className="bg-background border-border text-foreground font-mono text-sm mt-1"
               />
             </div>
           </div>
 
           {/* Notes */}
           <div>
-            <Label className="text-gray-400 text-xs font-mono">NOTES</Label>
+            <Label className="text-muted-foreground text-xs font-mono">NOTES</Label>
             <Input
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
               readOnly={isInspect}
-              className="bg-gray-800 border-gray-600 text-green-300 font-mono text-sm mt-1"
+              className="bg-background border-border text-foreground font-mono text-sm mt-1"
             />
           </div>
 
@@ -138,7 +138,7 @@ export default function TargetDialog({ mode, initialData, target, onConfirm, onD
                   variant="outline"
                   size="sm"
                   onClick={onClose}
-                  className="min-h-11 flex-1 font-mono text-xs border-gray-600 text-gray-300"
+                  className="min-h-11 flex-1 font-mono text-xs"
                 >
                   CLOSE
                 </Button>
@@ -149,7 +149,7 @@ export default function TargetDialog({ mode, initialData, target, onConfirm, onD
                   type="submit"
                   size="sm"
                   aria-label="Plot contact"
-                  className="min-h-11 flex-1 bg-green-800 hover:bg-green-700 text-green-100 font-mono text-xs"
+                  className="min-h-11 flex-1 font-mono text-xs"
                 >
                   PLOT CONTACT
                 </Button>
@@ -159,7 +159,7 @@ export default function TargetDialog({ mode, initialData, target, onConfirm, onD
                   size="sm"
                   onClick={onClose}
                   aria-label="Cancel new contact"
-                  className="min-h-11 font-mono text-xs border-gray-600 text-gray-300"
+                  className="min-h-11 font-mono text-xs"
                 >
                   CANCEL
                 </Button>

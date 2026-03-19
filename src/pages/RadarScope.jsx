@@ -1,7 +1,6 @@
-import { useState, useCallback } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import RadarDisplay from "../components/radar/RadarDisplay";
+import { useState, useCallback, Suspense, lazy } from "react";
+...
+const RadarDisplay = lazy(() => import("../components/radar/RadarDisplay"));
 import TargetDialog from "../components/radar/TargetDialog";
 import BottomTab from "../components/radar/BottomTab";
 import AppHeader from "@/components/mobile/AppHeader";
@@ -132,13 +131,21 @@ export default function RadarScope() {
     <div className="safe-screen h-screen bg-gray-950 overflow-hidden pb-24">
       <AppHeader title="Radar" />
       <div className="relative h-[calc(100%-3.5rem-env(safe-area-inset-top))] w-full overflow-hidden">
-        <RadarDisplay
-          settings={settings}
-          showNexrad={settings.showNexrad}
-          onSettingsChange={setSettings}
-          showRadio={showRadio}
-          onToggleRadio={setShowRadio}
-        />
+        <Suspense
+          fallback={(
+            <div className="flex h-full items-center justify-center">
+              <div className="h-8 w-8 rounded-full border-4 border-slate-200 border-t-slate-800 animate-spin"></div>
+            </div>
+          )}
+        >
+          <RadarDisplay
+            settings={settings}
+            showNexrad={settings.showNexrad}
+            onSettingsChange={setSettings}
+            showRadio={showRadio}
+            onToggleRadio={setShowRadio}
+          />
+        </Suspense>
       </div>
 
       <BottomTab />

@@ -8,9 +8,9 @@ const TYPE_SYMBOLS = {
 };
 
 const THEME_TEXT = {
-  green: "text-green-400",
-  amber: "text-amber-400",
-  blue: "text-blue-400",
+  green: "text-chart-2",
+  amber: "text-chart-4",
+  blue: "text-chart-1",
 };
 
 export default function TargetList({ targets, settings, onTargetClick, onDeleteTarget }) {
