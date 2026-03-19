@@ -708,7 +708,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         YouNeeK Pro Radar — by Andrew Gray
       </div>
       <ShelterAlert
-        activeTornadoWarning={true}
+        activeTornadoWarning={activeTornadoWarning}
         userLocation={userLocation}
       />
     </div>
