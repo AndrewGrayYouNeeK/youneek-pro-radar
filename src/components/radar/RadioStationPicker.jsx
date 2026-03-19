@@ -33,6 +33,7 @@ export default function RadioStationPicker({ stations, selectedStationId, onStat
           {stations.map((station) => (
             <button
               key={station.id}
+              aria-label={`Choose ${station.label}`}
               onClick={() => {
                 onStationChange(station.id);
                 setOpen(false);

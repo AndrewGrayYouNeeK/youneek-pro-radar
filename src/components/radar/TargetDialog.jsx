@@ -65,6 +65,7 @@ export default function TargetDialog({ mode, initialData, target, onConfirm, onD
                   <button
                     key={t}
                     type="button"
+                    aria-label={`Select ${t} type`}
                     onClick={() => setForm({ ...form, type: t })}
                     className={`min-h-11 px-3 py-2 text-xs font-mono rounded border transition-colors ${
                       form.type === t

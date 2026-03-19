@@ -175,7 +175,7 @@ export default function RadarLayersMenu({
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-xs font-mono font-bold tracking-widest text-slate-300">
-                    <Radio size={11} />
+                    <Radio size={11} aria-hidden="true" />
                     NOAA WEATHER RADIO
                   </div>
                   {isLocating && <LocateFixed size={12} className="animate-pulse text-green-400" />}

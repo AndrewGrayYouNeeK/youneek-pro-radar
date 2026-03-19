@@ -49,6 +49,7 @@ export default function MobileSelect({
             <button
               key={option.value}
               type="button"
+              aria-label={`Choose ${option.label}`}
               onClick={() => {
                 onChange(option.value);
                 setOpen(false);
