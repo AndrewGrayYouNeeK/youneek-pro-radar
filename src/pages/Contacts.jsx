@@ -28,7 +28,7 @@ export default function Contacts() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 pb-28 text-white">
+    <div className="safe-screen min-h-screen bg-slate-950 pb-28 text-white">
       <AppHeader title="Contacts" />
       <div className="mx-auto max-w-md space-y-6 px-4 pt-6">
         <div>
@@ -42,10 +42,12 @@ export default function Contacts() {
               value={value}
               onChange={(e) => setValue(e.target.value)}
               placeholder="Phone number or contact note"
+              aria-label="Shelter contact"
               className="flex-1 rounded-xl border border-white/10 bg-slate-900 px-3 py-3 text-sm text-white outline-none"
             />
             <button
               onClick={addContact}
+              aria-label="Add shelter contact"
               className="rounded-xl bg-green-600 px-4 py-3 text-sm font-medium text-white"
             >
               Add
@@ -64,6 +66,7 @@ export default function Contacts() {
                 <div className="text-sm text-white">{contact}</div>
                 <button
                   onClick={() => removeContact(contact)}
+                  aria-label={`Remove ${contact}`}
                   className="rounded-lg border border-red-500/40 bg-red-950/40 px-3 py-2 text-xs font-medium text-red-300"
                 >
                   Remove

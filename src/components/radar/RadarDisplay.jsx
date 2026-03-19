@@ -129,6 +129,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [loopFrameIndex, setLoopFrameIndex] = useState(0);
   const [userLocation, setUserLocation] = useState(null);
   const [activeTornadoWarning, setActiveTornadoWarning] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const alertToggles = {
     tornado: showTornado,
     severe: showThunderstorm,
@@ -596,12 +597,14 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   }, [isLooping, loopFrames]);
 
   const refreshWeatherData = () => {
+    setIsRefreshing(true);
     if (radarLayerRef.current?.setUrl && !radarLoadStatsRef.current.usingFallback) {
       radarLayerRef.current.setUrl(getIowaReflectivityUrl());
     }
     if (velLayerRef.current?.redraw) {
       velLayerRef.current.redraw();
     }
+    setTimeout(() => setIsRefreshing(false), 900);
   };
 
   const handleTouchStart = (event) => {
@@ -657,21 +660,32 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
+      {isRefreshing && (
+        <div
+          className="absolute left-1/2 z-[1200] -translate-x-1/2 rounded-full bg-slate-900/85 px-4 py-2 text-xs font-medium text-white shadow-lg backdrop-blur-sm"
+          style={{ top: 'calc(1rem + env(safe-area-inset-top))' }}
+        >
+          Refreshing radar...
+        </div>
+      )}
       <div className="absolute left-3 top-20 z-[1000] flex flex-col gap-2">
         <button
           onClick={handleHookZoneView}
+          aria-label="Jump to Hook Zone"
           className="rounded-lg bg-slate-900/80 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90"
         >
           🌀 Hook Zone
         </button>
         <button
           onClick={handleConusView}
+          aria-label="Show CONUS view"
           className="rounded-lg bg-slate-900/80 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90"
         >
           🗺️ CONUS
         </button>
         <button
           onClick={handleLoopToggle}
+          aria-label={isLooping ? "Stop radar loop" : "Start radar loop"}
           className="rounded-lg bg-slate-900/80 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90"
         >
           {isLooping ? "⏹ Loop" : "▶ Loop"}

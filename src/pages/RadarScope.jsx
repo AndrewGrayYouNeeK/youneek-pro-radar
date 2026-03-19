@@ -79,7 +79,7 @@ export default function RadarScope() {
   }, [navigate, location.pathname, location.search]);
 
   return (
-    <div className="h-screen bg-gray-950 overflow-hidden pb-24">
+    <div className="safe-screen h-screen bg-gray-950 overflow-hidden pb-24">
       <AppHeader title="Radar" />
       <div className="relative h-[calc(100%-3.5rem-env(safe-area-inset-top))] w-full overflow-hidden">
         <RadarDisplay

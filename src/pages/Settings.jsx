@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import BottomTab from "@/components/radar/BottomTab";
 import AppHeader from "@/components/mobile/AppHeader";
@@ -6,14 +7,19 @@ import AppHeader from "@/components/mobile/AppHeader";
 export default function Settings() {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
-  const handleDeleteAccount = async () => {
-    const me = await base44.auth.me();
-    await base44.entities.User.delete(me.id);
-    await base44.auth.logout("/");
-  };
+  const deleteAccountMutation = useMutation({
+    mutationFn: async () => {
+      const me = await base44.auth.me();
+      await base44.entities.User.delete(me.id);
+      await base44.auth.logout("/");
+    },
+    onMutate: () => {
+      setConfirmingDelete(false);
+    },
+  });
 
   return (
-    <div className="min-h-screen bg-slate-950 pb-28 text-white">
+    <div className="safe-screen min-h-screen bg-slate-950 pb-28 text-white">
       <AppHeader title="Settings" />
       <div className="mx-auto max-w-md space-y-6 px-4 pt-6">
         <div>
@@ -27,6 +33,7 @@ export default function Settings() {
             {!confirmingDelete ? (
               <button
                 onClick={() => setConfirmingDelete(true)}
+                aria-label="Delete account"
                 className="w-full rounded-xl border border-red-500/40 bg-red-950/40 px-4 py-3 text-sm font-medium text-red-300"
               >
                 Delete Account
@@ -37,13 +44,16 @@ export default function Settings() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => setConfirmingDelete(false)}
+                    aria-label="Cancel account deletion"
                     className="flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-sm text-white"
                   >
                     Cancel
                   </button>
                   <button
-                    onClick={handleDeleteAccount}
-                    className="flex-1 rounded-xl bg-red-600 px-3 py-3 text-sm font-medium text-white"
+                    onClick={() => deleteAccountMutation.mutate()}
+                    aria-label="Confirm account deletion"
+                    disabled={deleteAccountMutation.isPending}
+                    className="flex-1 rounded-xl bg-red-600 px-3 py-3 text-sm font-medium text-white disabled:opacity-60"
                   >
                     Confirm Delete
                   </button>
