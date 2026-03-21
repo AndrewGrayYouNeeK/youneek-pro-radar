@@ -5,6 +5,7 @@ const RadarDisplay = lazy(() => import("../components/radar/RadarDisplay"));
 import TargetDialog from "../components/radar/TargetDialog";
 import BottomTab from "../components/radar/BottomTab";
 import AppHeader from "@/components/mobile/AppHeader";
+import RainArrivalAlert from "@/components/radar/RainArrivalAlert";
 import { useNavigationStack } from "@/lib/NavigationStack";
 import useTabPageMemory from "@/hooks/useTabPageMemory";
 
@@ -132,6 +133,7 @@ export default function RadarScope() {
     <div className="safe-screen h-screen bg-gray-950 overflow-hidden pb-24">
       <AppHeader title="Radar" />
       <div className="relative h-[calc(100%-3.5rem-env(safe-area-inset-top))] w-full overflow-hidden">
+        <RainArrivalAlert />
         <Suspense
           fallback={(
             <div className="flex h-full items-center justify-center">
