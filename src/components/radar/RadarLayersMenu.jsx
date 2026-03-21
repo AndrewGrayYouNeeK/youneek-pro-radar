@@ -139,44 +139,6 @@ export default function RadarLayersMenu({
           </div>
           <div className="space-y-3">
             <div className="space-y-2 rounded-xl border border-white/10 bg-white/5 p-3">
-              <div className="flex items-center justify-between gap-2">
-                <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Radio</div>
-                <Switch checked={showRadio} onCheckedChange={onShowRadioChange} aria-label="Toggle weather radio" />
-              </div>
-
-              {showRadio ? (
-                <>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-[11px] font-mono font-bold tracking-widest text-slate-300">
-                      <Radio size={11} aria-hidden="true" />
-                      NOAA WEATHER RADIO
-                    </div>
-                    {isLocating && <LocateFixed size={12} aria-hidden="true" className="animate-pulse text-green-400" />}
-                  </div>
-
-                  <MobileSelect
-                    label="Radio Station"
-                    value={stationId}
-                    onChange={setStationId}
-                    options={LOCAL_STATIONS.map((item) => ({ value: item.id, label: item.label }))}
-                  />
-
-                  <div className="text-xs font-mono font-bold text-green-400">{station.label.replace(/^\w+\s/, "")}</div>
-                  <button
-                    onClick={togglePlayback}
-                    aria-label={isPlaying ? "Stop local NOAA weather radio" : "Play local NOAA weather radio"}
-                    className="flex w-full items-center justify-center gap-2 rounded border border-green-600 bg-green-900 px-3 py-2 text-xs font-mono text-green-300 transition-colors hover:bg-green-800"
-                  >
-                    {isPlaying ? <Pause size={13} aria-hidden="true" /> : <Play size={13} aria-hidden="true" />}
-                    {isPlaying ? "STOP RADIO" : "PLAY RADIO"}
-                  </button>
-                </>
-              ) : (
-                <div className="text-[11px] text-slate-400">Turn radio on to choose a station and play audio.</div>
-              )}
-            </div>
-
-            <div className="space-y-2 rounded-xl border border-white/10 bg-white/5 p-3">
               <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Radar</div>
               <ToggleRow
                 label="📡 Live NEXRAD"
@@ -230,6 +192,44 @@ export default function RadarLayersMenu({
                     ariaLabel="Toggle winter advisories layer"
                   />
                 </div>
+              )}
+            </div>
+
+            <div className="space-y-2 rounded-xl border border-white/10 bg-white/5 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Radio</div>
+                <Switch checked={showRadio} onCheckedChange={onShowRadioChange} aria-label="Toggle weather radio" />
+              </div>
+
+              {showRadio ? (
+                <>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-[11px] font-mono font-bold tracking-widest text-slate-300">
+                      <Radio size={11} aria-hidden="true" />
+                      NOAA WEATHER RADIO
+                    </div>
+                    {isLocating && <LocateFixed size={12} aria-hidden="true" className="animate-pulse text-green-400" />}
+                  </div>
+
+                  <MobileSelect
+                    label="Radio Station"
+                    value={stationId}
+                    onChange={setStationId}
+                    options={LOCAL_STATIONS.map((item) => ({ value: item.id, label: item.label }))}
+                  />
+
+                  <div className="text-xs font-mono font-bold text-green-400">{station.label.replace(/^\w+\s/, "")}</div>
+                  <button
+                    onClick={togglePlayback}
+                    aria-label={isPlaying ? "Stop local NOAA weather radio" : "Play local NOAA weather radio"}
+                    className="flex w-full items-center justify-center gap-2 rounded border border-green-600 bg-green-900 px-3 py-2 text-xs font-mono text-green-300 transition-colors hover:bg-green-800"
+                  >
+                    {isPlaying ? <Pause size={13} aria-hidden="true" /> : <Play size={13} aria-hidden="true" />}
+                    {isPlaying ? "STOP RADIO" : "PLAY RADIO"}
+                  </button>
+                </>
+              ) : (
+                <div className="text-[11px] text-slate-400">Turn radio on to choose a station and play audio.</div>
               )}
             </div>
 
