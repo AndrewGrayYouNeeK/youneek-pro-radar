@@ -479,24 +479,47 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const fetchLoopFrames = () => {
     if (!leafletMap.current) return;
     clearLoopLayers();
-    fetch("https://api.rainviewer.com/public/weather-maps.json").then((r) => r.json()).then((data) => {
-      const reflectivityFrames = (data?.radar?.past || []).filter((i) => i?.path).map((i) => ({ path: i.path, label: formatRainViewerTime(i), typeLabel: "🟢 Reflectivity" }));
-      const frames = showVelocityLocal ? reflectivityFrames.flatMap((f) => ([f, { ...f, typeLabel: "🔵 Velocity" }])) : reflectivityFrames;
-      const preloadPromises = frames.map((frame) => new Promise((resolve) => {
-        const layer = L.tileLayer(getRainViewerTileUrl(frame.path), { opacity: 0, maxZoom: 18, maxNativeZoom: 12, crossOrigin: "anonymous" });
-        layer.once("load", () => resolve(layer)); layer.once("tileerror", () => resolve(layer));
-        layer.addTo(leafletMap.current);
-      }));
-      Promise.all(preloadPromises).then((layers) => {
-        if (!leafletMap.current) return;
-        loopLayersRef.current = layers; loopIndexRef.current = 0; setLoopFrames(frames); setLoopFrameIndex(0);
-        layers.forEach((l, i) => l.setOpacity(i === 0 ? 0.7 : 0));
-        loopLayerRef.current = layers[0] || null; prevLoopLayerRef.current = null;
-        if (radarLayerRef.current?.setOpacity) radarLayerRef.current.setOpacity(0);
-        if (velLayerRef.current?.setOpacity) velLayerRef.current.setOpacity(0);
-        setIsLooping(true);
+    fetch("https://api.rainviewer.com/public/weather-maps.json")
+      .then(r => r.json())
+      .then(data => {
+        const past = (data?.radar?.past || []).filter(i => i?.path);
+        const limited = past.slice(-6);
+        const frames = limited.map(i => ({
+          path: i.path,
+          label: formatRainViewerTime(i),
+          typeLabel: "🟢 Reflectivity",
+        }));
+
+        let loaded = 0;
+        const layers = [];
+        const loadNext = (index) => {
+          if (index >= frames.length || !leafletMap.current) {
+            loopLayersRef.current = layers;
+            loopIndexRef.current = 0;
+            setLoopFrames(frames);
+            setLoopFrameIndex(0);
+            layers.forEach((l, i) => l.setOpacity(i === 0 ? 0.7 : 0));
+            loopLayerRef.current = layers[0] || null;
+            prevLoopLayerRef.current = null;
+            if (radarLayerRef.current?.setOpacity) radarLayerRef.current.setOpacity(0);
+            if (velLayerRef.current?.setOpacity) velLayerRef.current.setOpacity(0);
+            setIsLooping(true);
+            return;
+          }
+          const layer = L.tileLayer(getRainViewerTileUrl(frames[index].path), {
+            opacity: 0,
+            maxZoom: 18,
+            maxNativeZoom: 12,
+            crossOrigin: "anonymous",
+            keepBuffer: 1,
+          });
+          const finish = () => { layers.push(layer); loadNext(index + 1); };
+          layer.once("load", finish);
+          layer.once("tileerror", finish);
+          layer.addTo(leafletMap.current);
+        };
+        loadNext(0);
       });
-    });
   };
   const handleLoopToggle = () => { if (isLooping) { setIsLooping(false); clearLoopLayers(); return; } fetchLoopFrames(); };
   const handleShowNexradChange = (value) => onSettingsChange({ ...settings, showNexrad: value });
@@ -527,11 +550,11 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         if (p >= 1) { clearInterval(loopFadeRef.current); loopFadeRef.current = null; outgoing.setOpacity(0); incoming.setOpacity(0.7); }
       }, 25);
       loopIndexRef.current = nextIndex; setLoopFrameIndex(nextIndex);
-      loopTimerRef.current = setTimeout(animateToNextFrame, nextIndex === loopLayersRef.current.length - 1 ? 1500 : 700);
+      loopTimerRef.current = setTimeout(animateToNextFrame, nextIndex === loopLayersRef.current.length - 1 ? 2000 : 900);
     };
     loopLayersRef.current.forEach((l, i) => l.setOpacity(i === loopIndexRef.current ? 0.7 : 0));
     setLoopFrameIndex(loopIndexRef.current);
-    loopTimerRef.current = setTimeout(animateToNextFrame, loopIndexRef.current === loopLayersRef.current.length - 1 ? 1500 : 700);
+    loopTimerRef.current = setTimeout(animateToNextFrame, loopIndexRef.current === loopLayersRef.current.length - 1 ? 2000 : 900);
     return () => {
       if (loopTimerRef.current) { clearTimeout(loopTimerRef.current); loopTimerRef.current = null; }
       if (loopFadeRef.current) { clearInterval(loopFadeRef.current); loopFadeRef.current = null; }
