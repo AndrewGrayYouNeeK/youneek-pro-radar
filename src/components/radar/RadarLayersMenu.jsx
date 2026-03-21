@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Radio, Play, Pause, LocateFixed } from "lucide-react";
+import { Radio, Play, Pause, LocateFixed, ChevronDown, ChevronUp } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { LOCAL_STATIONS } from "./radioStations";
 import MobileSelect from "@/components/mobile/MobileSelect";
@@ -46,6 +46,7 @@ export default function RadarLayersMenu({
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLocating, setIsLocating] = useState(true);
   const [stationId, setStationId] = useState(LOCAL_STATIONS[0].id);
+  const [showAlerts, setShowAlerts] = useState(false);
 
   const station = useMemo(
     () => LOCAL_STATIONS.find((item) => item.id === stationId) || LOCAL_STATIONS[0],
@@ -138,6 +139,44 @@ export default function RadarLayersMenu({
           </div>
           <div className="space-y-3">
             <div className="space-y-2 rounded-xl border border-white/10 bg-white/5 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Radio</div>
+                <Switch checked={showRadio} onCheckedChange={onShowRadioChange} aria-label="Toggle weather radio" />
+              </div>
+
+              {showRadio ? (
+                <>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-[11px] font-mono font-bold tracking-widest text-slate-300">
+                      <Radio size={11} aria-hidden="true" />
+                      NOAA WEATHER RADIO
+                    </div>
+                    {isLocating && <LocateFixed size={12} aria-hidden="true" className="animate-pulse text-green-400" />}
+                  </div>
+
+                  <MobileSelect
+                    label="Radio Station"
+                    value={stationId}
+                    onChange={setStationId}
+                    options={LOCAL_STATIONS.map((item) => ({ value: item.id, label: item.label }))}
+                  />
+
+                  <div className="text-xs font-mono font-bold text-green-400">{station.label.replace(/^\w+\s/, "")}</div>
+                  <button
+                    onClick={togglePlayback}
+                    aria-label={isPlaying ? "Stop local NOAA weather radio" : "Play local NOAA weather radio"}
+                    className="flex w-full items-center justify-center gap-2 rounded border border-green-600 bg-green-900 px-3 py-2 text-xs font-mono text-green-300 transition-colors hover:bg-green-800"
+                  >
+                    {isPlaying ? <Pause size={13} aria-hidden="true" /> : <Play size={13} aria-hidden="true" />}
+                    {isPlaying ? "STOP RADIO" : "PLAY RADIO"}
+                  </button>
+                </>
+              ) : (
+                <div className="text-[11px] text-slate-400">Turn radio on to choose a station and play audio.</div>
+              )}
+            </div>
+
+            <div className="space-y-2 rounded-xl border border-white/10 bg-white/5 p-3">
               <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Radar</div>
               <ToggleRow
                 label="📡 Live NEXRAD"
@@ -151,73 +190,47 @@ export default function RadarLayersMenu({
                 onCheckedChange={onShowVelocityChange}
                 ariaLabel="Switch to velocity mode"
               />
-              <ToggleRow
-                label="📻 Radio"
-                checked={showRadio}
-                onCheckedChange={onShowRadioChange}
-                ariaLabel="Toggle weather radio"
-              />
             </div>
 
-            {showRadio && (
-              <div className="space-y-2 rounded-xl border border-white/10 bg-white/5 p-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-[11px] font-mono font-bold tracking-widest text-slate-300">
-                    <Radio size={11} aria-hidden="true" />
-                    NOAA WEATHER RADIO
-                  </div>
-                  {isLocating && <LocateFixed size={12} aria-hidden="true" className="animate-pulse text-green-400" />}
+            <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+              <button
+                type="button"
+                onClick={() => setShowAlerts((value) => !value)}
+                className="flex w-full items-center justify-between text-left"
+                aria-label={showAlerts ? "Hide warning controls" : "Show warning controls"}
+              >
+                <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Warnings</div>
+                {showAlerts ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
+              </button>
+
+              {showAlerts && (
+                <div className="mt-2 space-y-2">
+                  <ToggleRow
+                    label="🌪️ Tornado Warnings"
+                    checked={alertToggles.tornado}
+                    onCheckedChange={(value) => onAlertToggleChange("tornado", value)}
+                    ariaLabel="Toggle tornado warnings layer"
+                  />
+                  <ToggleRow
+                    label="⛈️ Severe Thunderstorm"
+                    checked={alertToggles.severe}
+                    onCheckedChange={(value) => onAlertToggleChange("severe", value)}
+                    ariaLabel="Toggle severe thunderstorm warnings layer"
+                  />
+                  <ToggleRow
+                    label="🌊 Flood Warnings"
+                    checked={alertToggles.flood}
+                    onCheckedChange={(value) => onAlertToggleChange("flood", value)}
+                    ariaLabel="Toggle flood warnings layer"
+                  />
+                  <ToggleRow
+                    label="❄️ Winter Advisories"
+                    checked={alertToggles.winter}
+                    onCheckedChange={(value) => onAlertToggleChange("winter", value)}
+                    ariaLabel="Toggle winter advisories layer"
+                  />
                 </div>
-
-                <MobileSelect
-                  label="Radio Station"
-                  value={stationId}
-                  onChange={setStationId}
-                  options={LOCAL_STATIONS.map((item) => ({ value: item.id, label: item.label }))}
-                />
-
-                <div className="text-xs font-mono font-bold text-green-400">{station.label.replace(/^\w+\s/, "")}</div>
-                <div className="text-[11px] font-mono text-slate-400">
-                  {isLocating ? "Finding your nearest local stream..." : "Plays directly here in the menu."}
-                </div>
-
-                <button
-                  onClick={togglePlayback}
-                  aria-label={isPlaying ? "Stop local NOAA weather radio" : "Play local NOAA weather radio"}
-                  className="flex w-full items-center justify-center gap-2 rounded border border-green-600 bg-green-900 px-3 py-2 text-xs font-mono text-green-300 transition-colors hover:bg-green-800"
-                >
-                  {isPlaying ? <Pause size={13} aria-hidden="true" /> : <Play size={13} aria-hidden="true" />}
-                  {isPlaying ? "STOP LOCAL NOAA" : "PLAY LOCAL NOAA"}
-                </button>
-              </div>
-            )}
-
-            <div className="space-y-2 rounded-xl border border-white/10 bg-white/5 p-3">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Warnings</div>
-              <ToggleRow
-                label="🌪️ Tornado Warnings"
-                checked={alertToggles.tornado}
-                onCheckedChange={(value) => onAlertToggleChange("tornado", value)}
-                ariaLabel="Toggle tornado warnings layer"
-              />
-              <ToggleRow
-                label="⛈️ Severe Thunderstorm"
-                checked={alertToggles.severe}
-                onCheckedChange={(value) => onAlertToggleChange("severe", value)}
-                ariaLabel="Toggle severe thunderstorm warnings layer"
-              />
-              <ToggleRow
-                label="🌊 Flood Warnings"
-                checked={alertToggles.flood}
-                onCheckedChange={(value) => onAlertToggleChange("flood", value)}
-                ariaLabel="Toggle flood warnings layer"
-              />
-              <ToggleRow
-                label="❄️ Winter Advisories"
-                checked={alertToggles.winter}
-                onCheckedChange={(value) => onAlertToggleChange("winter", value)}
-                ariaLabel="Toggle winter advisories layer"
-              />
+              )}
             </div>
 
             <AccountActions />
