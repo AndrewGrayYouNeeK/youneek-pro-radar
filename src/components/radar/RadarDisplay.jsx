@@ -572,7 +572,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
           Refreshing radar...
         </div>
       )}
-      <div className="absolute left-3 top-20 z-[1000] flex flex-col gap-2">
+      <div className="absolute left-3 top-20 z-[1000] flex flex-col gap-2" style={{ maxHeight: 'calc(100vh - 120px)', overflowY: 'auto', paddingRight: '2px' }}>
         <button
           onClick={() => setShowQuickControls((value) => !value)}
           className="rounded-lg bg-slate-900/85 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90"
