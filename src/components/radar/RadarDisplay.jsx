@@ -120,7 +120,7 @@ async function fetchOceanGrid(bounds, gridStep = 2.0) {
   for (let i = 0; i < pairs.length; i += 10) chunks.push(pairs.slice(i, i + 10));
   const results = [];
   await Promise.all(chunks.map(async (chunk) => {
-    const url = `https://api.open-meteo.com/v1/marine?latitude=${chunk.map((p) => p[0]).join(",")}&longitude=${chunk.map((p) => p[1]).join(",")}&current=ocean_current_velocity,ocean_current_direction,sea_surface_temperature&cell_selection=sea`;
+    const url = `https://marine-api.open-meteo.com/v1/marine?latitude=${chunk.map((p) => p[0]).join(",")}&longitude=${chunk.map((p) => p[1]).join(",")}&current=ocean_current_velocity,ocean_current_direction,sea_surface_temperature&cell_selection=sea`;
     try {
       const json = await (await fetch(url)).json();
       const arr = Array.isArray(json) ? json : [json];
@@ -267,7 +267,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       if (oceanPopupRef.current) { leafletMap.current.removeLayer(oceanPopupRef.current); oceanPopupRef.current = null; }
       try {
         const { lat, lng } = e.latlng;
-        const json = await (await fetch(`https://api.open-meteo.com/v1/marine?latitude=${lat.toFixed(3)}&longitude=${lng.toFixed(3)}&current=ocean_current_velocity,ocean_current_direction,sea_surface_temperature&cell_selection=sea`)).json();
+        const json = await (await fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat.toFixed(3)}&longitude=${lng.toFixed(3)}&current=ocean_current_velocity,ocean_current_direction,sea_surface_temperature&cell_selection=sea`)).json();
         if (json?.current?.ocean_current_velocity != null) {
           const { ocean_current_velocity: v, ocean_current_direction: d, sea_surface_temperature: t } = json.current;
           oceanPopupRef.current = L.popup({ closeButton: true })
