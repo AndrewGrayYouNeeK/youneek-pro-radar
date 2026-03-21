@@ -707,7 +707,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         </button>
         <button
           onClick={handleConusView}
-          aria-label="Show CONUS view"
+          aria-label="Show continental radar view"
           aria-description="Shows the full continental radar view"
           className="rounded-lg bg-slate-900/80 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90"
         >
@@ -744,12 +744,18 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         onClick={handleLocateMe}
         className="absolute z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700"
         style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom))', right: 'calc(1.25rem + env(safe-area-inset-right))' }}
-        aria-label="Locate me"
+        aria-label="Center radar on my location"
         aria-description="Centers the radar on your current GPS location"
+        aria-hidden="false"
       >
-        <LocateFixed size={24} />
+        <LocateFixed size={24} aria-hidden="true" />
       </button>
-      <div ref={mapRef} className="absolute inset-0 h-full min-h-[400px] w-full" />
+      <div
+        ref={mapRef}
+        className="absolute inset-0 h-full min-h-[400px] w-full"
+        role="application"
+        aria-label="Interactive weather radar - use arrow keys to pan, plus and minus keys to zoom"
+      />
       <div style={{ position:'absolute', bottom:'10px', left:'10px', zIndex:999, color:'rgba(255,255,255,0.35)', fontSize:'13px', fontWeight:'600', letterSpacing:'1px', pointerEvents:'none', userSelect:'none' }}>
         YouNeeK Pro Radar — by Andrew Gray
       </div>

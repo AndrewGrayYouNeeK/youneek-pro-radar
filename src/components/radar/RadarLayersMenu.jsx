@@ -5,11 +5,11 @@ import { LOCAL_STATIONS } from "./radioStations";
 import MobileSelect from "@/components/mobile/MobileSelect";
 import AccountActions from "./AccountActions";
 
-function ToggleRow({ label, checked, onCheckedChange }) {
+function ToggleRow({ label, checked, onCheckedChange, ariaLabel }) {
   return (
     <div className="flex items-center justify-between gap-3">
       <span className="text-sm text-white">{label}</span>
-      <Switch checked={checked} onCheckedChange={onCheckedChange} />
+      <Switch checked={checked} onCheckedChange={onCheckedChange} aria-label={ariaLabel || label} />
     </div>
   );
 }
@@ -124,10 +124,11 @@ export default function RadarLayersMenu({
       <button
         onClick={() => setIsOpen((open) => !open)}
         className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-900/80 text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90"
-        aria-label="Open layers menu"
+        aria-label={isOpen ? "Close layers menu" : "Open layers menu"}
         aria-description="Opens radar, warning, and radio controls"
+        aria-hidden="false"
       >
-        <span className="text-xl">🗂️</span>
+        <span className="text-xl" aria-hidden="true">🗂️</span>
       </button>
 
       {isOpen && (
@@ -136,29 +137,48 @@ export default function RadarLayersMenu({
             Layers
           </div>
           <div className="space-y-3">
-            <ToggleRow label="📡 Live NEXRAD" checked={showNexrad} onCheckedChange={onShowNexradChange} />
-            <ToggleRow label="🌀 Velocity" checked={showVelocity} onCheckedChange={onShowVelocityChange} />
+            <ToggleRow
+              label="📡 Live NEXRAD"
+              checked={showNexrad}
+              onCheckedChange={onShowNexradChange}
+              ariaLabel="Toggle live NEXRAD radar layer"
+            />
+            <ToggleRow
+              label="🌀 Velocity"
+              checked={showVelocity}
+              onCheckedChange={onShowVelocityChange}
+              ariaLabel="Switch to velocity mode"
+            />
             <ToggleRow
               label="🌪️ Tornado Warnings"
               checked={alertToggles.tornado}
               onCheckedChange={(value) => onAlertToggleChange("tornado", value)}
+              ariaLabel="Toggle tornado warnings layer"
             />
             <ToggleRow
               label="⛈️ Severe Thunderstorm"
               checked={alertToggles.severe}
               onCheckedChange={(value) => onAlertToggleChange("severe", value)}
+              ariaLabel="Toggle severe thunderstorm warnings layer"
             />
             <ToggleRow
               label="🌊 Flood Warnings"
               checked={alertToggles.flood}
               onCheckedChange={(value) => onAlertToggleChange("flood", value)}
+              ariaLabel="Toggle flood warnings layer"
             />
             <ToggleRow
               label="❄️ Winter Advisories"
               checked={alertToggles.winter}
               onCheckedChange={(value) => onAlertToggleChange("winter", value)}
+              ariaLabel="Toggle winter advisories layer"
             />
-            <ToggleRow label="📻 Radio" checked={showRadio} onCheckedChange={onShowRadioChange} />
+            <ToggleRow
+              label="📻 Radio"
+              checked={showRadio}
+              onCheckedChange={onShowRadioChange}
+              ariaLabel="Toggle weather radio"
+            />
 
             {showRadio && (
               <div className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-3">
@@ -189,10 +209,10 @@ export default function RadarLayersMenu({
 
                 <button
                   onClick={togglePlayback}
-                  aria-label={isPlaying ? "Stop radio playback" : "Start radio playback"}
+                  aria-label={isPlaying ? "Stop local NOAA weather radio" : "Play local NOAA weather radio"}
                   className="flex w-full items-center justify-center gap-2 rounded border border-green-600 bg-green-900 px-3 py-2 text-xs font-mono text-green-300 transition-colors hover:bg-green-800"
                 >
-                  {isPlaying ? <Pause size={13} /> : <Play size={13} />}
+                  {isPlaying ? <Pause size={13} aria-hidden="true" /> : <Play size={13} aria-hidden="true" />}
                   {isPlaying ? "STOP LOCAL NOAA" : "PLAY LOCAL NOAA"}
                 </button>
               </div>
