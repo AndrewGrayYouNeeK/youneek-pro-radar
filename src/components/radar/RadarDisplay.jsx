@@ -206,7 +206,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [isMapReady, setIsMapReady] = useState(false);
   const [showOcean, setShowOcean] = useState(false);
   const [oceanLoading, setOceanLoading] = useState(false);
-  const [oceanMode, setOceanMode] = useState('velocity');
+  const [oceanMode, setOceanMode] = useState('arrows');
   const [showQuickControls, setShowQuickControls] = useState(true);
 
   const alertToggles = { tornado: showTornado, severe: showThunderstorm, flood: showFlood, winter: showWinter };
@@ -372,7 +372,11 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
           ];
 
           if (velocityLayerRef.current) { leafletMap.current.removeLayer(velocityLayerRef.current); velocityLayerRef.current = null; }
-          if (!window.L?.velocityLayer) { setOceanLoading(false); return; }
+          if (!window.L?.velocityLayer) {
+            setOceanLoading(false);
+            setOceanMode('arrows');
+            return;
+          }
 
           velocityLayerRef.current = window.L.velocityLayer({
             displayValues: true,
