@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { CloudRain, LoaderCircle, MapPin } from "lucide-react";
+import { CloudRain, LoaderCircle, MapPin, X } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
 function getAlertCopy(data) {
@@ -38,6 +38,7 @@ function getAlertCopy(data) {
 export default function RainArrivalAlert() {
   const [coords, setCoords] = useState(null);
   const [locationError, setLocationError] = useState("");
+  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
     if (!navigator.geolocation) {
@@ -70,9 +71,21 @@ export default function RainArrivalAlert() {
 
   const copy = useMemo(() => getAlertCopy(data), [data]);
 
+  useEffect(() => {
+    setDismissed(false);
+  }, [data?.status, data?.minutesUntilRain]);
+
+  if (!locationError && data?.status === "dry") {
+    return null;
+  }
+
+  if (dismissed && !locationError) {
+    return null;
+  }
+
   return (
     <div className="pointer-events-none absolute left-3 right-3 top-3 z-[1100] flex justify-center">
-      <div className={`w-full max-w-md rounded-2xl border px-4 py-3 shadow-xl backdrop-blur-md ${copy.tone}`}>
+      <div className={`pointer-events-auto w-full max-w-md rounded-2xl border px-4 py-3 shadow-xl backdrop-blur-md ${copy.tone}`}>
         <div className="flex items-start gap-3">
           <div className="mt-0.5 rounded-full bg-white/10 p-2">
             {isLoading && !data ? (
@@ -84,13 +97,27 @@ export default function RainArrivalAlert() {
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <p className="text-sm font-semibold">{locationError || copy.title}</p>
-              {isFetching && <span className="h-2 w-2 rounded-full bg-current opacity-70 animate-pulse" aria-hidden="true" />}
+            <div className="flex items-start gap-2">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold">{locationError || copy.title}</p>
+                  {isFetching && <span className="h-2 w-2 rounded-full bg-current opacity-70 animate-pulse" aria-hidden="true" />}
+                </div>
+                <p className="mt-1 text-xs opacity-80">
+                  {locationError ? "The live rain timer needs your location to stay local and accurate." : copy.detail}
+                </p>
+              </div>
+              {!locationError && (
+                <button
+                  type="button"
+                  onClick={() => setDismissed(true)}
+                  aria-label="Dismiss rain alert"
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 transition-colors hover:bg-white/15"
+                >
+                  <X className="h-4 w-4" aria-hidden="true" />
+                </button>
+              )}
             </div>
-            <p className="mt-1 text-xs opacity-80">
-              {locationError ? "The live rain timer needs your location to stay local and accurate." : copy.detail}
-            </p>
           </div>
         </div>
       </div>
