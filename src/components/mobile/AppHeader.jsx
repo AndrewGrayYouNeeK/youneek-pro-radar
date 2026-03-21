@@ -26,6 +26,7 @@ export default function AppHeader({ title }) {
               type="button"
               onClick={() => goBack()}
               aria-label="Go back"
+              aria-hidden="false"
               className="flex h-11 w-11 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
             >
               <ChevronLeft className="h-5 w-5" aria-hidden="true" />

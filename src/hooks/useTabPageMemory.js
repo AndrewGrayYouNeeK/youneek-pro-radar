@@ -8,10 +8,23 @@ export default function useTabPageMemory(tabKey) {
 
   useEffect(() => {
     const savedScrollY = getScrollPosition(tabKey);
+    const saveCurrentScroll = () => saveScrollPosition(tabKey, window.scrollY);
+
     requestAnimationFrame(() => window.scrollTo(0, savedScrollY));
 
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        saveCurrentScroll();
+      }
+    };
+
+    window.addEventListener("pagehide", saveCurrentScroll);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     return () => {
-      saveScrollPosition(tabKey, window.scrollY);
+      saveCurrentScroll();
+      window.removeEventListener("pagehide", saveCurrentScroll);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [getScrollPosition, saveScrollPosition, tabKey, location.pathname, location.search]);
 }

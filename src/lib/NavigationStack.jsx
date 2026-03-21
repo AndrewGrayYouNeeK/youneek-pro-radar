@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState } from 
 import { useLocation, useNavigate, useNavigationType } from "react-router-dom";
 
 const NavigationStackContext = createContext(null);
+const TAB_STATE_STORAGE_KEY = "navigation-tab-state";
 
 const DEFAULT_TABS = {
   Radar: { path: "/RadarScope", search: "", scrollY: 0 },
@@ -20,7 +21,15 @@ export function NavigationStackProvider({ children }) {
   const navigate = useNavigate();
   const navigationType = useNavigationType();
   const routeStackRef = useRef([]);
-  const [tabState, setTabState] = useState(DEFAULT_TABS);
+  const [tabState, setTabState] = useState(() => {
+    if (typeof window === "undefined") return DEFAULT_TABS;
+    const storedState = window.sessionStorage.getItem(TAB_STATE_STORAGE_KEY);
+    if (!storedState) return DEFAULT_TABS;
+    return {
+      ...DEFAULT_TABS,
+      ...JSON.parse(storedState),
+    };
+  });
 
   useEffect(() => {
     const currentRoute = `${location.pathname}${location.search}`;
@@ -72,6 +81,10 @@ export function NavigationStackProvider({ children }) {
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
+
+  useEffect(() => {
+    window.sessionStorage.setItem(TAB_STATE_STORAGE_KEY, JSON.stringify(tabState));
+  }, [tabState]);
 
   const value = useMemo(() => ({
     goBack: (fallbackPath = "/RadarScope") => {

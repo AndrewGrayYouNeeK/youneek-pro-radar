@@ -35,6 +35,8 @@ export default function MobileSelect({
         <button
           type="button"
           aria-label={label}
+          aria-haspopup="dialog"
+          aria-expanded={open}
           className="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-3 text-left text-sm text-white outline-none"
         >
           {selectedLabel}

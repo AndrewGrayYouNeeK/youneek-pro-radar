@@ -36,7 +36,7 @@ export default function TargetDialog({ mode, initialData, target, onConfirm, onD
           <h2 className="text-primary font-mono font-bold text-sm tracking-widest uppercase">
             {isInspect ? "Contact Data" : "New Contact"}
           </h2>
-          <button onClick={onClose} aria-label="Close dialog" className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground">
+          <button onClick={onClose} aria-label="Close dialog" aria-hidden="false" className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground">
             <X size={18} aria-hidden="true" />
           </button>
         </div>
