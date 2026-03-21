@@ -26,5 +26,5 @@ export default function useTabPageMemory(tabKey) {
       window.removeEventListener("pagehide", saveCurrentScroll);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [getScrollPosition, saveScrollPosition, tabKey, location.pathname, location.search]);
+  }, [tabKey, location.pathname, location.search]);
 }
