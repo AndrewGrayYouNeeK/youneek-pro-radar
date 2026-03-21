@@ -55,14 +55,21 @@ export function NavigationStackProvider({ children }) {
     }
 
     const tabKey = getTabKey(location.pathname);
-    setTabState((current) => ({
-      ...current,
-      [tabKey]: {
-        ...current[tabKey],
-        path: location.pathname,
-        search: location.search || "",
-      },
-    }));
+    setTabState((current) => {
+      const nextPath = location.pathname;
+      const nextSearch = location.search || "";
+      if (current[tabKey]?.path === nextPath && current[tabKey]?.search === nextSearch) {
+        return current;
+      }
+      return {
+        ...current,
+        [tabKey]: {
+          ...current[tabKey],
+          path: nextPath,
+          search: nextSearch,
+        },
+      };
+    });
   }, [location.pathname, location.search, navigationType]);
 
   useEffect(() => {
@@ -105,13 +112,19 @@ export function NavigationStackProvider({ children }) {
       navigate(target.path, { replace: true });
     },
     saveScrollPosition: (tabKey, scrollY) => {
-      setTabState((current) => ({
-        ...current,
-        [tabKey]: {
-          ...(current[tabKey] || DEFAULT_TABS[tabKey]),
-          scrollY,
-        },
-      }));
+      setTabState((current) => {
+        const currentTab = current[tabKey] || DEFAULT_TABS[tabKey];
+        if (currentTab.scrollY === scrollY) {
+          return current;
+        }
+        return {
+          ...current,
+          [tabKey]: {
+            ...currentTab,
+            scrollY,
+          },
+        };
+      });
     },
     getScrollPosition: (tabKey) => tabState[tabKey]?.scrollY || 0,
   }), [navigate, tabState]);
