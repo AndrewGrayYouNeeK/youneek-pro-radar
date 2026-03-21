@@ -205,6 +205,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [isMapReady, setIsMapReady] = useState(false);
   const [showOcean, setShowOcean] = useState(false);
   const [oceanLoading, setOceanLoading] = useState(false);
+  const [showQuickControls, setShowQuickControls] = useState(true);
 
   const alertToggles = { tornado: showTornado, severe: showThunderstorm, flood: showFlood, winter: showWinter };
   const alertTogglesRef = useRef(alertToggles);
@@ -451,27 +452,38 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         </div>
       )}
       <div className="absolute left-3 top-20 z-[1000] flex flex-col gap-2">
-        <button onClick={handleHookZoneView} className="rounded-lg bg-slate-900/80 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90">🌀 Hook Zone</button>
-        <button onClick={handleConusView} className="rounded-lg bg-slate-900/80 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90">🗺️ CONUS</button>
-        <button onClick={handleLoopToggle} className="rounded-lg bg-slate-900/80 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90">{isLooping ? "⏹ Loop" : "▶ Loop"}</button>
-        <button onClick={() => setShowOcean((v) => !v)} className={`rounded-lg px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors ${showOcean ? "bg-cyan-700/90 hover:bg-cyan-600/90" : "bg-slate-900/80 hover:bg-slate-800/90"}`}>
-          {oceanLoading ? "⏳ Ocean..." : showOcean ? "🌊 Ocean ✓" : "🌊 Ocean"}
+        <button
+          onClick={() => setShowQuickControls((value) => !value)}
+          className="rounded-lg bg-slate-900/85 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90"
+        >
+          {showQuickControls ? "Hide Tools" : "Show Tools"}
         </button>
-        {isLooping && loopFrames.length > 0 && (
-          <div className="rounded-lg bg-slate-900/70 px-3 py-2 text-xs font-medium text-slate-200 shadow-lg backdrop-blur-sm">
-            Frame {loopFrameIndex + 1}/{loopFrames.length}
-            <div className="mt-1 text-[11px] text-slate-200">{loopFrames[loopFrameIndex]?.typeLabel}</div>
-            <div className="mt-1 text-[11px] text-slate-300">{loopFrames[loopFrameIndex]?.label}</div>
-          </div>
-        )}
-        {showOcean && (
-          <div className="rounded-lg bg-slate-900/80 px-3 py-2 text-[10px] text-slate-300 shadow-lg backdrop-blur-sm leading-5">
-            <div className="font-bold text-cyan-300 mb-1">🌊 Ocean Key</div>
-            <div style={{ background: "linear-gradient(to right,#0000ff,#00ffff,#00ff00,#ffff00,#ff0000)", height: 6, borderRadius: 3, marginBottom: 3 }} />
-            <div className="flex justify-between text-[9px]"><span>Cold</span><span>Warm</span></div>
-            <div className="mt-1 text-slate-400">↑ Arrow = direction</div>
-            <div className="text-slate-400">Tap ocean for details</div>
-          </div>
+
+        {showQuickControls && (
+          <>
+            <button onClick={handleHookZoneView} className="rounded-lg bg-slate-900/80 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90">🌀 Hook Zone</button>
+            <button onClick={handleConusView} className="rounded-lg bg-slate-900/80 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90">🗺️ CONUS</button>
+            <button onClick={handleLoopToggle} className="rounded-lg bg-slate-900/80 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90">{isLooping ? "⏹ Loop" : "▶ Loop"}</button>
+            <button onClick={() => setShowOcean((v) => !v)} className={`rounded-lg px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors ${showOcean ? "bg-cyan-700/90 hover:bg-cyan-600/90" : "bg-slate-900/80 hover:bg-slate-800/90"}`}>
+              {oceanLoading ? "⏳ Ocean..." : showOcean ? "🌊 Ocean ✓" : "🌊 Ocean"}
+            </button>
+            {isLooping && loopFrames.length > 0 && (
+              <div className="rounded-lg bg-slate-900/70 px-3 py-2 text-xs font-medium text-slate-200 shadow-lg backdrop-blur-sm">
+                Frame {loopFrameIndex + 1}/{loopFrames.length}
+                <div className="mt-1 text-[11px] text-slate-200">{loopFrames[loopFrameIndex]?.typeLabel}</div>
+                <div className="mt-1 text-[11px] text-slate-300">{loopFrames[loopFrameIndex]?.label}</div>
+              </div>
+            )}
+            {showOcean && (
+              <div className="rounded-lg bg-slate-900/80 px-3 py-2 text-[10px] text-slate-300 shadow-lg backdrop-blur-sm leading-5">
+                <div className="font-bold text-cyan-300 mb-1">🌊 Ocean Key</div>
+                <div style={{ background: "linear-gradient(to right,#0000ff,#00ffff,#00ff00,#ffff00,#ff0000)", height: 6, borderRadius: 3, marginBottom: 3 }} />
+                <div className="flex justify-between text-[9px]"><span>Cold</span><span>Warm</span></div>
+                <div className="mt-1 text-slate-400">↑ Arrow = direction</div>
+                <div className="text-slate-400">Tap ocean for details</div>
+              </div>
+            )}
+          </>
         )}
       </div>
       <RadarLayersMenu showNexrad={showNexrad} showVelocity={showVelocityLocal} showRadio={showRadio} nexradStation={settings.station} alertToggles={alertToggles} onShowNexradChange={handleShowNexradChange} onShowVelocityChange={handleShowVelocityChange} onShowRadioChange={onToggleRadio} onAlertToggleChange={handleAlertToggleChange} />
