@@ -599,7 +599,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
               </div>
             )}
             {showOcean && (
-              <div className="rounded-lg bg-slate-900/80 px-2 py-2 text-[10px] text-slate-300 shadow-lg backdrop-blur-sm leading-5">
+              <div className="rounded-lg bg-slate-900/80 px-2 py-2 text-[10px] text-slate-300 shadow-lg backdrop-blur-sm leading-5" style={{ maxHeight: '40vh', overflowY: 'auto' }}>
                 <div className="font-bold text-cyan-300 mb-1">🌊 Mode</div>
                 <div className="flex gap-1 mb-2">
                   <button
