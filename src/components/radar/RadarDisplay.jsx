@@ -191,6 +191,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const oceanCanvasRef = useRef(null);
   const oceanFetchTimerRef = useRef(null);
   const oceanPopupRef = useRef(null);
+  const velocityLayerRef = useRef(null);
 
   const [showVelocityLocal, setShowVelocityLocal] = useState(settings.showVelocity);
   const [showTornado, setShowTornado] = useState(true);
@@ -205,6 +206,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [isMapReady, setIsMapReady] = useState(false);
   const [showOcean, setShowOcean] = useState(false);
   const [oceanLoading, setOceanLoading] = useState(false);
+  const [oceanMode, setOceanMode] = useState('velocity');
   const [showQuickControls, setShowQuickControls] = useState(true);
 
   const alertToggles = { tornado: showTornado, severe: showThunderstorm, flood: showFlood, winter: showWinter };
@@ -247,45 +249,160 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   useEffect(() => { alertTogglesRef.current = alertToggles; }, [alertToggles]);
 
   useEffect(() => {
-    if (!leafletMap.current || !isMapReady) return;
-    if (!showOcean) {
-      if (oceanCanvasRef.current) { oceanCanvasRef.current.destroy(); oceanCanvasRef.current = null; }
-      if (oceanFetchTimerRef.current) { clearInterval(oceanFetchTimerRef.current); oceanFetchTimerRef.current = null; }
-      if (oceanPopupRef.current) { leafletMap.current.removeLayer(oceanPopupRef.current); oceanPopupRef.current = null; }
-      return;
+    if (!document.getElementById('leaflet-velocity-css')) {
+      const link = document.createElement('link');
+      link.id = 'leaflet-velocity-css';
+      link.rel = 'stylesheet';
+      link.href = 'https://cdn.jsdelivr.net/npm/leaflet-velocity@1.9.2/dist/leaflet-velocity.css';
+      document.head.appendChild(link);
     }
-    oceanCanvasRef.current = createOceanCanvasLayer(leafletMap.current);
-    const loadOceanData = async () => {
-      setOceanLoading(true);
-      const data = await fetchOceanGrid(leafletMap.current.getBounds(), 2.0);
-      if (oceanCanvasRef.current) oceanCanvasRef.current.update(data);
-      setOceanLoading(false);
-    };
-    loadOceanData();
-    leafletMap.current.on("moveend zoomend", loadOceanData);
-    const onMapClick = async (e) => {
-      if (!showOcean) return;
-      if (oceanPopupRef.current) { leafletMap.current.removeLayer(oceanPopupRef.current); oceanPopupRef.current = null; }
-      try {
-        const { lat, lng } = e.latlng;
-        const json = await (await fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat.toFixed(3)}&longitude=${lng.toFixed(3)}&current=ocean_current_velocity,ocean_current_direction,sea_surface_temperature&cell_selection=sea`)).json();
-        if (json?.current?.ocean_current_velocity != null) {
-          const { ocean_current_velocity: v, ocean_current_direction: d, sea_surface_temperature: t } = json.current;
-          oceanPopupRef.current = L.popup({ closeButton: true })
-            .setLatLng(e.latlng)
-            .setContent(`<div style="font-family:monospace;font-size:12px;color:#fff;background:#1a1a2e;padding:10px 14px;border-radius:8px;border:1px solid #c8a45a"><div style="color:#c8a45a;font-weight:bold;margin-bottom:6px">🌊 Ocean Current</div><div>💨 Speed: <b>${v.toFixed(2)} km/h</b></div><div>🧭 Direction: <b>${d?.toFixed(0)}°</b></div>${t != null ? `<div>🌡️ Temp: <b>${t.toFixed(1)}°C / ${(t * 9 / 5 + 32).toFixed(1)}°F</b></div>` : ""}<div style="color:#666;font-size:10px;margin-top:6px">Open-Meteo Marine API</div></div>`)
-            .openOn(leafletMap.current);
-        }
-      } catch (_) {}
-    };
-    leafletMap.current.on("click", onMapClick);
-    oceanFetchTimerRef.current = setInterval(loadOceanData, 10 * 60 * 1000);
-    return () => {
-      if (leafletMap.current) { leafletMap.current.off("moveend zoomend", loadOceanData); leafletMap.current.off("click", onMapClick); }
-      if (oceanFetchTimerRef.current) { clearInterval(oceanFetchTimerRef.current); oceanFetchTimerRef.current = null; }
+    if (!document.getElementById('leaflet-velocity-js')) {
+      const script = document.createElement('script');
+      script.id = 'leaflet-velocity-js';
+      script.src = 'https://cdn.jsdelivr.net/npm/leaflet-velocity@1.9.2/dist/leaflet-velocity.js';
+      document.head.appendChild(script);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!leafletMap.current || !isMapReady) return;
+
+    const cleanupOcean = () => {
       if (oceanCanvasRef.current) { oceanCanvasRef.current.destroy(); oceanCanvasRef.current = null; }
+      if (oceanFetchTimerRef.current) { clearInterval(oceanFetchTimerRef.current); oceanFetchTimerRef.current = null; }
+      if (oceanPopupRef.current) { leafletMap.current.removeLayer(oceanPopupRef.current); oceanPopupRef.current = null; }
+      if (velocityLayerRef.current) { leafletMap.current.removeLayer(velocityLayerRef.current); velocityLayerRef.current = null; }
     };
-  }, [showOcean, isMapReady]);
+
+    if (!showOcean) { cleanupOcean(); return; }
+
+    if (oceanMode === 'arrows') {
+      if (velocityLayerRef.current) { leafletMap.current.removeLayer(velocityLayerRef.current); velocityLayerRef.current = null; }
+      oceanCanvasRef.current = createOceanCanvasLayer(leafletMap.current);
+      const loadOceanData = async () => {
+        setOceanLoading(true);
+        const data = await fetchOceanGrid(leafletMap.current.getBounds(), 2.0);
+        if (oceanCanvasRef.current) oceanCanvasRef.current.update(data);
+        setOceanLoading(false);
+      };
+      loadOceanData();
+      leafletMap.current.on("moveend zoomend", loadOceanData);
+      const onMapClick = async (e) => {
+        if (!showOcean) return;
+        if (oceanPopupRef.current) { leafletMap.current.removeLayer(oceanPopupRef.current); oceanPopupRef.current = null; }
+        try {
+          const { lat, lng } = e.latlng;
+          const json = await (await fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat.toFixed(3)}&longitude=${lng.toFixed(3)}&current=ocean_current_velocity,ocean_current_direction,sea_surface_temperature&cell_selection=sea`)).json();
+          if (json?.current?.ocean_current_velocity != null) {
+            const { ocean_current_velocity: v, ocean_current_direction: d, sea_surface_temperature: t } = json.current;
+            oceanPopupRef.current = L.popup({ closeButton: true })
+              .setLatLng(e.latlng)
+              .setContent(`<div style="font-family:monospace;font-size:12px;color:#fff;background:#1a1a2e;padding:10px 14px;border-radius:8px;border:1px solid #c8a45a"><div style="color:#c8a45a;font-weight:bold;margin-bottom:6px">🌊 Ocean Current</div><div>💨 Speed: <b>${v.toFixed(2)} km/h</b></div><div>🧭 Direction: <b>${d?.toFixed(0)}°</b></div>${t != null ? `<div>🌡️ Temp: <b>${t.toFixed(1)}°C / ${(t*9/5+32).toFixed(1)}°F</b></div>` : ""}<div style="color:#666;font-size:10px;margin-top:6px">Open-Meteo Marine API</div></div>`)
+              .openOn(leafletMap.current);
+          }
+        } catch (_) {}
+      };
+      leafletMap.current.on("click", onMapClick);
+      oceanFetchTimerRef.current = setInterval(loadOceanData, 10 * 60 * 1000);
+      return () => {
+        if (leafletMap.current) { leafletMap.current.off("moveend zoomend", loadOceanData); leafletMap.current.off("click", onMapClick); }
+        cleanupOcean();
+      };
+
+    } else {
+      if (oceanCanvasRef.current) { oceanCanvasRef.current.destroy(); oceanCanvasRef.current = null; }
+
+      const loadVelocityLayer = async () => {
+        setOceanLoading(true);
+        try {
+          const bounds = leafletMap.current.getBounds();
+          const lats = [], lons = [];
+          const step = 2.0;
+          for (let lat = Math.ceil(bounds.getSouth() / step) * step; lat <= bounds.getNorth(); lat += step) lats.push(+lat.toFixed(2));
+          for (let lon = Math.ceil(bounds.getWest() / step) * step; lon <= bounds.getEast(); lon += step) lons.push(+lon.toFixed(2));
+
+          const pairs = [];
+          for (const lat of lats) for (const lon of lons) pairs.push([lat, lon]);
+          const chunks = [];
+          for (let i = 0; i < pairs.length; i += 10) chunks.push(pairs.slice(i, i + 10));
+
+          const results = [];
+          await Promise.all(chunks.map(async (chunk) => {
+            const url = `https://marine-api.open-meteo.com/v1/marine?latitude=${chunk.map(p=>p[0]).join(",")}&longitude=${chunk.map(p=>p[1]).join(",")}&current=ocean_current_velocity,ocean_current_direction,sea_surface_temperature&cell_selection=sea`;
+            try {
+              const json = await (await fetch(url)).json();
+              const arr = Array.isArray(json) ? json : [json];
+              arr.forEach((item, i) => {
+                if (item?.current?.ocean_current_velocity != null) {
+                  const deg = item.current.ocean_current_direction ?? 0;
+                  const spd = item.current.ocean_current_velocity ?? 0;
+                  const rad = deg * Math.PI / 180;
+                  results.push({ lat: chunk[i][0], lon: chunk[i][1], u: spd * Math.sin(rad), v: spd * Math.cos(rad), sst: item.current.sea_surface_temperature ?? null });
+                }
+              });
+            } catch (_) {}
+          }));
+
+          if (!results.length || !leafletMap.current) { setOceanLoading(false); return; }
+
+          const uniqueLats = [...new Set(results.map(r => r.lat))].sort((a,b) => a-b);
+          const uniqueLons = [...new Set(results.map(r => r.lon))].sort((a,b) => a-b);
+          const nx = uniqueLons.length, ny = uniqueLats.length;
+          const uData = new Array(nx * ny).fill(0);
+          const vData = new Array(nx * ny).fill(0);
+          results.forEach(({ lat, lon, u, v }) => {
+            const xi = uniqueLons.indexOf(lon);
+            const yi = uniqueLats.indexOf(lat);
+            if (xi >= 0 && yi >= 0) { uData[yi * nx + xi] = u; vData[yi * nx + xi] = v; }
+          });
+
+          const header = {
+            parameterUnit: "km/h", parameterNumberName: "Ocean Current",
+            nx, ny,
+            lo1: uniqueLons[0], lo2: uniqueLons[nx-1],
+            la1: uniqueLats[ny-1], la2: uniqueLats[0],
+            dx: uniqueLons.length > 1 ? uniqueLons[1] - uniqueLons[0] : 2,
+            dy: uniqueLats.length > 1 ? uniqueLats[1] - uniqueLats[0] : 2,
+            refTime: new Date().toISOString(),
+          };
+
+          const velocityData = [
+            { header: { ...header, parameterCategory: 2, parameterNumber: 2 }, data: uData },
+            { header: { ...header, parameterCategory: 2, parameterNumber: 3 }, data: vData },
+          ];
+
+          if (velocityLayerRef.current) { leafletMap.current.removeLayer(velocityLayerRef.current); velocityLayerRef.current = null; }
+          if (!window.L?.velocityLayer) { setOceanLoading(false); return; }
+
+          velocityLayerRef.current = window.L.velocityLayer({
+            displayValues: true,
+            displayOptions: {
+              velocityType: "Ocean Current",
+              position: "bottomleft",
+              emptyString: "No ocean data",
+              angleConvention: "bearingCCW",
+              speedUnit: "km/h",
+            },
+            data: velocityData,
+            maxVelocity: 10,
+            velocityScale: 0.012,
+            colorScale: ["#0000ff","#0080ff","#00ffff","#00ff80","#00ff00","#80ff00","#ffff00","#ff8000","#ff0000"],
+            opacity: 0.85,
+          }).addTo(leafletMap.current);
+        } catch (_) {}
+        setOceanLoading(false);
+      };
+
+      loadVelocityLayer();
+      leafletMap.current.on("moveend zoomend", loadVelocityLayer);
+      oceanFetchTimerRef.current = setInterval(loadVelocityLayer, 10 * 60 * 1000);
+
+      return () => {
+        if (leafletMap.current) leafletMap.current.off("moveend zoomend", loadVelocityLayer);
+        cleanupOcean();
+      };
+    }
+  }, [showOcean, isMapReady, oceanMode]);
 
   useEffect(() => {
     if (!leafletMap.current) return;
@@ -464,7 +581,10 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
             <button onClick={handleHookZoneView} className="rounded-lg bg-slate-900/80 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90">🌀 Hook Zone</button>
             <button onClick={handleConusView} className="rounded-lg bg-slate-900/80 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90">🗺️ CONUS</button>
             <button onClick={handleLoopToggle} className="rounded-lg bg-slate-900/80 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90">{isLooping ? "⏹ Loop" : "▶ Loop"}</button>
-            <button onClick={() => setShowOcean((v) => !v)} className={`rounded-lg px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors ${showOcean ? "bg-cyan-700/90 hover:bg-cyan-600/90" : "bg-slate-900/80 hover:bg-slate-800/90"}`}>
+            <button
+              onClick={() => setShowOcean(v => !v)}
+              className={`rounded-lg px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors ${showOcean ? "bg-cyan-700/90 hover:bg-cyan-600/90" : "bg-slate-900/80 hover:bg-slate-800/90"}`}
+            >
               {oceanLoading ? "⏳ Ocean..." : showOcean ? "🌊 Ocean ✓" : "🌊 Ocean"}
             </button>
             {isLooping && loopFrames.length > 0 && (
@@ -475,12 +595,25 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
               </div>
             )}
             {showOcean && (
-              <div className="rounded-lg bg-slate-900/80 px-3 py-2 text-[10px] text-slate-300 shadow-lg backdrop-blur-sm leading-5">
-                <div className="font-bold text-cyan-300 mb-1">🌊 Ocean Key</div>
+              <div className="rounded-lg bg-slate-900/80 px-2 py-2 text-[10px] text-slate-300 shadow-lg backdrop-blur-sm leading-5">
+                <div className="font-bold text-cyan-300 mb-1">🌊 Mode</div>
+                <div className="flex gap-1 mb-2">
+                  <button
+                    onClick={() => setOceanMode('velocity')}
+                    className={`flex-1 rounded px-1 py-1 text-[10px] font-medium transition-colors ${oceanMode === 'velocity' ? 'bg-cyan-600 text-white' : 'bg-slate-700 text-slate-300'}`}
+                  >
+                    🌀 Flow
+                  </button>
+                  <button
+                    onClick={() => setOceanMode('arrows')}
+                    className={`flex-1 rounded px-1 py-1 text-[10px] font-medium transition-colors ${oceanMode === 'arrows' ? 'bg-cyan-600 text-white' : 'bg-slate-700 text-slate-300'}`}
+                  >
+                    ➡️ Arrows
+                  </button>
+                </div>
                 <div style={{ background: "linear-gradient(to right,#0000ff,#00ffff,#00ff00,#ffff00,#ff0000)", height: 6, borderRadius: 3, marginBottom: 3 }} />
-                <div className="flex justify-between text-[9px]"><span>Cold</span><span>Warm</span></div>
-                <div className="mt-1 text-slate-400">↑ Arrow = direction</div>
-                <div className="text-slate-400">Tap ocean for details</div>
+                <div className="flex justify-between text-[9px]"><span>Slow</span><span>Fast</span></div>
+                <div className="mt-1 text-slate-400">Tap ocean for details</div>
               </div>
             )}
           </>
