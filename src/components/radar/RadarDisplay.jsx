@@ -466,8 +466,22 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     };
   }, [showNexrad, settings.showVelocity, showVelocityLocal, settings.station, showTornado, showThunderstorm, showFlood, showWinter, userLocation]);
 
-  const handleHookZoneView = () => { if (leafletMap.current) leafletMap.current.setView([36.8, -87.3], 9); };
-  const handleConusView = () => { if (leafletMap.current) leafletMap.current.setView([39.5, -98.35], 5); };
+  const handleHookZoneView = () => {
+    if (!leafletMap.current) return;
+    if (isLooping) {
+      setIsLooping(false);
+      clearLoopLayers();
+    }
+    leafletMap.current.setView([36.8, -87.3], 9);
+  };
+  const handleConusView = () => {
+    if (!leafletMap.current) return;
+    if (isLooping) {
+      setIsLooping(false);
+      clearLoopLayers();
+    }
+    leafletMap.current.setView([39.5, -98.35], 5);
+  };
   const clearLoopLayers = () => {
     if (loopTimerRef.current) { clearTimeout(loopTimerRef.current); loopTimerRef.current = null; }
     if (loopFadeRef.current) { clearInterval(loopFadeRef.current); loopFadeRef.current = null; }
