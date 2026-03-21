@@ -36,7 +36,7 @@ export default function BottomTab() {
                 active ? "bg-white/10 text-white" : "text-slate-400 hover:text-white"
               }`}
             >
-              <Icon className="h-5 w-5" />
+              <Icon className="h-5 w-5" aria-hidden="true" />
               <span>{label}</span>
             </button>
           );

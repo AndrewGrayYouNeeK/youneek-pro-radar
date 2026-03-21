@@ -37,7 +37,7 @@ export default function TargetDialog({ mode, initialData, target, onConfirm, onD
             {isInspect ? "Contact Data" : "New Contact"}
           </h2>
           <button onClick={onClose} aria-label="Close dialog" className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground">
-            <X size={18} />
+            <X size={18} aria-hidden="true" />
           </button>
         </div>
 
@@ -131,7 +131,7 @@ export default function TargetDialog({ mode, initialData, target, onConfirm, onD
                   aria-label="Delete contact"
                   className="min-h-11 flex-1 font-mono text-xs"
                 >
-                  <Trash2 size={14} className="mr-1" /> DELETE
+                  <Trash2 size={14} aria-hidden="true" className="mr-1" /> DELETE
                 </Button>
                 <Button
                   type="button"

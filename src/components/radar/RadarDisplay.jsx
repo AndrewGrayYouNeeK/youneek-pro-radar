@@ -143,6 +143,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [loopFrameIndex, setLoopFrameIndex] = useState(0);
   const [userLocation, setUserLocation] = useState(null);
   const [activeTornadoWarning, setActiveTornadoWarning] = useState(true);
+  const [isMapReady, setIsMapReady] = useState(false);
   const alertToggles = {
     tornado: showTornado,
     severe: showThunderstorm,
@@ -162,13 +163,14 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       zoomSnap: 0.5,
     }).setView(coords, 8);
 
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    const baseLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
       attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
       subdomains: "abcd",
       maxZoom: 20,
       crossOrigin: "anonymous",
     }).addTo(leafletMap.current);
 
+    baseLayer.once("load", () => setIsMapReady(true));
     invalidateMapSize(leafletMap.current);
     requestAnimationFrame(() => applyLeafletControlAccessibility(mapRef.current));
 
@@ -201,6 +203,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       });
       loopLayersRef.current = [];
 
+      setIsMapReady(false);
       if (leafletMap.current) {
         leafletMap.current.remove();
         leafletMap.current = null;
@@ -677,6 +680,14 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       className="relative h-full min-h-[400px] w-full select-none overscroll-none"
       {...pullToRefreshHandlers}
     >
+      {!isMapReady && (
+        <div className="absolute inset-0 z-[900] flex items-center justify-center bg-slate-950">
+          <div className="flex flex-col items-center gap-3 text-white/80">
+            <div className="h-10 w-10 rounded-full border-4 border-white/15 border-t-white/80 animate-spin"></div>
+            <div className="text-xs font-medium tracking-[0.2em] text-white/60 uppercase">Loading Radar</div>
+          </div>
+        </div>
+      )}
       {isRefreshing && (
         <div
           className="absolute left-1/2 z-[1200] -translate-x-1/2 rounded-full bg-slate-900/85 px-4 py-2 text-xs font-medium text-white shadow-lg backdrop-blur-sm"

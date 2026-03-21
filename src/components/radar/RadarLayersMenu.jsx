@@ -179,7 +179,7 @@ export default function RadarLayersMenu({
                     <Radio size={11} aria-hidden="true" />
                     NOAA WEATHER RADIO
                   </div>
-                  {isLocating && <LocateFixed size={12} className="animate-pulse text-green-400" />}
+                  {isLocating && <LocateFixed size={12} aria-hidden="true" className="animate-pulse text-green-400" />}
                 </div>
 
                 <div className="text-xs font-mono font-bold text-green-400">{station.label.replace(/^\w+\s/, "")}</div>

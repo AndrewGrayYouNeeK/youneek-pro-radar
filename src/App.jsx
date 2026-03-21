@@ -77,7 +77,9 @@ function App() {
       <QueryClientProvider client={queryClientInstance}>
         <Router>
           <NavigationStackProvider>
-            <AuthenticatedApp />
+            <div className="mx-auto h-screen w-full max-w-4xl overflow-hidden bg-slate-950 shadow-2xl">
+              <AuthenticatedApp />
+            </div>
           </NavigationStackProvider>
         </Router>
         <Toaster />
