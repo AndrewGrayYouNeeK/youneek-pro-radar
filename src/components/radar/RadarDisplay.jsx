@@ -543,6 +543,16 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       });
   };
   const handleLoopToggle = () => { if (isLooping) { setIsLooping(false); clearLoopLayers(); return; } fetchLoopFrames(); };
+  const handleOceanToggle = () => {
+    const nextShowOcean = !showOcean;
+    setShowOcean(nextShowOcean);
+    if (!nextShowOcean || !leafletMap.current) return;
+    if (isLooping) {
+      setIsLooping(false);
+      clearLoopLayers();
+    }
+    leafletMap.current.setView([20, 0], 2);
+  };
   const handleShowNexradChange = (value) => onSettingsChange({ ...settings, showNexrad: value });
   const handleShowVelocityChange = (value) => { setShowVelocityLocal(value); onSettingsChange({ ...settings, showVelocity: value }); };
   const handleAlertToggleChange = (key, value) => {
@@ -632,7 +642,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
             <button onClick={handleConusView} className="rounded-lg bg-slate-900/80 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90">🗺️ CONUS</button>
             <button onClick={handleLoopToggle} className="rounded-lg bg-slate-900/80 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90">{isLooping ? "⏹ Loop" : "▶ Loop"}</button>
             <button
-              onClick={() => setShowOcean(v => !v)}
+              onClick={handleOceanToggle}
               className={`rounded-lg px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors ${showOcean ? "bg-cyan-700/90 hover:bg-cyan-600/90" : "bg-slate-900/80 hover:bg-slate-800/90"}`}
             >
               {oceanLoading ? "⏳ Ocean..." : showOcean ? "🌊 Ocean ✓" : "🌊 Ocean"}
