@@ -59,6 +59,11 @@ const getRainViewerTileUrl = (path) => {
   const normalizedPath = path.startsWith("/v2/radar/") ? path : `/v2/radar/${path}`;
   return `https://tilecache.rainviewer.com${normalizedPath}/256/{z}/{x}/{y}/2/1_1.png`;
 };
+const fetchLatestRainViewerTileUrl = async () => {
+  const data = await (await fetch("https://api.rainviewer.com/public/weather-maps.json")).json();
+  const latestPath = data?.radar?.past?.[data?.radar?.past?.length - 1]?.path;
+  return getRainViewerTileUrl(latestPath);
+};
 const invalidateMapSize = (map) => {
   requestAnimationFrame(() => map.invalidateSize());
   setTimeout(() => map.invalidateSize(), 150);
@@ -437,24 +442,26 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       refreshAlertLayer(floodLayerRef, "flood", "https://api.weather.gov/alerts/active?event=Flood+Warning&status=actual", "#3b82f6");
       refreshAlertLayer(winterLayerRef, "winter", "https://api.weather.gov/alerts/active?event=Winter+Weather+Advisory&status=actual", "#a855f7");
     };
-    const loadRainViewerFallback = () => {
-      if (radarLoadStatsRef.current.usingFallback || !leafletMap.current) return;
-      radarLoadStatsRef.current.usingFallback = true;
-      if (radarLayerRef.current) { leafletMap.current.removeLayer(radarLayerRef.current); radarLayerRef.current = null; }
-      fetch("https://api.rainviewer.com/public/weather-maps.json").then((r) => r.json()).then((data) => {
-        const fallbackUrl = getRainViewerTileUrl(data?.radar?.past?.[data.radar.past.length - 1]?.path);
-        if (!fallbackUrl || !leafletMap.current) return;
-        radarLayerRef.current = L.tileLayer(fallbackUrl, { attribution: "RainViewer", opacity: 0.7, maxZoom: 18, maxNativeZoom: 12, crossOrigin: "anonymous" }).addTo(leafletMap.current);
-        addVelocityLayer(); refreshAlertLayers();
+    const refreshGlobalRadarLayer = () => {
+      fetchLatestRainViewerTileUrl().then((latestUrl) => {
+        if (!latestUrl || !leafletMap.current) return;
+        if (radarLayerRef.current?.setUrl) {
+          radarLayerRef.current.setUrl(latestUrl);
+          return;
+        }
+        radarLayerRef.current = L.tileLayer(latestUrl, {
+          attribution: "RainViewer",
+          opacity: 0.7,
+          maxZoom: 18,
+          maxNativeZoom: 12,
+          crossOrigin: "anonymous"
+        }).addTo(leafletMap.current);
       });
     };
-    const iowaLayer = L.tileLayer(`${RIDGE2_URL}?_cb=${getCacheBust()}`, { opacity: 0.7, transparent: true, crossOrigin: true, tileSize: 256, maxZoom: 18, maxNativeZoom: 12, attribution: 'NEXRAD © Iowa Mesonet' });
-    iowaLayer.on("tileload", () => { radarLoadStatsRef.current.loaded += 1; });
-    iowaLayer.on("tileerror", () => { radarLoadStatsRef.current.errors += 1; if (radarLoadStatsRef.current.errors >= 3 && radarLoadStatsRef.current.loaded === 0) loadRainViewerFallback(); });
-    radarLayerRef.current = iowaLayer.addTo(leafletMap.current);
+    refreshGlobalRadarLayer();
     addVelocityLayer(); refreshAlertLayers();
     refreshTimerRef.current = setInterval(() => {
-      if (radarLayerRef.current?.setUrl && !radarLoadStatsRef.current.usingFallback) { radarLoadStatsRef.current.errors = 0; radarLoadStatsRef.current.loaded = 0; radarLayerRef.current.setUrl(getIowaReflectivityUrl()); }
+      refreshGlobalRadarLayer();
       if (velLayerRef.current?.redraw) velLayerRef.current.redraw();
       refreshAlertLayers();
     }, 5 * 60 * 1000);
@@ -576,7 +583,9 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   }, [isLooping, loopFrames]);
 
   const refreshWeatherData = () => {
-    if (radarLayerRef.current?.setUrl && !radarLoadStatsRef.current.usingFallback) radarLayerRef.current.setUrl(getIowaReflectivityUrl());
+    fetchLatestRainViewerTileUrl().then((latestUrl) => {
+      if (latestUrl && radarLayerRef.current?.setUrl) radarLayerRef.current.setUrl(latestUrl);
+    });
     if (velLayerRef.current?.redraw) velLayerRef.current.redraw();
   };
   const { isRefreshing, pullToRefreshHandlers } = usePullToRefresh({ onRefresh: refreshWeatherData });
