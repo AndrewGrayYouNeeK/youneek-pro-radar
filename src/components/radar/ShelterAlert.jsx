@@ -18,11 +18,31 @@ export default function ShelterAlert({ activeTornadoWarning }) {
   };
 
   return (
-    <div style={{ position:'fixed', bottom:'calc(30px + env(safe-area-inset-bottom))', left:'50%', transform:'translateX(-50%)', zIndex:9999 }}>
-      <button aria-label="Alert shelter contacts" onClick={handleShelter} style={{ backgroundColor:'#00ff44', color:'#000', fontWeight:'bold', fontSize:'18px', padding:'18px 36px', borderRadius:'12px', border:'none', cursor:'pointer', boxShadow:'0 0 30px #00ff44', animation:'pulse 1.5s infinite' }}>
-        🟢 I'M SHELTERING — TAP TO ALERT CONTACTS
-      </button>
-      <style>{`@keyframes pulse { 0%{box-shadow:0 0 20px #00ff44} 50%{box-shadow:0 0 60px #00ff44} 100%{box-shadow:0 0 20px #00ff44} }`}</style>
+    <div className="pointer-events-none fixed inset-x-0 z-[1600] flex justify-center px-3" style={{ bottom: 'calc(5.5rem + env(safe-area-inset-bottom))' }}>
+      <div className="pointer-events-auto w-full max-w-md rounded-2xl border border-emerald-400/30 bg-slate-950/95 p-3 shadow-2xl backdrop-blur-xl">
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div>
+            <div className="inline-flex rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-200">
+              Tornado Warning
+            </div>
+            <h3 className="mt-2 text-sm font-semibold text-white">Send your safe message fast</h3>
+            <p className="mt-1 text-xs leading-5 text-slate-300">
+              One tap opens a text message to your shelter contacts with your status and location.
+            </p>
+          </div>
+          <div className="rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2 py-1 text-[10px] font-semibold text-emerald-200">
+            {contacts.length} contact{contacts.length === 1 ? '' : 's'}
+          </div>
+        </div>
+
+        <button
+          aria-label="Alert shelter contacts"
+          onClick={handleShelter}
+          className="flex min-h-11 w-full items-center justify-center rounded-xl bg-emerald-400 px-4 py-3 text-sm font-bold text-slate-950 shadow-[0_0_30px_rgba(74,222,128,0.35)] transition-colors hover:bg-emerald-300"
+        >
+          I’m Sheltering — Alert Contacts
+        </button>
+      </div>
     </div>
   );
 }
