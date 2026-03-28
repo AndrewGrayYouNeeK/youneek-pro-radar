@@ -1,0 +1,23 @@
+{
+  "name": "YouNeeK Pro Radar",
+  "short_name": "ProRadar",
+  "description": "Live NEXRAD weather radar, NWS severe weather alerts, NOAA weather radio, and one-tap shelter notifications.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "lang": "en",
+  "categories": ["weather", "utilities"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "related_applications": [],
+  "prefer_related_applications": false
+}

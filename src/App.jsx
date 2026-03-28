@@ -1,4 +1,4 @@
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useState } from "react";
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
@@ -8,6 +8,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import { NavigationStackProvider } from "@/lib/NavigationStack";
+import OnboardingModal from "@/components/radar/OnboardingModal";
 
 const RadarScope = lazy(() => import("./pages/RadarScope"));
 const Contacts   = lazy(() => import("./pages/Contacts"));
@@ -22,6 +23,7 @@ const Spinner = () => (
 const AuthenticatedApp = () => {
   const location = useLocation();
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem("onboarded_v1"));
 
   if (isLoadingPublicSettings || isLoadingAuth) return <Spinner />;
 
@@ -31,26 +33,31 @@ const AuthenticatedApp = () => {
   }
 
   return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={location.pathname}
-        initial={{ opacity: 0, x: 18 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: -18 }}
-        transition={{ duration: 0.2, ease: "easeOut" }}
-        className="h-full"
-      >
-        <Suspense fallback={<Spinner />}>
-          <Routes location={location}>
-            <Route path="/"           element={<Navigate to="/RadarScope" replace />} />
-            <Route path="/RadarScope" element={<RadarScope />} />
-            <Route path="/Contacts"   element={<Contacts />} />
-            <Route path="/Settings"   element={<Settings />} />
-            <Route path="*"           element={<PageNotFound />} />
-          </Routes>
-        </Suspense>
-      </motion.div>
-    </AnimatePresence>
+    <>
+      {showOnboarding && (
+        <OnboardingModal onDone={() => setShowOnboarding(false)} />
+      )}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={location.pathname}
+          initial={{ opacity: 0, x: 18 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -18 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+          className="h-full"
+        >
+          <Suspense fallback={<Spinner />}>
+            <Routes location={location}>
+              <Route path="/"           element={<Navigate to="/RadarScope" replace />} />
+              <Route path="/RadarScope" element={<RadarScope />} />
+              <Route path="/Contacts"   element={<Contacts />} />
+              <Route path="/Settings"   element={<Settings />} />
+              <Route path="*"           element={<PageNotFound />} />
+            </Routes>
+          </Suspense>
+        </motion.div>
+      </AnimatePresence>
+    </>
   );
 };
 
