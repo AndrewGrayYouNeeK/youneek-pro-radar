@@ -1,48 +1,106 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+function loadContacts() {
+  try {
+    // Try new format first
+    const v2 = JSON.parse(localStorage.getItem('shelterContacts_v2') || 'null');
+    if (Array.isArray(v2) && v2.length > 0 && v2[0]?.phone) return v2;
+    // Fall back to legacy (array of phone strings)
+    const legacy = JSON.parse(localStorage.getItem('shelterContacts') || '[]');
+    return legacy.map((p, i) => ({ id: String(i), name: `Contact ${i + 1}`, phone: p }));
+  } catch { return []; }
+}
 
 export default function ShelterAlert({ activeTornadoWarning }) {
-  const contacts = JSON.parse(localStorage.getItem('shelterContacts') || '[]');
-  if (!contacts || contacts.length === 0) return null;
-  if (!activeTornadoWarning) return null;
+  const [sent, setSent] = useState(false);
+  const contacts = loadContacts();
+
+  if (!contacts.length || !activeTornadoWarning) return null;
 
   const handleShelter = () => {
-    navigator.geolocation.getCurrentPosition((pos) => {
-      const { latitude, longitude } = pos.coords;
-      const mapsUrl = `https://maps.google.com/?q=${latitude},${longitude}`;
-      const body = encodeURIComponent(`⚠️ TORNADO WARNING ACTIVE. I am safe and sheltering. My location: ${mapsUrl} — sent via YouNeeK Pro Radar`);
-      window.open(`sms:?&body=${body}`);
-    }, () => {
-      const body = encodeURIComponent(`⚠️ TORNADO WARNING ACTIVE. I am safe and sheltering. — sent via YouNeeK Pro Radar`);
-      window.open(`sms:?&body=${body}`);
-    });
+    const send = (locationLine) => {
+      // Build a single sms: URI with all recipients (comma-separated, works on iOS)
+      const phones = contacts.map((c) => c.phone).join(',');
+      const body = encodeURIComponent(
+        `⚠️ TORNADO WARNING — I'm safe and sheltering.\n${locationLine}\n— sent via YouNeeK Pro Radar`
+      );
+      window.open(`sms:${phones}?&body=${body}`, '_self');
+      setSent(true);
+      setTimeout(() => setSent(false), 8000);
+    };
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          send(`My location: https://maps.google.com/?q=${latitude},${longitude}`);
+        },
+        () => send('(Location unavailable)')
+      );
+    } else {
+      send('(Location unavailable)');
+    }
   };
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 z-[1600] flex justify-center px-3" style={{ bottom: 'calc(5.5rem + env(safe-area-inset-bottom))' }}>
-      <div className="pointer-events-auto w-full max-w-md rounded-2xl border border-emerald-400/30 bg-slate-950/95 p-3 shadow-2xl backdrop-blur-xl">
-        <div className="mb-3 flex items-start justify-between gap-3">
-          <div>
-            <div className="inline-flex rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-200">
-              Tornado Warning
+    <div
+      className="pointer-events-none fixed inset-x-0 z-[1600] flex justify-center px-3"
+      style={{ bottom: 'calc(5.5rem + env(safe-area-inset-bottom))' }}
+    >
+      <AnimatePresence mode="wait">
+        {sent ? (
+          <motion.div
+            key="sent"
+            initial={{ opacity: 0, scale: 0.95, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 8 }}
+            transition={{ duration: 0.2 }}
+            className="pointer-events-auto w-full max-w-md rounded-2xl border border-emerald-400/40 bg-emerald-950/95 px-4 py-3 shadow-2xl backdrop-blur-xl"
+          >
+            <div className="flex items-center gap-3">
+              <div className="text-2xl">✅</div>
+              <div>
+                <p className="text-sm font-bold text-emerald-300">Message sent to {contacts.length} contact{contacts.length !== 1 ? 's' : ''}</p>
+                <p className="text-xs text-emerald-400/70 mt-0.5">Stay sheltered. You've got this.</p>
+              </div>
             </div>
-            <h3 className="mt-2 text-sm font-semibold text-white">Send your safe message fast</h3>
-            <p className="mt-1 text-xs leading-5 text-slate-300">
-              One tap opens a text message to your shelter contacts with your status and location.
-            </p>
-          </div>
-          <div className="rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2 py-1 text-[10px] font-semibold text-emerald-200">
-            {contacts.length} contact{contacts.length === 1 ? '' : 's'}
-          </div>
-        </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="alert"
+            initial={{ opacity: 0, scale: 0.95, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 8 }}
+            transition={{ duration: 0.2 }}
+            className="pointer-events-auto w-full max-w-md rounded-2xl border border-red-500/30 bg-slate-950/95 p-3 shadow-2xl backdrop-blur-xl"
+          >
+            {/* Warning badge */}
+            <div className="mb-2 flex items-center justify-between">
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-red-300">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-red-400 animate-pulse" />
+                Tornado Warning Active
+              </div>
+              <div className="text-[11px] font-medium text-slate-400">
+                {contacts.length} contact{contacts.length !== 1 ? 's' : ''}
+              </div>
+            </div>
 
-        <button
-          aria-label="Alert shelter contacts"
-          onClick={handleShelter}
-          className="flex min-h-11 w-full items-center justify-center rounded-xl bg-emerald-400 px-4 py-3 text-sm font-bold text-slate-950 shadow-[0_0_30px_rgba(74,222,128,0.35)] transition-colors hover:bg-emerald-300"
-        >
-          I’m Sheltering — Alert Contacts
-        </button>
-      </div>
+            <p className="mb-3 text-xs leading-5 text-slate-300">
+              Tap below to send your location &amp; safe status to{' '}
+              <span className="font-semibold text-white">{contacts.map((c) => c.name).join(', ')}</span>.
+            </p>
+
+            <button
+              aria-label="Send shelter alert to all contacts"
+              onClick={handleShelter}
+              className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-bold text-slate-950 shadow-[0_0_30px_rgba(74,222,128,0.3)] transition-colors hover:bg-emerald-400 active:scale-[0.98]"
+            >
+              🏠 I'm Sheltering — Alert Contacts
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

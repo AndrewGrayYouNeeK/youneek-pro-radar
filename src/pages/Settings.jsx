@@ -141,6 +141,15 @@ export default function Settings() {
             sublabel="Location is used locally only — never stored or shared"
             right={null}
           />
+          <SettingRow
+            icon={Info}
+            label="Re-run app walkthrough"
+            sublabel="See the intro guide again"
+            onClick={() => {
+              localStorage.removeItem("onboarded_v1");
+              window.location.reload();
+            }}
+          />
         </Section>
 
         {/* Account */}
