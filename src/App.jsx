@@ -7,37 +7,31 @@ import { AnimatePresence, motion } from 'framer-motion';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-// Add page imports here
-const RadarScope = lazy(() => import("./pages/RadarScope"));
-const Contacts = lazy(() => import("./pages/Contacts"));
-const Settings = lazy(() => import("./pages/Settings"));
 import { NavigationStackProvider } from "@/lib/NavigationStack";
+
+const RadarScope = lazy(() => import("./pages/RadarScope"));
+const Contacts   = lazy(() => import("./pages/Contacts"));
+const Settings   = lazy(() => import("./pages/Settings"));
+const Store      = lazy(() => import("./pages/Store"));
+const Success    = lazy(() => import("./pages/Success"));
+
+const Spinner = () => (
+  <div className="fixed inset-0 flex items-center justify-center bg-slate-950">
+    <div className="w-8 h-8 border-4 border-slate-200 border-t-sky-400 rounded-full animate-spin" />
+  </div>
+);
 
 const AuthenticatedApp = () => {
   const location = useLocation();
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
 
-  // Show loading spinner while checking app public settings or auth
-  if (isLoadingPublicSettings || isLoadingAuth) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
-      </div>
-    );
-  }
+  if (isLoadingPublicSettings || isLoadingAuth) return <Spinner />;
 
-  // Handle authentication errors
   if (authError) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      // Redirect to login automatically
-      navigateToLogin();
-      return null;
-    }
+    if (authError.type === 'user_not_registered') return <UserNotRegisteredError />;
+    if (authError.type === 'auth_required') { navigateToLogin(); return null; }
   }
 
-  // Render the main app
   return (
     <AnimatePresence mode="wait">
       <motion.div
@@ -48,20 +42,15 @@ const AuthenticatedApp = () => {
         transition={{ duration: 0.2, ease: "easeOut" }}
         className="h-full"
       >
-        <Suspense
-          fallback={(
-            <div className="fixed inset-0 flex items-center justify-center">
-              <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
-            </div>
-          )}
-        >
+        <Suspense fallback={<Spinner />}>
           <Routes location={location}>
-            {/* Add your page Route elements here */}
-            <Route path="/" element={<Navigate to="/RadarScope" replace />} />
+            <Route path="/"           element={<Navigate to="/Store" replace />} />
+            <Route path="/Store"      element={<Store />} />
+            <Route path="/Success"    element={<Success />} />
             <Route path="/RadarScope" element={<RadarScope />} />
-            <Route path="/Contacts" element={<Contacts />} />
-            <Route path="/Settings" element={<Settings />} />
-            <Route path="*" element={<PageNotFound />} />
+            <Route path="/Contacts"   element={<Contacts />} />
+            <Route path="/Settings"   element={<Settings />} />
+            <Route path="*"           element={<PageNotFound />} />
           </Routes>
         </Suspense>
       </motion.div>
@@ -69,9 +58,7 @@ const AuthenticatedApp = () => {
   );
 };
 
-
 function App() {
-
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
@@ -85,7 +72,7 @@ function App() {
         <Toaster />
       </QueryClientProvider>
     </AuthProvider>
-  )
+  );
 }
 
-export default App
+export default App;
