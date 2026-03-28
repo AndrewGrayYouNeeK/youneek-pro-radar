@@ -1,7 +1,7 @@
 {
-  "name": "base44-app",
+  "name": "youneek-pro-radar",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -97,5 +97,13 @@
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.2",
     "vite": "^6.1.0"
+  },
+  "description": "Military-style NEXRAD radar and severe weather tracker",
+  "author": "Andrew Gray <andrew@youneek.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/AndrewGrayYouNeeK/youneek-pro-radar",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AndrewGrayYouNeeK/youneek-pro-radar.git"
   }
 }
