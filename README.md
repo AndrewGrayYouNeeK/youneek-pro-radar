@@ -1,45 +1,51 @@
-# YouNeeKProRadar
+# YouNeeK Pro Radar
 
-A personal, military-style PPI radar simulator for iOS—think tactical scope meets storm tracking. Drop manual targets, watch the sweep spin, and get real tornado warnings with an "I'm Safe" ping button. Built in Swift with WeatherKit for live alerts. Quiet mode keeps it stealthy (dog-approved). (https://img.shields.io/badge/Swift-5.9-orange.svg?style=flat)](https://swift.org) (https://img.shields.io/badge/iOS-16%2B-blue.svg?style=flat)](https://developer.apple.com/ios/) (https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+A military-style NEXRAD radar and severe weather tracker — built for real storm chasers and weather enthusiasts.
+
+## About
+
+YouNeeK Pro Radar is a professional-grade weather radar application featuring live NEXRAD base reflectivity mosaics, NWS severe weather alert overlays, NOAA weather radio streaming, and an emergency shelter alert system. Designed to look like a tactical PPI scope with a dark, phosphor-green aesthetic.
 
 ## Features
 
-- **Authentic PPI Scope**: Rotating green sweep, range rings, bearing lines—classic radar glow on black.
-- **Manual Targets**: Tap to drop blips—red hostile, blue friendly, yellow unknown. Drag, label, set threat levels.
-- **WeatherKit Integration**: Pulls live tornado warnings → flashes "I'm Safe" button. Tap to text/call your crew with GPS.
-- **Stealth Mode**: Mute sounds, dim screen—perfect for quiet ops (or napping pups).
-- **Location-Based**: Uses CoreLocation for alerts—no manual zip codes.
-- **Dark Theme Only**: No bright bullshit—just phosphor green on void.
+- **Live NEXRAD Radar** — Iowa Mesonet base reflectivity mosaics, auto-refreshing every 5 minutes
+- **Velocity Mode** — Toggle between reflectivity and velocity radar data
+- **Radar Loop** — Animated 6-frame loop showing storm movement over time
+- **NWS Alert Overlays** — Real-time GeoJSON polygons for:
+  - 🔴 Tornado Warnings
+  - 🟠 Severe Thunderstorm Warnings
+  - 🔵 Flood Warnings
+  - ❄️ Winter Storm Advisories
+- **NOAA Weather Radio** — 130 stations nationwide with auto-select by GPS location
+- **I'M SHELTERING Button** — One-tap emergency SMS to up to 3 contacts with GPS coordinates and Google Maps link
+- **Hook Echo Detection** — Zoom and pan to identify rotation signatures
+- **Dark Tactical UI** — PPI scope aesthetic, phosphor on black
 
-## Screenshots
+## Running Locally
 
-<img src="images/radar-sweep.gif" width="300" alt="PPI scope with rotating sweep and manual blips">  
-<img src="images/im-safe-button.png" width="300" alt="Tornado warning: 'I'm Safe' button glowing green">  
-<img src="images/target-drop.png" width="300" alt="Dropping a custom target on the scope">
+```bash
+git clone https://github.com/AndrewGrayYouNeeK/youneek-pro-radar.git
+cd youneek-pro-radar
+npm install
+npm run dev
+```
 
-(Pro tip: Upload your own GIFs/screenshots—make the sweep loop for max hype.)
+No API keys required — uses Iowa Mesonet public tiles and NWS public GeoJSON endpoints.
 
-## Installation
+## Data Sources
 
-1. Clone the repo:
-   ```bash
-   git clone https://github.com/yourusername/YouNeeKProRadar.git
-2.  Open in Xcode (needs iOS 16+).
-3.  Sign in with your Apple ID → enable WeatherKit in Capabilities.
-4.  Run on device/simulator—grant location perms.
-Usage
-•  Swipe for bearings, pinch to zoom.
-•  Tap screen → add target (hold for edit).
-•  During warnings: “I’m Safe” pops—tap to notify contacts.
-•  Toggle silent: Top-right kill-switch (red when active).
-Tech Stack
-•  Swift / SwiftUI (mostly UIKit for radar perf)
-•  WeatherKit (Apple’s API—500k free calls/mo)
-•  CoreLocation for GPS
-•  No third-party deps—pure Apple.
-Why This Exists
-Built for fun: simulate radar while tracking real storms. No ads, no tracking—just you, your dog, and a glowing scope.
-Contributing
-Pull requests welcome—especially if you wanna add phased-array sim or ECM jamming mode.
-License
-MIT—do whatever. Just credit if you fork.
+- **Radar:** [Iowa Environmental Mesonet](https://mesonet.agron.iastate.edu) — NEXRAD mosaics
+- **Alerts:** [NWS Weather API](https://api.weather.gov) — Active polygon warnings
+- **Radio:** NOAA Weather Radio station list (130 stations)
+
+## Tech Stack
+
+- React + Vite
+- Leaflet.js for map rendering
+- Iowa Mesonet XYZ tiles for radar
+- NWS GeoJSON API for live alerts
+- `sms:` URI scheme for emergency contacts
+
+## Built By
+
+Andrew Gray — YouNeeK
