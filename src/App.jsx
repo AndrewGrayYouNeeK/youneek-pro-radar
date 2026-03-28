@@ -12,8 +12,6 @@ import { NavigationStackProvider } from "@/lib/NavigationStack";
 const RadarScope = lazy(() => import("./pages/RadarScope"));
 const Contacts   = lazy(() => import("./pages/Contacts"));
 const Settings   = lazy(() => import("./pages/Settings"));
-const Store      = lazy(() => import("./pages/Store"));
-const Success    = lazy(() => import("./pages/Success"));
 
 const Spinner = () => (
   <div className="fixed inset-0 flex items-center justify-center bg-slate-950">
@@ -44,9 +42,7 @@ const AuthenticatedApp = () => {
       >
         <Suspense fallback={<Spinner />}>
           <Routes location={location}>
-            <Route path="/"           element={<Navigate to="/Store" replace />} />
-            <Route path="/Store"      element={<Store />} />
-            <Route path="/Success"    element={<Success />} />
+            <Route path="/"           element={<Navigate to="/RadarScope" replace />} />
             <Route path="/RadarScope" element={<RadarScope />} />
             <Route path="/Contacts"   element={<Contacts />} />
             <Route path="/Settings"   element={<Settings />} />
