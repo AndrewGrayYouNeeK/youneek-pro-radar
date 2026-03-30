@@ -8,6 +8,7 @@ import StormAnalysisStrip from "./StormAnalysisStrip";
 import ProLegend from "./ProLegend";
 import RadarRangeRings from "./RadarRangeRings";
 import RadarInspectorPanel from "./RadarInspectorPanel";
+import RadarQuickActions from "./RadarQuickActions";
 import { getRadarProduct } from "./radarProducts";
 import usePullToRefresh from "@/hooks/usePullToRefresh";
 import "leaflet/dist/leaflet.css";
@@ -153,6 +154,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     lonHemisphere: mapCenter?.lng >= 0 ? "E" : "W",
     zoom: (leafletMap.current?.getZoom() || 8).toFixed(1),
     warnings: activeWarningsCount,
+    inspectorStatus: inspector.active ? "Tracking" : "Standby",
     stormMode: activeTornadoWarning ? "Tornado Warning" : activeTornadoWatch ? "Tornado Watch" : "Monitor",
   }), [mapCenter, isLooping, activeWarningsCount, activeTornadoWarning, activeTornadoWatch]);
 
@@ -449,31 +451,28 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
           Refreshing radar...
         </div>
       )}
-      <div className="absolute left-3 top-28 z-[1000] flex flex-col gap-2" style={{ maxHeight: "calc(100vh - 160px)", overflowY: "auto", paddingRight: "2px" }}>
-        <button onClick={() => setShowQuickControls((v) => !v)} className="rounded-lg bg-slate-900/85 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90">
-          {showQuickControls ? "Hide Tools" : "Show Tools"}
-        </button>
-        {showQuickControls && (
-          <>
-            <button onClick={handleHookZoneView} className="rounded-lg bg-slate-900/80 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90">🌀 Hook Zone</button>
-            <button onClick={handleConusView} className="rounded-lg bg-slate-900/80 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90">🗺️ CONUS</button>
-            <button onClick={() => leafletMap.current?.zoomIn()} className="rounded-lg bg-slate-900/80 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90">➕ Zoom In</button>
-            <button onClick={() => leafletMap.current?.zoomOut()} className="rounded-lg bg-slate-900/80 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90">➖ Zoom Out</button>
-            <button onClick={handleLocateMe} className="rounded-lg bg-slate-900/80 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90">📍 My Location</button>
-            <button onClick={() => setShowRangeRings((value) => !value)} className="rounded-lg bg-slate-900/80 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90">{showRangeRings ? "◎ Hide Rings" : "◎ Show Rings"}</button>
-            <button onClick={handleLoopToggle} className="rounded-lg bg-slate-900/80 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90">{isLooping ? "⏹ Loop" : "▶ Loop"}</button>
-            {isLooping && loopFrames.length > 0 && (
-              <div className="rounded-lg bg-slate-900/70 px-3 py-2 text-xs font-medium text-slate-200 shadow-lg backdrop-blur-sm">
-                Frame {loopFrameIndex + 1}/{loopFrames.length}
-                <div className="mt-1 text-[11px] text-slate-200">{loopFrames[loopFrameIndex]?.typeLabel}</div>
-                <div className="mt-1 text-[11px] text-slate-300">{loopFrames[loopFrameIndex]?.label}</div>
-              </div>
-            )}
-            <div className="rounded-lg border border-cyan-400/20 bg-cyan-500/10 px-3 py-2 text-[11px] font-medium text-cyan-100 shadow-lg backdrop-blur-sm">
-              Pro mode: {activeProduct.label}
-            </div>
-          </>
-        )}
+      <RadarQuickActions
+        show={showQuickControls}
+        onToggleShow={() => setShowQuickControls((value) => !value)}
+        onHookZone={handleHookZoneView}
+        onConus={handleConusView}
+        onZoomIn={() => leafletMap.current?.zoomIn()}
+        onZoomOut={() => leafletMap.current?.zoomOut()}
+        onLocate={handleLocateMe}
+        onToggleRings={() => setShowRangeRings((value) => !value)}
+        showRangeRings={showRangeRings}
+        onToggleLoop={handleLoopToggle}
+        isLooping={isLooping}
+      />
+      {isLooping && loopFrames.length > 0 && (
+        <div className="absolute left-3 top-[30rem] z-[1000] rounded-2xl border border-white/10 bg-slate-950/82 px-3 py-2 text-xs font-medium text-slate-200 shadow-lg backdrop-blur-sm">
+          Frame {loopFrameIndex + 1}/{loopFrames.length}
+          <div className="mt-1 text-[11px] text-slate-200">{loopFrames[loopFrameIndex]?.typeLabel}</div>
+          <div className="mt-1 text-[11px] text-slate-300">{loopFrames[loopFrameIndex]?.label}</div>
+        </div>
+      )}
+      <div className="absolute left-3 top-[26.5rem] z-[1000] rounded-2xl border border-cyan-400/15 bg-slate-950/82 px-3 py-2 text-[11px] font-medium text-cyan-100 shadow-lg backdrop-blur-sm">
+        Pro mode: {activeProduct.label}
       </div>
       {showRangeRings && <RadarRangeRings />}
       <RadarLayersMenu showNexrad={showNexrad} showVelocity={showVelocityLocal} showRadio={showRadio} nexradStation={settings.station} radarProduct={settings.radarProduct} alertToggles={alertToggles} onShowNexradChange={handleShowNexradChange} onShowVelocityChange={handleShowVelocityChange} onShowRadioChange={onToggleRadio} onAlertToggleChange={handleAlertToggleChange} onRadarProductChange={handleRadarProductChange} />

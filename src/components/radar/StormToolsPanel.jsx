@@ -1,4 +1,4 @@
-import { Crosshair, Gauge, Navigation, ScanSearch, Radar, Timer, MapPinned, ShieldAlert, Expand } from "lucide-react";
+import { Crosshair, Gauge, Navigation, ScanSearch, Radar, Timer, MapPinned, ShieldAlert, Expand, CircleDot } from "lucide-react";
 
 function ToolChip({ icon: IconComponent, label, value, accent = "text-cyan-300" }) {
   return (
@@ -40,6 +40,7 @@ export default function StormToolsPanel({ metrics, productLabel }) {
           <ToolChip icon={Crosshair} label="Tilt Focus" value={metrics.focus} accent="text-amber-300" />
           <ToolChip icon={Expand} label="Zoom" value={metrics.zoom} accent="text-violet-300" />
           <ToolChip icon={ShieldAlert} label="Alerts On" value={String(metrics.warnings)} accent="text-red-300" />
+          <ToolChip icon={CircleDot} label="Inspector" value={metrics.inspectorStatus || "Standby"} accent="text-emerald-300" />
           <ToolChip icon={MapPinned} label="Latitude" value={`${metrics.latitude}° ${metrics.latHemisphere}`} accent="text-sky-300" />
           <ToolChip icon={MapPinned} label="Longitude" value={`${metrics.longitude}° ${metrics.lonHemisphere}`} accent="text-sky-300" />
         </div>
