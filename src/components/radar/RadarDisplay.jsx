@@ -134,12 +134,21 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [showQuickControls, setShowQuickControls] = useState(true);
 
   const activeProduct = useMemo(() => getRadarProduct(settings.radarProduct), [settings.radarProduct]);
+  const mapCenter = leafletMap.current?.getCenter();
+  const activeWarningsCount = [showTornado, showThunderstorm, showFlood, showWinter].filter(Boolean).length;
   const stormMetrics = useMemo(() => ({
-    bearing: Math.round((((leafletMap.current?.getCenter()?.lng || -87.3) + 180) % 360 + 360) % 360),
+    bearing: Math.round((((mapCenter?.lng || -87.3) + 180) % 360 + 360) % 360),
     range: Math.max(8, Math.round((leafletMap.current?.getZoom() || 8) * 4.5)),
     focus: leafletMap.current?.getZoom() >= 10 ? "Tight" : leafletMap.current?.getZoom() >= 7 ? "Regional" : "Wide",
     refreshLabel: isLooping ? "Loop Active" : "Live Feed",
-  }), [settings.radarProduct, isMapReady, loopFrameIndex, isLooping]);
+    latitude: mapCenter ? Math.abs(mapCenter.lat).toFixed(2) : "--",
+    longitude: mapCenter ? Math.abs(mapCenter.lng).toFixed(2) : "--",
+    latHemisphere: mapCenter?.lat >= 0 ? "N" : "S",
+    lonHemisphere: mapCenter?.lng >= 0 ? "E" : "W",
+    zoom: (leafletMap.current?.getZoom() || 8).toFixed(1),
+    warnings: activeWarningsCount,
+    stormMode: activeTornadoWarning ? "Tornado Warning" : activeTornadoWatch ? "Tornado Watch" : "Monitor",
+  }), [mapCenter, isLooping, activeWarningsCount, activeTornadoWarning, activeTornadoWatch]);
 
   const alertToggles = { tornado: showTornado, severe: showThunderstorm, flood: showFlood, winter: showWinter };
   const alertTogglesRef = useRef(alertToggles);
@@ -413,7 +422,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
           Refreshing radar...
         </div>
       )}
-      <div className="absolute left-3 top-20 z-[1000] flex flex-col gap-2" style={{ maxHeight: "calc(100vh - 120px)", overflowY: "auto", paddingRight: "2px" }}>
+      <div className="absolute left-3 top-28 z-[1000] flex flex-col gap-2" style={{ maxHeight: "calc(100vh - 160px)", overflowY: "auto", paddingRight: "2px" }}>
         <button onClick={() => setShowQuickControls((v) => !v)} className="rounded-lg bg-slate-900/85 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90">
           {showQuickControls ? "Hide Tools" : "Show Tools"}
         </button>

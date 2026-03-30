@@ -1,4 +1,4 @@
-import { Crosshair, Gauge, Navigation, ScanSearch, Radar, Timer } from "lucide-react";
+import { Crosshair, Gauge, Navigation, ScanSearch, Radar, Timer, MapPinned, ShieldAlert, Expand } from "lucide-react";
 
 function ToolChip({ icon: IconComponent, label, value, accent = "text-cyan-300" }) {
   return (
@@ -25,16 +25,23 @@ export default function StormToolsPanel({ metrics, productLabel }) {
             <Timer className="h-3.5 w-3.5 text-emerald-300" aria-hidden="true" />
             {metrics.refreshLabel}
           </div>
-          <div>{metrics.focus} Scan</div>
+          <div className="flex items-center gap-1.5 text-amber-300">
+            <ShieldAlert className="h-3.5 w-3.5" aria-hidden="true" />
+            {metrics.stormMode}
+          </div>
         </div>
       </div>
 
       <div className="mr-16 rounded-3xl border border-white/10 bg-slate-900/45 p-2 shadow-2xl backdrop-blur-xl">
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-6">
           <ToolChip icon={ScanSearch} label="Product" value={productLabel} />
           <ToolChip icon={Navigation} label="Bearing" value={`${metrics.bearing}°`} />
           <ToolChip icon={Gauge} label="Range" value={`${metrics.range} mi`} accent="text-emerald-300" />
           <ToolChip icon={Crosshair} label="Tilt Focus" value={metrics.focus} accent="text-amber-300" />
+          <ToolChip icon={Expand} label="Zoom" value={metrics.zoom} accent="text-violet-300" />
+          <ToolChip icon={ShieldAlert} label="Alerts On" value={String(metrics.warnings)} accent="text-red-300" />
+          <ToolChip icon={MapPinned} label="Latitude" value={`${metrics.latitude}° ${metrics.latHemisphere}`} accent="text-sky-300" />
+          <ToolChip icon={MapPinned} label="Longitude" value={`${metrics.longitude}° ${metrics.lonHemisphere}`} accent="text-sky-300" />
         </div>
       </div>
     </div>
