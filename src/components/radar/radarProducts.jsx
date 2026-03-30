@@ -31,6 +31,22 @@ export const RADAR_PRODUCTS = [
     opacity: 0.68,
     maxNativeZoom: 12,
   },
+  {
+    id: "hail",
+    label: "Hail Index",
+    description: "Hail core spotting view",
+    tileUrl: "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::USCOMP-NHI-0/{z}/{x}/{y}.png",
+    opacity: 0.68,
+    maxNativeZoom: 12,
+  },
+  {
+    id: "echo_tops",
+    label: "Echo Tops",
+    description: "Storm height and intensity structure",
+    tileUrl: "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::USCOMP-NET-0/{z}/{x}/{y}.png",
+    opacity: 0.66,
+    maxNativeZoom: 12,
+  },
 ];
 
 export function getRadarProduct(productId) {
