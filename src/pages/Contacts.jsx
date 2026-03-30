@@ -138,8 +138,8 @@ export default function Contacts() {
         {/* Add form */}
         <div className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3">
           <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Add Contact</div>
-          <div className="flex gap-2">
-            <div className="relative flex-1">
+          <div className="space-y-2">
+            <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" aria-hidden="true" />
               <input
                 value={name}
@@ -150,7 +150,7 @@ export default function Contacts() {
                 className="w-full rounded-xl border border-white/10 bg-slate-900 pl-9 pr-3 py-3 text-sm text-white outline-none placeholder:text-slate-600 focus:border-cyan-500/50"
               />
             </div>
-            <div className="relative flex-1">
+            <div className="relative">
               <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" aria-hidden="true" />
               <input
                 value={phone}
@@ -171,13 +171,14 @@ export default function Contacts() {
             </div>
           )}
           <button
+            type="button"
             onClick={handleAdd}
-            disabled={!name.trim() || !phone.trim()}
+            disabled={!name.trim() || !phone.trim() || addMutation.isPending}
             aria-label="Add shelter contact"
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white shadow-md transition-colors hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <UserPlus className="h-4 w-4" aria-hidden="true" />
-            Add Contact
+            {addMutation.isPending ? "Adding..." : "Add Contact"}
           </button>
         </div>
 
