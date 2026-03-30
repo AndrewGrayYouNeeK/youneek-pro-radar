@@ -13,6 +13,8 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
+const WORKER_BASE = "https://youneek-radar-worker.youneekartifacts.workers.dev";
+
 const STATION_COORDS = {
   KOKX: [40.866, -72.864], KBOX: [41.956, -71.137], KBGM: [42.2, -75.985],
   KBUF: [42.949, -78.737], KENX: [42.586, -74.064], KPBZ: [40.532, -80.218],
@@ -51,9 +53,9 @@ const STATION_COORDS = {
   KMSX: [47.041, -113.986], KTFX: [47.46, -111.385], KCBX: [43.491, -116.236],
 };
 
-const RIDGE2_URL = "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::USCOMP-N0Q-0/{z}/{x}/{y}.png";
 const getCacheBust = () => Math.floor(Date.now() / 120000);
-const getIowaReflectivityUrl = () => `${RIDGE2_URL}?_cb=${getCacheBust()}`;
+const getRadarTileUrl = () => `${WORKER_BASE}/radar/{z}/{x}/{y}.png?_cb=${getCacheBust()}`;
+const getAlertUrl = (type) => `${WORKER_BASE}/alerts?type=${type}`;
 const getRainViewerTileUrl = (path) => {
   if (!path) return null;
   const normalizedPath = path.startsWith("/v2/radar/") ? path : `/v2/radar/${path}`;
@@ -96,13 +98,6 @@ function isFeatureNearLocation(feature, userLocation, maxDistanceKm = 150) {
   return points.some(([lon, lat]) => haversineKm(lat, lon, userLocation.lat, userLocation.lon) <= maxDistanceKm);
 }
 
-function sstColor(tempC) {
-  const t = Math.max(0, Math.min(1, (tempC + 2) / 35));
-  if (t < 0.25) return `rgb(0,${Math.round(t * 4 * 200)},255)`;
-  if (t < 0.5) return `rgb(0,${Math.round(200 + (t - 0.25) * 4 * 55)},${Math.round(255 - (t - 0.25) * 4 * 255)})`;
-  if (t < 0.75) return `rgb(${Math.round((t - 0.5) * 4 * 255)},255,0)`;
-  return `rgb(255,${Math.round(255 - (t - 0.75) * 4 * 255)},0)`;
-}
 export default function RadarDisplay({ settings, showNexrad, onSettingsChange, showRadio, onToggleRadio }) {
   const mapRef = useRef(null);
   const leafletMap = useRef(null);
@@ -142,7 +137,10 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     if (leafletMap.current || !mapRef.current) return;
     const coords = STATION_COORDS[settings.station] || [37.8, -85.5];
     leafletMap.current = L.map(mapRef.current, { zoomControl: true, attributionControl: true, zoomSnap: 0.5 }).setView(coords, 8);
-    const baseLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", { attribution: '&copy; OpenStreetMap contributors &copy; CARTO', subdomains: "abcd", maxZoom: 20, crossOrigin: "anonymous" }).addTo(leafletMap.current);
+    const baseLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+      attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+      subdomains: "abcd", maxZoom: 20, crossOrigin: "anonymous"
+    }).addTo(leafletMap.current);
     baseLayer.once("load", () => setIsMapReady(true));
     invalidateMapSize(leafletMap.current);
     requestAnimationFrame(() => applyLeafletControlAccessibility(mapRef.current));
@@ -150,7 +148,10 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
       if (loopTimerRef.current) clearTimeout(loopTimerRef.current);
       if (loopFadeRef.current) clearInterval(loopFadeRef.current);
-      [radarLayerRef, velLayerRef, tornadoLayerRef, thunderLayerRef, floodLayerRef, winterLayerRef, userLocationMarkerRef, prevLoopLayerRef, loopLayerRef].forEach((r) => { if (r.current && leafletMap.current?.hasLayer(r.current)) leafletMap.current.removeLayer(r.current); r.current = null; });
+      [radarLayerRef, velLayerRef, tornadoLayerRef, thunderLayerRef, floodLayerRef, winterLayerRef, userLocationMarkerRef, prevLoopLayerRef, loopLayerRef].forEach((r) => {
+        if (r.current && leafletMap.current?.hasLayer(r.current)) leafletMap.current.removeLayer(r.current);
+        r.current = null;
+      });
       loopLayersRef.current.forEach((l) => { if (leafletMap.current?.hasLayer(l)) leafletMap.current.removeLayer(l); });
       loopLayersRef.current = [];
       setIsMapReady(false);
@@ -173,17 +174,17 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   useEffect(() => { alertTogglesRef.current = alertToggles; }, [alertToggles]);
 
   useEffect(() => {
-    if (!document.getElementById('leaflet-velocity-css')) {
-      const link = document.createElement('link');
-      link.id = 'leaflet-velocity-css';
-      link.rel = 'stylesheet';
-      link.href = 'https://cdn.jsdelivr.net/npm/leaflet-velocity@1.9.2/dist/leaflet-velocity.css';
+    if (!document.getElementById("leaflet-velocity-css")) {
+      const link = document.createElement("link");
+      link.id = "leaflet-velocity-css";
+      link.rel = "stylesheet";
+      link.href = "https://cdn.jsdelivr.net/npm/leaflet-velocity@1.9.2/dist/leaflet-velocity.css";
       document.head.appendChild(link);
     }
-    if (!document.getElementById('leaflet-velocity-js')) {
-      const script = document.createElement('script');
-      script.id = 'leaflet-velocity-js';
-      script.src = 'https://cdn.jsdelivr.net/npm/leaflet-velocity@1.9.2/dist/leaflet-velocity.js';
+    if (!document.getElementById("leaflet-velocity-js")) {
+      const script = document.createElement("script");
+      script.id = "leaflet-velocity-js";
+      script.src = "https://cdn.jsdelivr.net/npm/leaflet-velocity@1.9.2/dist/leaflet-velocity.js";
       document.head.appendChild(script);
     }
   }, []);
@@ -192,57 +193,72 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     if (!leafletMap.current) return;
     if (radarLayerRef.current) { leafletMap.current.removeLayer(radarLayerRef.current); radarLayerRef.current = null; }
     if (velLayerRef.current) { leafletMap.current.removeLayer(velLayerRef.current); velLayerRef.current = null; }
-    [tornadoLayerRef, thunderLayerRef, floodLayerRef, winterLayerRef].forEach((r) => { if (r.current) { leafletMap.current.removeLayer(r.current); r.current = null; } });
+    [tornadoLayerRef, thunderLayerRef, floodLayerRef, winterLayerRef].forEach((r) => {
+      if (r.current) { leafletMap.current.removeLayer(r.current); r.current = null; }
+    });
     if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
     radarLoadStatsRef.current = { errors: 0, loaded: 0, usingFallback: false };
     if (!showNexrad) { setActiveTornadoWarning(false); return; }
+
     const addVelocityLayer = () => {
       if (velLayerRef.current) { leafletMap.current.removeLayer(velLayerRef.current); velLayerRef.current = null; }
       if (!showVelocityLocal || !leafletMap.current) return;
-      velLayerRef.current = L.tileLayer("https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::USCOMP-N0U-0/{z}/{x}/{y}.png", { opacity: 0.65, transparent: true, crossOrigin: true, tileSize: 256, maxZoom: 18, maxNativeZoom: 12, attribution: 'NEXRAD Velocity © Iowa Mesonet' }).addTo(leafletMap.current);
+      velLayerRef.current = L.tileLayer(
+        "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::USCOMP-N0U-0/{z}/{x}/{y}.png",
+        { opacity: 0.65, transparent: true, crossOrigin: true, tileSize: 256, maxZoom: 18, maxNativeZoom: 12, attribution: "NEXRAD Velocity © Iowa Mesonet" }
+      ).addTo(leafletMap.current);
     };
-    const refreshAlertLayer = (layerRef, toggleKey, url, color) => {
+
+    const refreshAlertLayer = (layerRef, toggleKey, alertType, color) => {
       if (layerRef.current) { leafletMap.current.removeLayer(layerRef.current); layerRef.current = null; }
       if (!leafletMap.current || !showNexrad) return;
-      fetch(url).then((r) => r.json()).then((data) => {
-        if (!leafletMap.current) return;
-        if (toggleKey === "tornado") { const features = data?.features || []; setActiveTornadoWarning(Boolean(userLocation) && features.some((f) => isFeatureNearLocation(f, userLocation, 150))); }
-        if (!alertTogglesRef.current[toggleKey]) return;
-        layerRef.current = L.geoJSON(data, { style: { color, weight: 2, opacity: 0.95, fillColor: color, fillOpacity: 0.18 } }).addTo(leafletMap.current);
-      });
+      fetch(getAlertUrl(alertType))
+        .then((r) => r.json())
+        .then((data) => {
+          if (!leafletMap.current) return;
+          if (toggleKey === "tornado") {
+            const features = data?.features || [];
+            setActiveTornadoWarning(Boolean(userLocation) && features.some((f) => isFeatureNearLocation(f, userLocation, 150)));
+          }
+          if (!alertTogglesRef.current[toggleKey]) return;
+          layerRef.current = L.geoJSON(data, {
+            style: { color, weight: 2, opacity: 0.95, fillColor: color, fillOpacity: 0.18 }
+          }).addTo(leafletMap.current);
+        });
     };
+
     const refreshAlertLayers = () => {
-      refreshAlertLayer(tornadoLayerRef, "tornado", "https://api.weather.gov/alerts/active?event=Tornado+Warning&status=actual", "#ef4444");
-      refreshAlertLayer(thunderLayerRef, "severe", "https://api.weather.gov/alerts/active?event=Severe+Thunderstorm+Warning&status=actual", "#f97316");
-      refreshAlertLayer(floodLayerRef, "flood", "https://api.weather.gov/alerts/active?event=Flood+Warning&status=actual", "#3b82f6");
-      refreshAlertLayer(winterLayerRef, "winter", "https://api.weather.gov/alerts/active?event=Winter+Weather+Advisory&status=actual", "#a855f7");
+      refreshAlertLayer(tornadoLayerRef, "tornado", "tornado", "#ef4444");
+      refreshAlertLayer(thunderLayerRef, "severe", "thunderstorm", "#f97316");
+      refreshAlertLayer(floodLayerRef, "flood", "flood", "#3b82f6");
+      refreshAlertLayer(winterLayerRef, "winter", "winter", "#a855f7");
     };
+
     const refreshGlobalRadarLayer = () => {
-      fetchLatestRainViewerTileUrl().then((latestUrl) => {
-        if (!latestUrl || !leafletMap.current) return;
-        if (radarLayerRef.current?.setUrl) {
-          radarLayerRef.current.setUrl(latestUrl);
-          return;
-        }
-        radarLayerRef.current = L.tileLayer(latestUrl, {
-          attribution: "RainViewer",
-          opacity: 0.7,
-          maxZoom: 18,
-          maxNativeZoom: 12,
-          crossOrigin: "anonymous"
-        }).addTo(leafletMap.current);
-      });
+      const tileUrl = getRadarTileUrl();
+      if (radarLayerRef.current?.setUrl) { radarLayerRef.current.setUrl(tileUrl); return; }
+      radarLayerRef.current = L.tileLayer(tileUrl, {
+        attribution: "NEXRAD © Iowa Mesonet via YouNeeK",
+        opacity: 0.7, maxZoom: 18, maxNativeZoom: 12, crossOrigin: "anonymous",
+      }).addTo(leafletMap.current);
     };
+
     refreshGlobalRadarLayer();
-    addVelocityLayer(); refreshAlertLayers();
+    addVelocityLayer();
+    refreshAlertLayers();
+
     refreshTimerRef.current = setInterval(() => {
       refreshGlobalRadarLayer();
       if (velLayerRef.current?.redraw) velLayerRef.current.redraw();
       refreshAlertLayers();
     }, 5 * 60 * 1000);
+
     return () => {
       clearInterval(refreshTimerRef.current);
-      [radarLayerRef, velLayerRef, tornadoLayerRef, thunderLayerRef, floodLayerRef, winterLayerRef, prevLoopLayerRef, loopLayerRef].forEach((r) => { if (r.current && leafletMap.current?.hasLayer(r.current)) leafletMap.current.removeLayer(r.current); r.current = null; });
+      [radarLayerRef, velLayerRef, tornadoLayerRef, thunderLayerRef, floodLayerRef, winterLayerRef, prevLoopLayerRef, loopLayerRef].forEach((r) => {
+        if (r.current && leafletMap.current?.hasLayer(r.current)) leafletMap.current.removeLayer(r.current);
+        r.current = null;
+      });
       loopLayersRef.current.forEach((l) => { if (leafletMap.current?.hasLayer(l)) leafletMap.current.removeLayer(l); });
       loopLayersRef.current = [];
     };
@@ -250,25 +266,20 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
 
   const handleHookZoneView = () => {
     if (!leafletMap.current) return;
-    if (isLooping) {
-      setIsLooping(false);
-      clearLoopLayers();
-    }
+    if (isLooping) { setIsLooping(false); clearLoopLayers(); }
     leafletMap.current.setView([36.8, -87.3], 9);
   };
   const handleConusView = () => {
     if (!leafletMap.current) return;
-    if (isLooping) {
-      setIsLooping(false);
-      clearLoopLayers();
-    }
+    if (isLooping) { setIsLooping(false); clearLoopLayers(); }
     leafletMap.current.setView([39.5, -98.35], 5);
   };
   const clearLoopLayers = () => {
     if (loopTimerRef.current) { clearTimeout(loopTimerRef.current); loopTimerRef.current = null; }
     if (loopFadeRef.current) { clearInterval(loopFadeRef.current); loopFadeRef.current = null; }
     if (leafletMap.current) loopLayersRef.current.forEach((l) => { if (leafletMap.current.hasLayer(l)) leafletMap.current.removeLayer(l); });
-    loopLayersRef.current = []; loopLayerRef.current = null; prevLoopLayerRef.current = null; loopIndexRef.current = 0; setLoopFrameIndex(0);
+    loopLayersRef.current = []; loopLayerRef.current = null; prevLoopLayerRef.current = null;
+    loopIndexRef.current = 0; setLoopFrameIndex(0);
     if (radarLayerRef.current?.setOpacity) radarLayerRef.current.setOpacity(0.7);
     if (velLayerRef.current?.setOpacity) velLayerRef.current.setOpacity(showVelocityLocal ? 0.6 : 0);
   };
@@ -276,42 +287,24 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     if (!leafletMap.current) return;
     clearLoopLayers();
     fetch("https://api.rainviewer.com/public/weather-maps.json")
-      .then(r => r.json())
-      .then(data => {
-        const past = (data?.radar?.past || []).filter(i => i?.path);
-        const limited = past.slice(-6);
-        const frames = limited.map(i => ({
-          path: i.path,
-          label: formatRainViewerTime(i),
-          typeLabel: "🟢 Reflectivity",
-        }));
-
-        let loaded = 0;
+      .then((r) => r.json())
+      .then((data) => {
+        const past = (data?.radar?.past || []).filter((i) => i?.path);
+        const frames = past.slice(-6).map((i) => ({ path: i.path, label: formatRainViewerTime(i), typeLabel: "🟢 Reflectivity" }));
         const layers = [];
         const loadNext = (index) => {
           if (index >= frames.length || !leafletMap.current) {
-            loopLayersRef.current = layers;
-            loopIndexRef.current = 0;
-            setLoopFrames(frames);
-            setLoopFrameIndex(0);
+            loopLayersRef.current = layers; loopIndexRef.current = 0;
+            setLoopFrames(frames); setLoopFrameIndex(0);
             layers.forEach((l, i) => l.setOpacity(i === 0 ? 0.7 : 0));
-            loopLayerRef.current = layers[0] || null;
-            prevLoopLayerRef.current = null;
+            loopLayerRef.current = layers[0] || null; prevLoopLayerRef.current = null;
             if (radarLayerRef.current?.setOpacity) radarLayerRef.current.setOpacity(0);
             if (velLayerRef.current?.setOpacity) velLayerRef.current.setOpacity(0);
-            setIsLooping(true);
-            return;
+            setIsLooping(true); return;
           }
-          const layer = L.tileLayer(getRainViewerTileUrl(frames[index].path), {
-            opacity: 0,
-            maxZoom: 18,
-            maxNativeZoom: 12,
-            crossOrigin: "anonymous",
-            keepBuffer: 1,
-          });
+          const layer = L.tileLayer(getRainViewerTileUrl(frames[index].path), { opacity: 0, maxZoom: 18, maxNativeZoom: 12, crossOrigin: "anonymous", keepBuffer: 1 });
           const finish = () => { layers.push(layer); loadNext(index + 1); };
-          layer.once("load", finish);
-          layer.once("tileerror", finish);
+          layer.once("load", finish); layer.once("tileerror", finish);
           layer.addTo(leafletMap.current);
         };
         loadNext(0);
@@ -358,9 +351,8 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   }, [isLooping, loopFrames]);
 
   const refreshWeatherData = () => {
-    fetchLatestRainViewerTileUrl().then((latestUrl) => {
-      if (latestUrl && radarLayerRef.current?.setUrl) radarLayerRef.current.setUrl(latestUrl);
-    });
+    const tileUrl = getRadarTileUrl();
+    if (radarLayerRef.current?.setUrl) radarLayerRef.current.setUrl(tileUrl);
     if (velLayerRef.current?.redraw) velLayerRef.current.redraw();
   };
   const { isRefreshing, pullToRefreshHandlers } = usePullToRefresh({ onRefresh: refreshWeatherData });
@@ -389,18 +381,14 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         </div>
       )}
       {isRefreshing && (
-        <div className="absolute left-1/2 z-[1200] -translate-x-1/2 rounded-full bg-slate-900/85 px-4 py-2 text-xs font-medium text-white shadow-lg backdrop-blur-sm" style={{ top: 'calc(1rem + env(safe-area-inset-top))' }}>
+        <div className="absolute left-1/2 z-[1200] -translate-x-1/2 rounded-full bg-slate-900/85 px-4 py-2 text-xs font-medium text-white shadow-lg backdrop-blur-sm" style={{ top: "calc(1rem + env(safe-area-inset-top))" }}>
           Refreshing radar...
         </div>
       )}
-      <div className="absolute left-3 top-20 z-[1000] flex flex-col gap-2" style={{ maxHeight: 'calc(100vh - 120px)', overflowY: 'auto', paddingRight: '2px' }}>
-        <button
-          onClick={() => setShowQuickControls((value) => !value)}
-          className="rounded-lg bg-slate-900/85 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90"
-        >
+      <div className="absolute left-3 top-20 z-[1000] flex flex-col gap-2" style={{ maxHeight: "calc(100vh - 120px)", overflowY: "auto", paddingRight: "2px" }}>
+        <button onClick={() => setShowQuickControls((v) => !v)} className="rounded-lg bg-slate-900/85 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90">
           {showQuickControls ? "Hide Tools" : "Show Tools"}
         </button>
-
         {showQuickControls && (
           <>
             <button onClick={handleHookZoneView} className="rounded-lg bg-slate-900/80 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90">🌀 Hook Zone</button>
@@ -417,11 +405,11 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         )}
       </div>
       <RadarLayersMenu showNexrad={showNexrad} showVelocity={showVelocityLocal} showRadio={showRadio} nexradStation={settings.station} alertToggles={alertToggles} onShowNexradChange={handleShowNexradChange} onShowVelocityChange={handleShowVelocityChange} onShowRadioChange={onToggleRadio} onAlertToggleChange={handleAlertToggleChange} />
-      <button onClick={handleLocateMe} className="absolute z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700" style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom))', right: 'calc(1.25rem + env(safe-area-inset-right))' }} aria-label="Center radar on my location">
+      <button onClick={handleLocateMe} className="absolute z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700" style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))", right: "calc(1.25rem + env(safe-area-inset-right))" }} aria-label="Center radar on my location">
         <LocateFixed size={24} aria-hidden="true" />
       </button>
       <div ref={mapRef} className="absolute inset-0 h-full min-h-[400px] w-full" role="application" aria-label="Interactive weather radar" />
-      <div style={{ position:'absolute', bottom:'10px', left:'10px', zIndex:999, color:'rgba(255,255,255,0.35)', fontSize:'13px', fontWeight:'600', letterSpacing:'1px', pointerEvents:'none', userSelect:'none' }}>
+      <div style={{ position: "absolute", bottom: "10px", left: "10px", zIndex: 999, color: "rgba(255,255,255,0.35)", fontSize: "13px", fontWeight: "600", letterSpacing: "1px", pointerEvents: "none", userSelect: "none" }}>
         YouNeeK Pro Radar — by Andrew Gray
       </div>
       <ShelterAlert activeTornadoWarning={activeTornadoWarning} userLocation={userLocation} />
