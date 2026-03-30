@@ -48,17 +48,18 @@ export default function Contacts() {
 
   const addMutation = useMutation({
     mutationFn: async (contact) => {
-      const next = [...(queryClient.getQueryData(["shelterContacts_v2"]) || []), contact];
+      const current = queryClient.getQueryData(["shelterContacts_v2"]) || [];
+      const next = [...current, contact];
       saveContacts(next);
       return next;
     },
-    onMutate: async (contact) => {
+    onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: ["shelterContacts_v2"] });
       const prev = queryClient.getQueryData(["shelterContacts_v2"]) || [];
-      queryClient.setQueryData(["shelterContacts_v2"], [...prev, contact]);
       setName(""); setPhone(""); setError("");
       return { prev };
     },
+    onSuccess: (next) => queryClient.setQueryData(["shelterContacts_v2"], next),
     onError: (_, __, ctx) => queryClient.setQueryData(["shelterContacts_v2"], ctx?.prev || []),
     onSettled: () => queryClient.invalidateQueries({ queryKey: ["shelterContacts_v2"] }),
   });
@@ -80,6 +81,7 @@ export default function Contacts() {
   });
 
   const handleAdd = () => {
+    if (addMutation.isPending) return;
     const trimName = name.trim();
     const cleaned = cleanPhone(phone);
     if (!trimName) { setError("Enter a name."); return; }
@@ -144,7 +146,12 @@ export default function Contacts() {
               <input
                 value={name}
                 onChange={(e) => { setName(e.target.value); setError(""); }}
-                onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAdd();
+                  }
+                }}
                 placeholder="Name"
                 aria-label="Contact name"
                 className="w-full rounded-xl border border-white/10 bg-slate-900 pl-9 pr-3 py-3 text-sm text-white outline-none placeholder:text-slate-600 focus:border-cyan-500/50"
@@ -155,7 +162,12 @@ export default function Contacts() {
               <input
                 value={phone}
                 onChange={(e) => { setPhone(e.target.value); setError(""); }}
-                onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAdd();
+                  }
+                }}
                 placeholder="(555) 867-5309"
                 aria-label="Contact phone number"
                 inputMode="tel"
