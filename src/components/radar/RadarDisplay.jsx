@@ -9,6 +9,7 @@ import ProLegend from "./ProLegend";
 import RadarRangeRings from "./RadarRangeRings";
 import RadarInspectorPanel from "./RadarInspectorPanel";
 import RadarQuickActions from "./RadarQuickActions";
+import RadarStatusBar from "./RadarStatusBar";
 import { getRadarProduct } from "./radarProducts";
 import usePullToRefresh from "@/hooks/usePullToRefresh";
 import "leaflet/dist/leaflet.css";
@@ -478,6 +479,12 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       <RadarLayersMenu showNexrad={showNexrad} showVelocity={showVelocityLocal} showRadio={showRadio} nexradStation={settings.station} radarProduct={settings.radarProduct} alertToggles={alertToggles} onShowNexradChange={handleShowNexradChange} onShowVelocityChange={handleShowVelocityChange} onShowRadioChange={onToggleRadio} onAlertToggleChange={handleAlertToggleChange} onRadarProductChange={handleRadarProductChange} />
       <StormToolsPanel metrics={stormMetrics} productLabel={activeProduct.label} />
       <StormAnalysisStrip metrics={stormMetrics} />
+      <RadarStatusBar
+        productLabel={activeProduct.label}
+        isLooping={isLooping}
+        frameLabel={isLooping ? loopFrames[loopFrameIndex]?.label : "Live"}
+        warnings={activeWarningsCount}
+      />
       <ProLegend productLabel={activeProduct.label} />
       <RadarInspectorPanel inspector={inspector} productLabel={activeProduct.label} />
       <button onClick={handleLocateMe} className="absolute z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700" style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))", right: "calc(1.25rem + env(safe-area-inset-right))" }} aria-label="Center radar on my location">

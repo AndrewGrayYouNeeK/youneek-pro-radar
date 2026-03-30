@@ -14,7 +14,7 @@ function InspectorRow({ icon: Icon, label, value, accent = "text-cyan-300" }) {
 
 export default function RadarInspectorPanel({ inspector, productLabel }) {
   return (
-    <div className="pointer-events-none absolute bottom-24 right-3 z-[1000] w-[12rem] space-y-2">
+    <div className="pointer-events-none absolute bottom-24 right-3 z-[1000] w-[12.5rem] space-y-2">
       <InspectorRow icon={Crosshair} label="Inspector" value={inspector.active ? "Live" : "Standby"} accent="text-emerald-300" />
       <InspectorRow icon={MapPinned} label="Lat / Lon" value={`${inspector.lat}, ${inspector.lon}`} />
       <InspectorRow icon={Ruler} label="Bearing / Range" value={`${inspector.bearing}° / ${inspector.range} mi`} accent="text-amber-300" />
