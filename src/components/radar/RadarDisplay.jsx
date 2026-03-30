@@ -138,7 +138,8 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     bearing: Math.round((((leafletMap.current?.getCenter()?.lng || -87.3) + 180) % 360 + 360) % 360),
     range: Math.max(8, Math.round((leafletMap.current?.getZoom() || 8) * 4.5)),
     focus: leafletMap.current?.getZoom() >= 10 ? "Tight" : leafletMap.current?.getZoom() >= 7 ? "Regional" : "Wide",
-  }), [settings.radarProduct, isMapReady, loopFrameIndex]);
+    refreshLabel: isLooping ? "Loop Active" : "Live Feed",
+  }), [settings.radarProduct, isMapReady, loopFrameIndex, isLooping]);
 
   const alertToggles = { tornado: showTornado, severe: showThunderstorm, flood: showFlood, winter: showWinter };
   const alertTogglesRef = useRef(alertToggles);
