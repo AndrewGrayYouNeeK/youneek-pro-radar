@@ -15,6 +15,17 @@ L.Icon.Default.mergeOptions({
 
 const WORKER_BASE = "https://youneek-radar-worker.youneekartifacts.workers.dev";
 
+const fetchWeatherKitConditions = async (lat, lon) => {
+  try {
+    const res = await fetch(
+      `${WORKER_BASE}/weather/weather/${lat}/${lon}?dataSets=currentWeather,forecastDaily&language=en&timezone=America/Chicago`
+    );
+    return await res.json();
+  } catch (e) {
+    return null;
+  }
+};
+
 const STATION_COORDS = {
   KOKX: [40.866, -72.864], KBOX: [41.956, -71.137], KBGM: [42.2, -75.985],
   KBUF: [42.949, -78.737], KENX: [42.586, -74.064], KPBZ: [40.532, -80.218],
@@ -88,6 +99,24 @@ function haversineKm(lat1, lon1, lat2, lon2) {
   const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
+
+function getWeatherEmoji(conditionCode) {
+  if (!conditionCode) return '🌡️';
+  const c = conditionCode.toLowerCase();
+  if (c.includes('clear')) return '☀️';
+  if (c.includes('mostly_clear')) return '🌤️';
+  if (c.includes('partly_cloudy')) return '⛅';
+  if (c.includes('cloudy') || c.includes('overcast')) return '☁️';
+  if (c.includes('drizzle')) return '🌦️';
+  if (c.includes('rain') || c.includes('shower')) return '🌧️';
+  if (c.includes('thunder') || c.includes('storm')) return '⛈️';
+  if (c.includes('snow') || c.includes('sleet') || c.includes('hail')) return '🌨️';
+  if (c.includes('fog') || c.includes('haze') || c.includes('smoke')) return '🌫️';
+  if (c.includes('wind') || c.includes('breezy') || c.includes('blustery')) return '💨';
+  if (c.includes('blizzard') || c.includes('frigid') || c.includes('ice')) return '🧊';
+  if (c.includes('hot') || c.includes('scorching')) return '🔥';
+  return '🌡️';
+}
 function getGeometryPoints(geometry) {
   if (!geometry?.coordinates) return [];
   const flattenCoords = (coords) => { if (!Array.isArray(coords[0])) return [coords]; return coords.flatMap(flattenCoords); };
@@ -129,6 +158,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [activeTornadoWarning, setActiveTornadoWarning] = useState(true);
   const [isMapReady, setIsMapReady] = useState(false);
   const [showQuickControls, setShowQuickControls] = useState(true);
+  const [weatherConditions, setWeatherConditions] = useState(null);
 
   const alertToggles = { tornado: showTornado, severe: showThunderstorm, flood: showFlood, winter: showWinter };
   const alertTogglesRef = useRef(alertToggles);
@@ -169,6 +199,19 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition((p) => setUserLocation({ lat: p.coords.latitude, lon: p.coords.longitude }));
   }, []);
+
+  useEffect(() => {
+    if (!userLocation) return;
+    fetchWeatherKitConditions(userLocation.lat, userLocation.lon).then((data) => {
+      if (data?.currentWeather) setWeatherConditions(data.currentWeather);
+    });
+    const interval = setInterval(() => {
+      fetchWeatherKitConditions(userLocation.lat, userLocation.lon).then((data) => {
+        if (data?.currentWeather) setWeatherConditions(data.currentWeather);
+      });
+    }, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [userLocation]);
 
   useEffect(() => { setShowVelocityLocal(settings.showVelocity); }, [settings.showVelocity]);
   useEffect(() => { alertTogglesRef.current = alertToggles; }, [alertToggles]);
@@ -412,6 +455,44 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       <div style={{ position: "absolute", bottom: "10px", left: "10px", zIndex: 999, color: "rgba(255,255,255,0.35)", fontSize: "13px", fontWeight: "600", letterSpacing: "1px", pointerEvents: "none", userSelect: "none" }}>
         YouNeeK Pro Radar — by Andrew Gray
       </div>
+      {weatherConditions && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 'calc(1rem + env(safe-area-inset-top))',
+            right: 'calc(1rem + env(safe-area-inset-right))',
+            zIndex: 1000,
+            background: 'rgba(10,15,30,0.82)',
+            backdropFilter: 'blur(10px)',
+            borderRadius: '14px',
+            border: '1px solid rgba(255,255,255,0.08)',
+            padding: '10px 14px',
+            color: '#fff',
+            minWidth: '140px',
+            boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
+            pointerEvents: 'none',
+          }}
+        >
+          <div style={{ fontSize: '22px', lineHeight: 1 }}>
+            {getWeatherEmoji(weatherConditions.conditionCode)}
+          </div>
+          <div style={{ fontSize: '26px', fontWeight: '700', letterSpacing: '-0.5px', marginTop: '4px' }}>
+            {Math.round((weatherConditions.temperature * 9/5) + 32)}°F
+          </div>
+          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', marginTop: '2px', textTransform: 'capitalize', maxWidth: '120px', lineHeight: 1.3 }}>
+            {weatherConditions.conditionCode?.replace(/_/g, ' ').toLowerCase()}
+          </div>
+          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', marginTop: '4px' }}>
+            💨 {Math.round(weatherConditions.windSpeed * 0.621371)} mph
+          </div>
+          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)' }}>
+            💧 {weatherConditions.humidity != null ? Math.round(weatherConditions.humidity * 100) : '--'}%
+          </div>
+          <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.2)', marginTop: '6px', letterSpacing: '0.05em' }}>
+            Apple WeatherKit
+          </div>
+        </div>
+      )}
       <ShelterAlert activeTornadoWarning={activeTornadoWarning} userLocation={userLocation} />
     </div>
   );
