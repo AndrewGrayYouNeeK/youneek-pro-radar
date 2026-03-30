@@ -16,6 +16,7 @@ const DEFAULT_SETTINGS = {
   showNexrad: false, // live NEXRAD overlay
   station: "KJKL",   // default station (nearest to Columbia, KY)
   showVelocity: false, // show velocity overlay
+  radarProduct: "reflectivity",
 };
 
 export default function RadarScope() {

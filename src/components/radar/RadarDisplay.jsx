@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
 import { LocateFixed } from "lucide-react";
 import RadarLayersMenu from "./RadarLayersMenu";
 import ShelterAlert from "./ShelterAlert";
+import StormToolsPanel from "./StormToolsPanel";
+import { getRadarProduct } from "./radarProducts";
 import usePullToRefresh from "@/hooks/usePullToRefresh";
 import "leaflet/dist/leaflet.css";
 
@@ -131,6 +133,13 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [isMapReady, setIsMapReady] = useState(false);
   const [showQuickControls, setShowQuickControls] = useState(true);
 
+  const activeProduct = useMemo(() => getRadarProduct(settings.radarProduct), [settings.radarProduct]);
+  const stormMetrics = useMemo(() => ({
+    bearing: Math.round((((leafletMap.current?.getCenter()?.lng || -87.3) + 180) % 360 + 360) % 360),
+    range: Math.max(8, Math.round((leafletMap.current?.getZoom() || 8) * 4.5)),
+    focus: leafletMap.current?.getZoom() >= 10 ? "Tight" : leafletMap.current?.getZoom() >= 7 ? "Regional" : "Wide",
+  }), [settings.radarProduct, isMapReady, loopFrameIndex]);
+
   const alertToggles = { tornado: showTornado, severe: showThunderstorm, flood: showFlood, winter: showWinter };
   const alertTogglesRef = useRef(alertToggles);
 
@@ -203,10 +212,10 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
 
     const addVelocityLayer = () => {
       if (velLayerRef.current) { leafletMap.current.removeLayer(velLayerRef.current); velLayerRef.current = null; }
-      if (!showVelocityLocal || !leafletMap.current) return;
+      if (!showVelocityLocal || !leafletMap.current || settings.radarProduct === "velocity") return;
       velLayerRef.current = L.tileLayer(
         "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::USCOMP-N0U-0/{z}/{x}/{y}.png",
-        { opacity: 0.65, transparent: true, crossOrigin: true, tileSize: 256, maxZoom: 18, maxNativeZoom: 12, attribution: "NEXRAD Velocity © Iowa Mesonet" }
+        { opacity: 0.35, transparent: true, crossOrigin: true, tileSize: 256, maxZoom: 18, maxNativeZoom: 12, attribution: "NEXRAD Velocity © Iowa Mesonet" }
       ).addTo(leafletMap.current);
     };
 
@@ -242,11 +251,18 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     };
 
     const refreshGlobalRadarLayer = () => {
-      const tileUrl = getRadarTileUrl();
-      if (radarLayerRef.current?.setUrl) { radarLayerRef.current.setUrl(tileUrl); return; }
+      const tileUrl = settings.radarProduct === "reflectivity" ? getRadarTileUrl() : activeProduct.tileUrl;
+      if (radarLayerRef.current?.setUrl) {
+        radarLayerRef.current.setUrl(tileUrl);
+        radarLayerRef.current.setOpacity(activeProduct.opacity);
+        return;
+      }
       radarLayerRef.current = L.tileLayer(tileUrl, {
-        attribution: "NEXRAD © Iowa Mesonet via YouNeeK",
-        opacity: 0.7, maxZoom: 18, maxNativeZoom: 12, crossOrigin: "anonymous",
+        attribution: "Radar data © Iowa Mesonet / RainViewer",
+        opacity: activeProduct.opacity,
+        maxZoom: 18,
+        maxNativeZoom: activeProduct.maxNativeZoom || 12,
+        crossOrigin: "anonymous",
       }).addTo(leafletMap.current);
     };
 
@@ -269,7 +285,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       loopLayersRef.current.forEach((l) => { if (leafletMap.current?.hasLayer(l)) leafletMap.current.removeLayer(l); });
       loopLayersRef.current = [];
     };
-  }, [showNexrad, settings.showVelocity, showVelocityLocal, settings.station, showTornado, showThunderstorm, showFlood, showWinter, userLocation]);
+  }, [showNexrad, settings.showVelocity, settings.radarProduct, activeProduct, showVelocityLocal, settings.station, showTornado, showThunderstorm, showFlood, showWinter, userLocation]);
 
   const handleHookZoneView = () => {
     if (!leafletMap.current) return;
@@ -320,6 +336,10 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const handleLoopToggle = () => { if (isLooping) { setIsLooping(false); clearLoopLayers(); return; } fetchLoopFrames(); };
   const handleShowNexradChange = (value) => onSettingsChange({ ...settings, showNexrad: value });
   const handleShowVelocityChange = (value) => { setShowVelocityLocal(value); onSettingsChange({ ...settings, showVelocity: value }); };
+  const handleRadarProductChange = (value) => {
+    onSettingsChange({ ...settings, radarProduct: value, showVelocity: value === "velocity" ? true : settings.showVelocity });
+    if (value === "velocity") setShowVelocityLocal(true);
+  };
   const handleAlertToggleChange = (key, value) => {
     if (key === "tornado") setShowTornado(value);
     if (key === "severe") setShowThunderstorm(value);
@@ -358,7 +378,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   }, [isLooping, loopFrames]);
 
   const refreshWeatherData = () => {
-    const tileUrl = getRadarTileUrl();
+    const tileUrl = settings.radarProduct === "reflectivity" ? getRadarTileUrl() : activeProduct.tileUrl;
     if (radarLayerRef.current?.setUrl) radarLayerRef.current.setUrl(tileUrl);
     if (velLayerRef.current?.redraw) velLayerRef.current.redraw();
   };
@@ -408,10 +428,14 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
                 <div className="mt-1 text-[11px] text-slate-300">{loopFrames[loopFrameIndex]?.label}</div>
               </div>
             )}
+            <div className="rounded-lg border border-cyan-400/20 bg-cyan-500/10 px-3 py-2 text-[11px] font-medium text-cyan-100 shadow-lg backdrop-blur-sm">
+              Pro mode: {activeProduct.label}
+            </div>
           </>
         )}
       </div>
-      <RadarLayersMenu showNexrad={showNexrad} showVelocity={showVelocityLocal} showRadio={showRadio} nexradStation={settings.station} alertToggles={alertToggles} onShowNexradChange={handleShowNexradChange} onShowVelocityChange={handleShowVelocityChange} onShowRadioChange={onToggleRadio} onAlertToggleChange={handleAlertToggleChange} />
+      <RadarLayersMenu showNexrad={showNexrad} showVelocity={showVelocityLocal} showRadio={showRadio} nexradStation={settings.station} radarProduct={settings.radarProduct} alertToggles={alertToggles} onShowNexradChange={handleShowNexradChange} onShowVelocityChange={handleShowVelocityChange} onShowRadioChange={onToggleRadio} onAlertToggleChange={handleAlertToggleChange} onRadarProductChange={handleRadarProductChange} />
+      <StormToolsPanel metrics={stormMetrics} productLabel={activeProduct.label} />
       <button onClick={handleLocateMe} className="absolute z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700" style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))", right: "calc(1.25rem + env(safe-area-inset-right))" }} aria-label="Center radar on my location">
         <LocateFixed size={24} aria-hidden="true" />
       </button>

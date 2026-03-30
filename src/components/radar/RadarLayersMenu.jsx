@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import MobileSelect from "@/components/mobile/MobileSelect";
 import AccountActions from "./AccountActions";
 import RadioControls from "./RadioControls";
+import { RADAR_PRODUCTS } from "./radarProducts";
 
 function ToggleRow({ label, checked, onCheckedChange, ariaLabel }) {
   return (
@@ -18,11 +20,13 @@ export default function RadarLayersMenu({
   showVelocity,
   showRadio,
   nexradStation,
+  radarProduct,
   alertToggles,
   onShowNexradChange,
   onShowVelocityChange,
   onShowRadioChange,
   onAlertToggleChange,
+  onRadarProductChange,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [showAlerts, setShowAlerts] = useState(false);
@@ -61,6 +65,13 @@ export default function RadarLayersMenu({
                 checked={showVelocity}
                 onCheckedChange={onShowVelocityChange}
                 ariaLabel="Switch to velocity mode"
+              />
+              <MobileSelect
+                label="Radar Product"
+                value={radarProduct}
+                onChange={onRadarProductChange}
+                options={RADAR_PRODUCTS.map((product) => ({ value: product.id, label: product.label }))}
+                placeholder="Choose product"
               />
             </div>
 
