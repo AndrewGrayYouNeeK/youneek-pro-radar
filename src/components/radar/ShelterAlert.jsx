@@ -21,11 +21,12 @@ export default function ShelterAlert({ activeTornadoWarning }) {
 
   const handleShelter = (messagePrefix = "⚠️ TORNADO WARNING") => {
     const send = (locationLine) => {
-      const phones = contacts.map((c) => c.phone).join(',');
       const body = encodeURIComponent(
         `${messagePrefix} — I'm safe and sheltering.\n${locationLine}\n— sent via YouNeeK Pro Radar`
       );
-      window.open(`sms:${phones}?&body=${body}`, '_self');
+      const uniquePhones = [...new Set(contacts.map((c) => c.phone).filter(Boolean))];
+      const smsUrl = `sms:${uniquePhones.join(';')}?body=${body}`;
+      window.location.href = smsUrl;
       setSent(true);
       setTimeout(() => {
         setSent(false);
@@ -65,7 +66,7 @@ export default function ShelterAlert({ activeTornadoWarning }) {
               <div className="text-2xl">✅</div>
               <div>
                 <p className="text-sm font-bold text-emerald-300">Message sent to {contacts.length} contact{contacts.length !== 1 ? 's' : ''}</p>
-                <p className="text-xs text-emerald-400/70 mt-0.5">{isTesting ? 'Test draft opened successfully.' : 'Stay sheltered. You\'ve got this.'}</p>
+                <p className="text-xs text-emerald-400/70 mt-0.5">{isTesting ? 'Test draft opened for all saved contacts.' : 'Stay sheltered. You\'ve got this.'}</p>
               </div>
             </div>
           </motion.div>

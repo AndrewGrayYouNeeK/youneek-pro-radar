@@ -201,9 +201,11 @@ export default function Contacts() {
                   <div className="text-xs text-slate-400">{formatDisplay(contact.phone)}</div>
                 </div>
                 <button
+                  type="button"
                   onClick={() => removeMutation.mutate(contact.id)}
+                  disabled={removeMutation.isPending}
                   aria-label={`Remove ${contact.name}`}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-red-500/30 bg-red-950/40 text-red-400 transition-colors hover:bg-red-900/60"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-red-500/30 bg-red-950/40 text-red-400 transition-colors hover:bg-red-900/60 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Trash2 className="h-4 w-4" aria-hidden="true" />
                 </button>
