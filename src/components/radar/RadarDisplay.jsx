@@ -10,6 +10,7 @@ import RadarRangeRings from "./RadarRangeRings";
 import RadarInspectorPanel from "./RadarInspectorPanel";
 import RadarQuickActions from "./RadarQuickActions";
 import RadarStatusBar from "./RadarStatusBar";
+import RadarDataDock from "./RadarDataDock";
 import { getRadarProduct } from "./radarProducts";
 import usePullToRefresh from "@/hooks/usePullToRefresh";
 import "leaflet/dist/leaflet.css";
@@ -486,6 +487,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         warnings={activeWarningsCount}
       />
       <ProLegend productLabel={activeProduct.label} />
+      <RadarDataDock metrics={stormMetrics} productLabel={activeProduct.label} station={settings.station} />
       <RadarInspectorPanel inspector={inspector} productLabel={activeProduct.label} />
       <button onClick={handleLocateMe} className="absolute z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700" style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))", right: "calc(1.25rem + env(safe-area-inset-right))" }} aria-label="Center radar on my location">
         <LocateFixed size={24} aria-hidden="true" />

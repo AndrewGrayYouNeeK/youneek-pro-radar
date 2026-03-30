@@ -11,7 +11,7 @@ function LegendItem({ icon: Icon, label, tone }) {
 
 export default function ProLegend({ productLabel }) {
   return (
-    <div className="pointer-events-none absolute bottom-24 left-3 right-[13.5rem] z-[1000]">
+    <div className="pointer-events-none absolute bottom-24 left-[16.8rem] right-[13.5rem] z-[1000]">
       <div className="flex flex-wrap gap-2 rounded-3xl border border-white/10 bg-slate-950/78 p-2 shadow-2xl backdrop-blur-xl">
         <LegendItem icon={CloudRain} label={productLabel} tone="text-cyan-300" />
         <LegendItem icon={Tornado} label="Tornado" tone="text-red-300" />

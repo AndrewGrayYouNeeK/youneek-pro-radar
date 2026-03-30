@@ -14,7 +14,7 @@ function StatusCell({ icon: Icon, label, value, tone = "text-cyan-300" }) {
 
 export default function RadarStatusBar({ productLabel, isLooping, frameLabel, warnings }) {
   return (
-    <div className="pointer-events-none absolute left-3 right-3 top-[13.4rem] z-[1000]">
+    <div className="pointer-events-none absolute left-3 right-3 top-[13.6rem] z-[1000]">
       <div className="grid grid-cols-2 gap-2 rounded-3xl border border-white/10 bg-slate-950/78 p-2 shadow-2xl backdrop-blur-xl md:grid-cols-4">
         <StatusCell icon={Layers3} label="Product" value={productLabel} tone="text-cyan-300" />
         <StatusCell icon={Clock3} label="Frame" value={frameLabel || "Live"} tone="text-emerald-300" />

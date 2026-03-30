@@ -26,7 +26,7 @@ export default function RadarQuickActions({
   isLooping,
 }) {
   return (
-    <div className="absolute left-3 top-28 z-[1000] flex w-44 flex-col gap-2">
+    <div className="absolute left-3 top-28 z-[1000] flex w-[13rem] flex-col gap-2">
       <button
         onClick={onToggleShow}
         className="rounded-xl border border-white/10 bg-slate-950/88 px-3 py-2.5 text-sm font-semibold text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-900/90"
