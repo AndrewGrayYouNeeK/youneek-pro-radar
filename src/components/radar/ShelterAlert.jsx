@@ -14,20 +14,23 @@ function loadContacts() {
 
 export default function ShelterAlert({ activeTornadoWarning }) {
   const [sent, setSent] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
   const contacts = loadContacts();
 
-  if (!contacts.length || !activeTornadoWarning) return null;
+  if (!contacts.length) return null;
 
-  const handleShelter = () => {
+  const handleShelter = (messagePrefix = "⚠️ TORNADO WARNING") => {
     const send = (locationLine) => {
-      // Build a single sms: URI with all recipients (comma-separated, works on iOS)
       const phones = contacts.map((c) => c.phone).join(',');
       const body = encodeURIComponent(
-        `⚠️ TORNADO WARNING — I'm safe and sheltering.\n${locationLine}\n— sent via YouNeeK Pro Radar`
+        `${messagePrefix} — I'm safe and sheltering.\n${locationLine}\n— sent via YouNeeK Pro Radar`
       );
       window.open(`sms:${phones}?&body=${body}`, '_self');
       setSent(true);
-      setTimeout(() => setSent(false), 8000);
+      setTimeout(() => {
+        setSent(false);
+        setIsTesting(false);
+      }, 8000);
     };
 
     if (navigator.geolocation) {
@@ -62,7 +65,7 @@ export default function ShelterAlert({ activeTornadoWarning }) {
               <div className="text-2xl">✅</div>
               <div>
                 <p className="text-sm font-bold text-emerald-300">Message sent to {contacts.length} contact{contacts.length !== 1 ? 's' : ''}</p>
-                <p className="text-xs text-emerald-400/70 mt-0.5">Stay sheltered. You've got this.</p>
+                <p className="text-xs text-emerald-400/70 mt-0.5">{isTesting ? 'Test draft opened successfully.' : 'Stay sheltered. You\'ve got this.'}</p>
               </div>
             </div>
           </motion.div>
@@ -91,13 +94,28 @@ export default function ShelterAlert({ activeTornadoWarning }) {
               <span className="font-semibold text-white">{contacts.map((c) => c.name).join(', ')}</span>.
             </p>
 
-            <button
-              aria-label="Send shelter alert to all contacts"
-              onClick={handleShelter}
-              className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-bold text-slate-950 shadow-[0_0_30px_rgba(74,222,128,0.3)] transition-colors hover:bg-emerald-400 active:scale-[0.98]"
-            >
-              🏠 I'm Sheltering — Alert Contacts
-            </button>
+            <div className="space-y-2">
+              {activeTornadoWarning && (
+                <button
+                  aria-label="Send shelter alert to all contacts"
+                  onClick={() => handleShelter("⚠️ TORNADO WARNING")}
+                  className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-bold text-slate-950 shadow-[0_0_30px_rgba(74,222,128,0.3)] transition-colors hover:bg-emerald-400 active:scale-[0.98]"
+                >
+                  🏠 I'm Sheltering — Alert Contacts
+                </button>
+              )}
+
+              <button
+                aria-label="Test emergency text to all contacts"
+                onClick={() => {
+                  setIsTesting(true);
+                  handleShelter("🧪 TEST MESSAGE");
+                }}
+                className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/15 active:scale-[0.98]"
+              >
+                🧪 Test Emergency Text
+              </button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
