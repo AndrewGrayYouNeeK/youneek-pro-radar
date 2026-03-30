@@ -12,7 +12,7 @@ function loadContacts() {
   } catch { return []; }
 }
 
-export default function ShelterAlert({ activeTornadoWarning }) {
+export default function ShelterAlert({ activeTornadoWarning, activeTornadoWatch }) {
   const [sent, setSent] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const sendTimerRef = useRef(null);
@@ -86,9 +86,9 @@ export default function ShelterAlert({ activeTornadoWarning }) {
           >
             {/* Warning badge */}
             <div className="mb-2 flex items-center justify-between">
-              <div className="inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-red-300">
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-red-400 animate-pulse" />
-                Tornado Warning Active
+              <div className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] ${activeTornadoWarning ? 'border border-red-500/30 bg-red-500/10 text-red-300' : 'border border-amber-500/30 bg-amber-500/10 text-amber-300'}`}>
+                <span className={`inline-block h-1.5 w-1.5 rounded-full animate-pulse ${activeTornadoWarning ? 'bg-red-400' : 'bg-amber-400'}`} />
+                {activeTornadoWarning ? 'Tornado Warning Active' : 'Tornado Watch Active'}
               </div>
               <div className="text-[11px] font-medium text-slate-400">
                 {contacts.length} contact{contacts.length !== 1 ? 's' : ''}
@@ -101,13 +101,13 @@ export default function ShelterAlert({ activeTornadoWarning }) {
             </p>
 
             <div className="space-y-2">
-              {activeTornadoWarning && (
+              {(activeTornadoWarning || activeTornadoWatch) && (
                 <button
                   aria-label="Send shelter alert to all contacts"
-                  onClick={() => handleShelter("⚠️ TORNADO WARNING")}
+                  onClick={() => handleShelter(activeTornadoWarning ? "⚠️ TORNADO WARNING" : "🟡 TORNADO WATCH")}
                   className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-bold text-slate-950 shadow-[0_0_30px_rgba(74,222,128,0.3)] transition-colors hover:bg-emerald-400 active:scale-[0.98]"
                 >
-                  🏠 I'm Sheltering — Alert Contacts
+                  {activeTornadoWarning ? "🏠 I'm Sheltering — Alert Contacts" : "🟡 Heads Up — Alert Contacts"}
                 </button>
               )}
 

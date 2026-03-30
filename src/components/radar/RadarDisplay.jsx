@@ -127,6 +127,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [loopFrameIndex, setLoopFrameIndex] = useState(0);
   const [userLocation, setUserLocation] = useState(null);
   const [activeTornadoWarning, setActiveTornadoWarning] = useState(true);
+  const [activeTornadoWatch, setActiveTornadoWatch] = useState(false);
   const [isMapReady, setIsMapReady] = useState(false);
   const [showQuickControls, setShowQuickControls] = useState(true);
 
@@ -229,6 +230,12 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
 
     const refreshAlertLayers = () => {
       refreshAlertLayer(tornadoLayerRef, "tornado", "tornado", "#ef4444");
+      fetch(getAlertUrl("tornado_watch"))
+        .then((r) => r.json())
+        .then((data) => {
+          const features = data?.features || [];
+          setActiveTornadoWatch(Boolean(userLocation) && features.some((f) => isFeatureNearLocation(f, userLocation, 150)));
+        });
       refreshAlertLayer(thunderLayerRef, "severe", "thunderstorm", "#f97316");
       refreshAlertLayer(floodLayerRef, "flood", "flood", "#3b82f6");
       refreshAlertLayer(winterLayerRef, "winter", "winter", "#a855f7");
@@ -412,7 +419,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       <div style={{ position: "absolute", bottom: "10px", left: "10px", zIndex: 999, color: "rgba(255,255,255,0.35)", fontSize: "13px", fontWeight: "600", letterSpacing: "1px", pointerEvents: "none", userSelect: "none" }}>
         YouNeeK Pro Radar — by Andrew Gray
       </div>
-      <ShelterAlert activeTornadoWarning={activeTornadoWarning} userLocation={userLocation} />
+      <ShelterAlert activeTornadoWarning={activeTornadoWarning} activeTornadoWatch={activeTornadoWatch} userLocation={userLocation} />
     </div>
   );
 }
