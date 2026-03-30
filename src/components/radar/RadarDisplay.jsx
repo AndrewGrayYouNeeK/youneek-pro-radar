@@ -6,6 +6,8 @@ import ShelterAlert from "./ShelterAlert";
 import StormToolsPanel from "./StormToolsPanel";
 import StormAnalysisStrip from "./StormAnalysisStrip";
 import ProLegend from "./ProLegend";
+import RadarRangeRings from "./RadarRangeRings";
+import RadarInspectorPanel from "./RadarInspectorPanel";
 import { getRadarProduct } from "./radarProducts";
 import usePullToRefresh from "@/hooks/usePullToRefresh";
 import "leaflet/dist/leaflet.css";
@@ -134,6 +136,8 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [activeTornadoWatch, setActiveTornadoWatch] = useState(false);
   const [isMapReady, setIsMapReady] = useState(false);
   const [showQuickControls, setShowQuickControls] = useState(true);
+  const [showRangeRings, setShowRangeRings] = useState(true);
+  const [inspector, setInspector] = useState({ active: false, lat: "--", lon: "--", bearing: "--", range: "--" });
 
   const activeProduct = useMemo(() => getRadarProduct(settings.radarProduct), [settings.radarProduct]);
   const mapCenter = leafletMap.current?.getCenter();
@@ -360,6 +364,27 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   };
 
   useEffect(() => {
+    if (!leafletMap.current) return;
+    const updateInspector = (event) => {
+      const center = leafletMap.current.getCenter();
+      const point = event.latlng;
+      const latDiff = point.lat - center.lat;
+      const lonDiff = point.lng - center.lng;
+      const distance = haversineKm(center.lat, center.lng, point.lat, point.lng) * 0.621371;
+      const bearing = (Math.atan2(lonDiff, latDiff) * 180 / Math.PI + 360) % 360;
+      setInspector({
+        active: true,
+        lat: point.lat.toFixed(2),
+        lon: point.lng.toFixed(2),
+        bearing: Math.round(bearing),
+        range: Math.max(1, Math.round(distance)),
+      });
+    };
+    leafletMap.current.on("mousemove", updateInspector);
+    return () => leafletMap.current?.off("mousemove", updateInspector);
+  }, [leafletMap.current]);
+
+  useEffect(() => {
     if (!leafletMap.current || !isLooping || !loopFrames.length || !loopLayersRef.current.length) return;
     if (radarLayerRef.current?.setOpacity) radarLayerRef.current.setOpacity(0);
     if (velLayerRef.current?.setOpacity) velLayerRef.current.setOpacity(0);
@@ -435,6 +460,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
             <button onClick={() => leafletMap.current?.zoomIn()} className="rounded-lg bg-slate-900/80 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90">➕ Zoom In</button>
             <button onClick={() => leafletMap.current?.zoomOut()} className="rounded-lg bg-slate-900/80 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90">➖ Zoom Out</button>
             <button onClick={handleLocateMe} className="rounded-lg bg-slate-900/80 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90">📍 My Location</button>
+            <button onClick={() => setShowRangeRings((value) => !value)} className="rounded-lg bg-slate-900/80 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90">{showRangeRings ? "◎ Hide Rings" : "◎ Show Rings"}</button>
             <button onClick={handleLoopToggle} className="rounded-lg bg-slate-900/80 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90">{isLooping ? "⏹ Loop" : "▶ Loop"}</button>
             {isLooping && loopFrames.length > 0 && (
               <div className="rounded-lg bg-slate-900/70 px-3 py-2 text-xs font-medium text-slate-200 shadow-lg backdrop-blur-sm">
@@ -449,10 +475,12 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
           </>
         )}
       </div>
+      {showRangeRings && <RadarRangeRings />}
       <RadarLayersMenu showNexrad={showNexrad} showVelocity={showVelocityLocal} showRadio={showRadio} nexradStation={settings.station} radarProduct={settings.radarProduct} alertToggles={alertToggles} onShowNexradChange={handleShowNexradChange} onShowVelocityChange={handleShowVelocityChange} onShowRadioChange={onToggleRadio} onAlertToggleChange={handleAlertToggleChange} onRadarProductChange={handleRadarProductChange} />
       <StormToolsPanel metrics={stormMetrics} productLabel={activeProduct.label} />
       <StormAnalysisStrip metrics={stormMetrics} />
       <ProLegend productLabel={activeProduct.label} />
+      <RadarInspectorPanel inspector={inspector} productLabel={activeProduct.label} />
       <button onClick={handleLocateMe} className="absolute z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700" style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))", right: "calc(1.25rem + env(safe-area-inset-right))" }} aria-label="Center radar on my location">
         <LocateFixed size={24} aria-hidden="true" />
       </button>
