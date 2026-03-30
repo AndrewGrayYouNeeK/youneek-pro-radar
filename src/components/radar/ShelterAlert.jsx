@@ -26,11 +26,9 @@ export default function ShelterAlert({ activeTornadoWarning, activeTornadoWatch 
         `${messagePrefix} — I'm safe and sheltering.\n${locationLine}\n— sent via YouNeeK Pro Radar`
       );
       const uniquePhones = [...new Set(contacts.map((c) => c.phone).filter(Boolean))];
-      uniquePhones.forEach((phone, index) => {
-        window.setTimeout(() => {
-          window.open(`sms:${phone}?body=${body}`, '_self');
-        }, index * 700);
-      });
+      const recipients = uniquePhones.join(",");
+      if (!recipients) return;
+      window.location.href = `sms:${recipients}?body=${body}`;
       setSent(true);
       if (sendTimerRef.current) window.clearTimeout(sendTimerRef.current);
       sendTimerRef.current = window.setTimeout(() => {
