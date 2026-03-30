@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 function loadContacts() {
@@ -15,6 +15,7 @@ function loadContacts() {
 export default function ShelterAlert({ activeTornadoWarning }) {
   const [sent, setSent] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
+  const sendTimerRef = useRef(null);
   const contacts = loadContacts();
 
   if (!contacts.length) return null;
@@ -25,10 +26,14 @@ export default function ShelterAlert({ activeTornadoWarning }) {
         `${messagePrefix} — I'm safe and sheltering.\n${locationLine}\n— sent via YouNeeK Pro Radar`
       );
       const uniquePhones = [...new Set(contacts.map((c) => c.phone).filter(Boolean))];
-      const smsUrl = `sms:${uniquePhones.join(';')}?body=${body}`;
-      window.location.href = smsUrl;
+      uniquePhones.forEach((phone, index) => {
+        window.setTimeout(() => {
+          window.open(`sms:${phone}?body=${body}`, '_self');
+        }, index * 700);
+      });
       setSent(true);
-      setTimeout(() => {
+      if (sendTimerRef.current) window.clearTimeout(sendTimerRef.current);
+      sendTimerRef.current = window.setTimeout(() => {
         setSent(false);
         setIsTesting(false);
       }, 8000);
@@ -66,7 +71,7 @@ export default function ShelterAlert({ activeTornadoWarning }) {
               <div className="text-2xl">✅</div>
               <div>
                 <p className="text-sm font-bold text-emerald-300">Message sent to {contacts.length} contact{contacts.length !== 1 ? 's' : ''}</p>
-                <p className="text-xs text-emerald-400/70 mt-0.5">{isTesting ? 'Test draft opened for all saved contacts.' : 'Stay sheltered. You\'ve got this.'}</p>
+                <p className="text-xs text-emerald-400/70 mt-0.5">{isTesting ? 'Test drafts are opening one by one for your saved contacts.' : 'Message drafts are opening one by one for your contacts.'}</p>
               </div>
             </div>
           </motion.div>
