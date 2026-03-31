@@ -159,11 +159,14 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [tiltIndex, setTiltIndex] = useState(0);
   const [baseLayer, setBaseLayer] = useState('dark'); // dark | satellite
   const [mesoMarkers, setMesoMarkers] = useState([]);
+  const [hailReports, setHailReports] = useState([]);
+  const [showShareBanner, setShowShareBanner] = useState(false);
   const stormMarkerGroupRef = useRef(null);
   const hookLayerGroupRef = useRef(null);
   const countyWarningLayerRef = useRef(null);
   const vectorLayerGroupRef = useRef(null);
   const mesoLayerGroupRef = useRef(null);
+  const hailLayerGroupRef = useRef(null);
   const baseLayerRef = useRef(null);
   const mapRef2 = useRef(null);
   const leafletMap2 = useRef(null);
@@ -218,7 +221,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
       if (loopTimerRef.current) clearTimeout(loopTimerRef.current);
       if (loopFadeRef.current) clearInterval(loopFadeRef.current);
-      [radarLayerRef, velLayerRef, tornadoLayerRef, thunderLayerRef, floodLayerRef, winterLayerRef, userLocationMarkerRef, prevLoopLayerRef, loopLayerRef, stormMarkerGroupRef, hookLayerGroupRef, countyWarningLayerRef, vectorLayerGroupRef, mesoLayerGroupRef, baseLayerRef].forEach((r) => {
+      [radarLayerRef, velLayerRef, tornadoLayerRef, thunderLayerRef, floodLayerRef, winterLayerRef, userLocationMarkerRef, prevLoopLayerRef, loopLayerRef, stormMarkerGroupRef, hookLayerGroupRef, countyWarningLayerRef, vectorLayerGroupRef, mesoLayerGroupRef, hailLayerGroupRef, baseLayerRef].forEach((r) => {
         if (r.current && leafletMap.current?.hasLayer(r.current)) leafletMap.current.removeLayer(r.current);
         r.current = null;
       });
@@ -936,6 +939,91 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     };
   }, [dualPane]);
 
+  // ── Hail Size Markers ────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!isMapReady || !leafletMap.current) return;
+
+    const fetchHail = () => {
+      fetch('https://mesonet.agron.iastate.edu/geojson/lsr.php?hours=3&wfo=all&type=H')
+        .then(r => r.json())
+        .then(data => {
+          if (!leafletMap.current) return;
+          if (hailLayerGroupRef.current) leafletMap.current.removeLayer(hailLayerGroupRef.current);
+          const group = L.layerGroup();
+          const reports = [];
+
+          (data?.features || []).forEach(feature => {
+            const props = feature?.properties || {};
+            const coords = feature?.geometry?.coordinates;
+            if (!coords) return;
+            const [lon, lat] = coords;
+            const sizeInches = parseFloat(props.magnitude) || 0;
+            // Size: < 0.75 = pea, 0.75–1.0 = penny, 1.0–1.75 = golf ball, > 1.75 = baseball+
+            const isLarge = sizeInches >= 1.75;
+            const isMedium = sizeInches >= 1.0;
+            const color = isLarge ? '#ef4444' : isMedium ? '#f97316' : '#3b82f6';
+            const sizeLabel = isLarge ? '⚾' : isMedium ? '⛳' : '🫐';
+            const sizePx = Math.max(22, Math.min(38, 22 + sizeInches * 8));
+
+            const icon = L.divIcon({
+              className: '',
+              html: `<div style="
+                width:${sizePx}px;height:${sizePx}px;
+                border:2px solid ${color};
+                border-radius:50%;
+                background:${color}22;
+                display:flex;align-items:center;justify-content:center;
+                font-size:${sizePx * 0.55}px;
+                box-shadow:0 0 8px ${color}66;
+              ">${sizeLabel}</div>`,
+              iconSize: [sizePx, sizePx],
+              iconAnchor: [sizePx/2, sizePx/2],
+            });
+
+            const time = props.valid ? new Date(props.valid).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
+            L.marker([lat, lon], { icon, zIndexOffset: 400 })
+              .bindPopup(`<div style="font-family:sans-serif;min-width:150px">
+                <strong style="color:${color}">🌨️ HAIL REPORT</strong><br/>
+                <span style="font-size:12px;color:#ddd">${sizeInches > 0 ? sizeInches + '"' : 'Size unknown'}</span><br/>
+                <span style="font-size:11px;color:#888">${props.city || ''} ${props.state || ''}</span><br/>
+                <span style="font-size:11px;color:#aaa">${time}</span>
+              </div>`)
+              .addTo(group);
+            reports.push({ lat, lon, size: sizeInches });
+          });
+
+          group.addTo(leafletMap.current);
+          hailLayerGroupRef.current = group;
+          setHailReports(reports);
+        })
+        .catch(() => {});
+    };
+
+    fetchHail();
+    const interval = setInterval(fetchHail, 5 * 60 * 1000);
+    return () => {
+      clearInterval(interval);
+      if (hailLayerGroupRef.current && leafletMap.current) leafletMap.current.removeLayer(hailLayerGroupRef.current);
+    };
+  }, [isMapReady]);
+
+  // ── Share My Location ─────────────────────────────────────────────────────
+  const handleShareLocation = () => {
+    if (!navigator.geolocation) { alert("Location not available."); return; }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        const body = encodeURIComponent(`📍 My current location: https://maps.google.com/?q=${latitude},${longitude}
+— sent via YouNeeK Pro Radar`);
+        const separator = /iPad|iPhone|iPod/.test(navigator.userAgent) ? "&" : "?";
+        window.open(`sms:${separator}body=${body}`, '_blank');
+        setShowShareBanner(true);
+        setTimeout(() => setShowShareBanner(false), 4000);
+      },
+      () => alert("Couldn't get location — check permissions.")
+    );
+  };
+
   const refreshWeatherData = () => {
     const tileUrl = settings.radarProduct === "reflectivity" ? getRadarTileUrl() : activeProduct.tileUrl;
     if (radarLayerRef.current?.setUrl) radarLayerRef.current.setUrl(tileUrl);
@@ -1017,6 +1105,31 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       <button onClick={handleLocateMe} className="absolute z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700" style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))", right: "calc(1.25rem + env(safe-area-inset-right))" }} aria-label="Center radar on my location">
         <LocateFixed size={24} aria-hidden="true" />
       </button>
+      {/* Share location quick-send */}
+      <button
+        onClick={handleShareLocation}
+        className="absolute z-[1000] flex h-12 w-12 items-center justify-center rounded-full bg-emerald-600/90 text-white shadow-lg border border-emerald-400/30 transition-colors hover:bg-emerald-500 active:scale-95"
+        style={{ bottom: "calc(11rem + env(safe-area-inset-bottom))", right: "calc(1.25rem + env(safe-area-inset-right))" }}
+        aria-label="Share my location via SMS"
+        title="Share my location"
+      >
+        📍
+      </button>
+      {showShareBanner && (
+        <div className="absolute left-1/2 z-[1400] -translate-x-1/2 flex items-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-950/95 px-4 py-2 text-xs font-semibold text-emerald-300 shadow-xl backdrop-blur-sm"
+          style={{ bottom: "calc(15rem + env(safe-area-inset-bottom))" }}>
+          📍 Location message opened!
+        </div>
+      )}
+      {/* Hail report badge */}
+      {hailReports.length > 0 && (
+        <div className="absolute z-[1000] flex items-center gap-1.5 rounded-full border border-blue-500/30 bg-slate-950/80 px-3 py-1.5 text-[11px] font-bold text-blue-300 shadow-lg backdrop-blur-sm"
+          style={{ top: "calc(5.5rem + env(safe-area-inset-top))", right: "1rem" }}>
+          🌨️ {hailReports.filter(h => h.size >= 1.75).length > 0
+            ? `${hailReports.filter(h => h.size >= 1.75).length} baseball+ hail`
+            : `${hailReports.length} hail report${hailReports.length !== 1 ? 's' : ''}`}
+        </div>
+      )}
       <button
         onClick={() => setDualPane(v => !v)}
         className={`absolute z-[1000] flex items-center gap-1.5 rounded-full px-3 py-2 text-[11px] font-bold shadow-lg transition-colors ${dualPane ? 'bg-cyan-600 text-white border border-cyan-400' : 'bg-slate-800/90 text-slate-300 border border-white/10'}`}
