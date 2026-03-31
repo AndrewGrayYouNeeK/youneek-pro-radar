@@ -3,13 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 function loadContacts() {
   try {
-    // Try new format first
     const v2 = JSON.parse(localStorage.getItem('shelterContacts_v2') || 'null');
     if (Array.isArray(v2) && v2.length > 0 && v2[0]?.phone) return v2;
-    // Fall back to legacy (array of phone strings)
     const legacy = JSON.parse(localStorage.getItem('shelterContacts') || '[]');
     return legacy.map((p, i) => ({ id: String(i), name: `Contact ${i + 1}`, phone: p }));
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
 
 export default function ShelterAlert({ activeTornadoWarning, activeTornadoWatch }) {
@@ -21,7 +21,7 @@ export default function ShelterAlert({ activeTornadoWarning, activeTornadoWatch 
 
   if (!contacts.length) return null;
 
-  const handleShelter = (messagePrefix = "⚠️ TORNADO WARNING") => {
+  const handleShelter = (messagePrefix = '⚠️ TORNADO WARNING') => {
     const uniquePhones = [...new Set(contacts.map((c) => c.phone).filter(Boolean))];
     if (!uniquePhones.length) return;
 
@@ -32,10 +32,9 @@ export default function ShelterAlert({ activeTornadoWarning, activeTornadoWatch 
 
     const openNext = (phones, locationLine, index) => {
       if (index >= phones.length) return;
-      const separator = /iPad|iPhone|iPod/.test(navigator.userAgent) ? "&" : "?";
+      const separator = /iPad|iPhone|iPod/.test(navigator.userAgent) ? '&' : '?';
       window.open(`sms:${phones[index]}${separator}body=${buildBody(locationLine)}`, '_blank');
       setCurrentContactIndex(index + 1);
-      // Stagger each subsequent contact by 1.5 seconds so the user can send before the next opens
       if (index + 1 < phones.length) {
         setTimeout(() => openNext(phones, locationLine, index + 1), 1500);
       }
@@ -87,7 +86,7 @@ export default function ShelterAlert({ activeTornadoWarning, activeTornadoWatch 
                   Sending to {contacts.length} contact{contacts.length !== 1 ? 's' : ''}{' '}
                   {contacts.length > 1 && currentContactIndex > 0 ? `(${currentContactIndex}/${contacts.length})` : ''}
                 </p>
-                <p className="text-xs text-emerald-400/70 mt-0.5">
+                <p className="mt-0.5 text-xs text-emerald-400/70">
                   {isTesting
                     ? 'Test drafts are opening one by one — send each as it opens.'
                     : 'Message drafts are opening one by one — send each as it opens.'}
@@ -104,7 +103,6 @@ export default function ShelterAlert({ activeTornadoWarning, activeTornadoWatch 
             transition={{ duration: 0.2 }}
             className="pointer-events-auto w-full max-w-md rounded-2xl border border-red-500/30 bg-slate-950/95 p-3 shadow-2xl backdrop-blur-xl"
           >
-            {/* Warning badge */}
             <div className="mb-2 flex items-center justify-between">
               <div className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] ${activeTornadoWarning ? 'border border-red-500/30 bg-red-500/10 text-red-300' : 'border border-amber-500/30 bg-amber-500/10 text-amber-300'}`}>
                 <span className={`inline-block h-1.5 w-1.5 rounded-full animate-pulse ${activeTornadoWarning ? 'bg-red-400' : 'bg-amber-400'}`} />
@@ -124,10 +122,10 @@ export default function ShelterAlert({ activeTornadoWarning, activeTornadoWatch 
               {(activeTornadoWarning || activeTornadoWatch) && (
                 <button
                   aria-label="Send shelter alert to all contacts"
-                  onClick={() => handleShelter(activeTornadoWarning ? "⚠️ TORNADO WARNING" : "🟡 TORNADO WATCH")}
+                  onClick={() => handleShelter(activeTornadoWarning ? '⚠️ TORNADO WARNING' : '🟡 TORNADO WATCH')}
                   className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-bold text-slate-950 shadow-[0_0_30px_rgba(74,222,128,0.3)] transition-colors hover:bg-emerald-400 active:scale-[0.98]"
                 >
-                  {activeTornadoWarning ? "🏠 I'm Sheltering — Alert All Contacts" : "🟡 Heads Up — Alert All Contacts"}
+                  {activeTornadoWarning ? "🏠 I'm Sheltering — Alert All Contacts" : '🟡 Heads Up — Alert All Contacts'}
                 </button>
               )}
 
@@ -135,7 +133,7 @@ export default function ShelterAlert({ activeTornadoWarning, activeTornadoWatch 
                 aria-label="Test emergency text to all contacts"
                 onClick={() => {
                   setIsTesting(true);
-                  handleShelter("🧪 TEST MESSAGE");
+                  handleShelter('🧪 TEST MESSAGE');
                 }}
                 className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/15 active:scale-[0.98]"
               >
