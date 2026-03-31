@@ -473,8 +473,6 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         onToggleShow={() => setShowQuickControls((value) => !value)}
         onHookZone={handleHookZoneView}
         onConus={handleConusView}
-        onZoomIn={() => leafletMap.current?.zoomIn()}
-        onZoomOut={() => leafletMap.current?.zoomOut()}
         onToggleLoop={handleLoopToggle}
         isLooping={isLooping}
       />
