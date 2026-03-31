@@ -173,8 +173,11 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       zoomControl: true,
       attributionControl: true,
       zoomSnap: 0.5,
+      zoomDelta: 0.5,
       touchZoom: true,
       bounceAtZoomLimits: false,
+      minZoom: 4,
+      maxZoom: 16,
     }).setView(coords, 8);
     const baseLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
       attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
@@ -250,7 +253,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       if (!showVelocityLocal || !leafletMap.current || settings.radarProduct === "velocity") return;
       velLayerRef.current = L.tileLayer(
         "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::USCOMP-N0U-0/{z}/{x}/{y}.png",
-        { opacity: 0.35, transparent: true, crossOrigin: true, tileSize: 256, maxZoom: 18, maxNativeZoom: 12, attribution: "NEXRAD Velocity © Iowa Mesonet" }
+        { opacity: 0.35, transparent: true, crossOrigin: true, tileSize: 256, maxZoom: 16, maxNativeZoom: 12, attribution: "NEXRAD Velocity © Iowa Mesonet" }
       ).addTo(leafletMap.current);
     };
 
@@ -295,7 +298,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       radarLayerRef.current = L.tileLayer(tileUrl, {
         attribution: "Radar data © Iowa Mesonet / RainViewer",
         opacity: activeProduct.opacity,
-        maxZoom: 18,
+        maxZoom: 16,
         maxNativeZoom: activeProduct.maxNativeZoom || 12,
         crossOrigin: "anonymous",
       }).addTo(leafletMap.current);
@@ -360,7 +363,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
             if (velLayerRef.current?.setOpacity) velLayerRef.current.setOpacity(0);
             setIsLooping(true); return;
           }
-          const layer = L.tileLayer(getRainViewerTileUrl(frames[index].path), { opacity: 0, maxZoom: 18, maxNativeZoom: 12, crossOrigin: "anonymous", keepBuffer: 1 });
+          const layer = L.tileLayer(getRainViewerTileUrl(frames[index].path), { opacity: 0, maxZoom: 16, maxNativeZoom: 12, crossOrigin: "anonymous", keepBuffer: 1 });
           const finish = () => { layers.push(layer); loadNext(index + 1); };
           layer.once("load", finish); layer.once("tileerror", finish);
           layer.addTo(leafletMap.current);
