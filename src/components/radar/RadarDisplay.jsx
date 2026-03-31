@@ -59,6 +59,13 @@ const STATION_COORDS = {
   KMSX: [47.041, -113.986], KTFX: [47.46, -111.385], KCBX: [43.491, -116.236],
 };
 
+const TILT_PRODUCTS = [
+  { label: "0.5°", url: "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::USCOMP-N0Q-0/{z}/{x}/{y}.png" },
+  { label: "1.5°", url: "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::USCOMP-N1Q-0/{z}/{x}/{y}.png" },
+  { label: "2.4°", url: "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::USCOMP-N2Q-0/{z}/{x}/{y}.png" },
+  { label: "3.4°", url: "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::USCOMP-N3Q-0/{z}/{x}/{y}.png" },
+];
+
 const getCacheBust = () => Math.floor(Date.now() / 120000);
 const getRadarTileUrl = () => `${WORKER_BASE}/radar/{z}/{x}/{y}.png?_cb=${getCacheBust()}`;
 const getAlertUrl = (type) => `${WORKER_BASE}/alerts?type=${type}`;
@@ -149,10 +156,15 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [hookZones, setHookZones] = useState([]);
   const [dualPane, setDualPane] = useState(false);
   const [stormVectors, setStormVectors] = useState([]);
+  const [tiltIndex, setTiltIndex] = useState(0);
+  const [baseLayer, setBaseLayer] = useState('dark'); // dark | satellite
+  const [mesoMarkers, setMesoMarkers] = useState([]);
   const stormMarkerGroupRef = useRef(null);
   const hookLayerGroupRef = useRef(null);
   const countyWarningLayerRef = useRef(null);
   const vectorLayerGroupRef = useRef(null);
+  const mesoLayerGroupRef = useRef(null);
+  const baseLayerRef = useRef(null);
   const mapRef2 = useRef(null);
   const leafletMap2 = useRef(null);
   const radarLayer2Ref = useRef(null);
@@ -206,7 +218,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
       if (loopTimerRef.current) clearTimeout(loopTimerRef.current);
       if (loopFadeRef.current) clearInterval(loopFadeRef.current);
-      [radarLayerRef, velLayerRef, tornadoLayerRef, thunderLayerRef, floodLayerRef, winterLayerRef, userLocationMarkerRef, prevLoopLayerRef, loopLayerRef, stormMarkerGroupRef, hookLayerGroupRef, countyWarningLayerRef, vectorLayerGroupRef].forEach((r) => {
+      [radarLayerRef, velLayerRef, tornadoLayerRef, thunderLayerRef, floodLayerRef, winterLayerRef, userLocationMarkerRef, prevLoopLayerRef, loopLayerRef, stormMarkerGroupRef, hookLayerGroupRef, countyWarningLayerRef, vectorLayerGroupRef, mesoLayerGroupRef, baseLayerRef].forEach((r) => {
         if (r.current && leafletMap.current?.hasLayer(r.current)) leafletMap.current.removeLayer(r.current);
         r.current = null;
       });
@@ -695,6 +707,100 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     };
   }, [isMapReady]);
 
+  // ── Base Layer Switcher (dark / satellite) ───────────────────────────────
+  useEffect(() => {
+    if (!isMapReady || !leafletMap.current) return;
+    if (baseLayerRef.current) {
+      leafletMap.current.removeLayer(baseLayerRef.current);
+      baseLayerRef.current = null;
+    }
+    const tileUrl = baseLayer === 'satellite'
+      ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+      : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+    baseLayerRef.current = L.tileLayer(tileUrl, {
+      subdomains: baseLayer === 'dark' ? 'abcd' : '',
+      maxZoom: 20,
+      crossOrigin: 'anonymous',
+      attribution: baseLayer === 'satellite' ? 'Tiles © Esri' : '© OpenStreetMap © CARTO',
+    });
+    // Insert below radar layers (pane order)
+    baseLayerRef.current.addTo(leafletMap.current);
+    baseLayerRef.current.bringToBack();
+  }, [isMapReady, baseLayer]);
+
+  // ── Tilt Selector — switch radar elevation angle ──────────────────────
+  useEffect(() => {
+    if (!isMapReady || !leafletMap.current || !showNexrad) return;
+    if (settings.radarProduct !== 'reflectivity') return; // only for reflectivity
+    const tilt = TILT_PRODUCTS[tiltIndex];
+    if (!tilt) return;
+    if (radarLayerRef.current) {
+      radarLayerRef.current.setUrl(tilt.url);
+    }
+  }, [tiltIndex, isMapReady, showNexrad, settings.radarProduct]);
+
+  // ── Mesocyclone Markers from NWS Storm Reports ────────────────────────
+  useEffect(() => {
+    if (!isMapReady || !leafletMap.current) return;
+
+    const fetchMeso = () => {
+      // Pull SPS (Special Weather Statements) and SVR/TOR with "MESO" in text
+      fetch('https://mesonet.agron.iastate.edu/geojson/lsr.php?hours=3&wfo=all&type=M')
+        .then(r => r.json())
+        .then(data => {
+          if (!leafletMap.current) return;
+          if (mesoLayerGroupRef.current) leafletMap.current.removeLayer(mesoLayerGroupRef.current);
+          const group = L.layerGroup();
+          const markers = [];
+
+          (data?.features || []).forEach(feature => {
+            const props = feature?.properties || {};
+            const coords = feature?.geometry?.coordinates;
+            if (!coords) return;
+            const [lon, lat] = coords;
+
+            const icon = L.divIcon({
+              className: '',
+              html: `<div style="
+                width:32px;height:32px;
+                border:3px solid #c084fc;
+                border-radius:50%;
+                background:#7c3aed22;
+                display:flex;align-items:center;justify-content:center;
+                font-size:15px;
+                box-shadow:0 0 14px #c084fc88, 0 0 28px #7c3aed44;
+                animation:pulse 1.2s ease-in-out infinite;
+              ">🌀</div>`,
+              iconSize: [32, 32],
+              iconAnchor: [16, 16],
+            });
+
+            const time = props.valid ? new Date(props.valid).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
+            L.marker([lat, lon], { icon, zIndexOffset: 900 })
+              .bindPopup(`<div style="font-family:sans-serif;min-width:160px">
+                <strong style="color:#c084fc">🌀 MESOCYCLONE</strong><br/>
+                <span style="font-size:11px;color:#888">${props.city || ''} ${props.state || ''}</span><br/>
+                <span style="font-size:11px;color:#aaa">${time}</span>
+              </div>`)
+              .addTo(group);
+            markers.push({ lat, lon, city: props.city });
+          });
+
+          group.addTo(leafletMap.current);
+          mesoLayerGroupRef.current = group;
+          setMesoMarkers(markers);
+        })
+        .catch(() => {});
+    };
+
+    fetchMeso();
+    const interval = setInterval(fetchMeso, 4 * 60 * 1000);
+    return () => {
+      clearInterval(interval);
+      if (mesoLayerGroupRef.current && leafletMap.current) leafletMap.current.removeLayer(mesoLayerGroupRef.current);
+    };
+  }, [isMapReady]);
+
   // ── Storm Movement Vectors ───────────────────────────────────────────────
   useEffect(() => {
     if (!isMapReady || !leafletMap.current) return;
@@ -919,6 +1025,35 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       >
         ⚡ {dualPane ? 'Dual ON' : 'Dual'}
       </button>
+      {/* Tilt selector */}
+      {showNexrad && settings.radarProduct === 'reflectivity' && (
+        <div className="absolute z-[1000] flex items-center gap-1 rounded-xl border border-white/10 bg-slate-900/90 p-1 shadow-lg backdrop-blur-sm"
+          style={{ bottom: "calc(9.5rem + env(safe-area-inset-bottom))", left: "calc(1.25rem + env(safe-area-inset-left))" }}>
+          {TILT_PRODUCTS.map((t, i) => (
+            <button key={t.label} onClick={() => setTiltIndex(i)}
+              className={`rounded-lg px-2.5 py-1 text-[10px] font-bold transition-colors ${tiltIndex === i ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'}`}>
+              {t.label}
+            </button>
+          ))}
+          <span className="ml-1 text-[9px] font-semibold uppercase tracking-widest text-slate-500">TILT</span>
+        </div>
+      )}
+      {/* Base layer toggle */}
+      <button
+        onClick={() => setBaseLayer(v => v === 'dark' ? 'satellite' : 'dark')}
+        className="absolute z-[1000] flex items-center gap-1.5 rounded-full border border-white/10 bg-slate-900/90 px-3 py-1.5 text-[11px] font-bold text-slate-300 shadow-lg backdrop-blur-sm hover:text-white transition-colors"
+        style={{ bottom: "calc(9.5rem + env(safe-area-inset-bottom))", right: "calc(1.25rem + env(safe-area-inset-right))" }}
+        aria-label="Toggle satellite base layer"
+      >
+        {baseLayer === 'dark' ? '🛰️ Sat' : '🌑 Dark'}
+      </button>
+      {/* Mesocyclone badge */}
+      {mesoMarkers.length > 0 && (
+        <div className="absolute z-[1000] flex items-center gap-1.5 rounded-full border border-purple-500/40 bg-purple-950/85 px-3 py-1.5 text-[11px] font-bold text-purple-300 shadow-lg backdrop-blur-sm animate-pulse"
+          style={{ top: "calc(3.5rem + env(safe-area-inset-top))", right: "1rem" }}>
+          🌀 {mesoMarkers.length} meso
+        </div>
+      )}
       {dualPane ? (
         <div className="absolute inset-0 flex">
           <div className="relative flex-1 border-r border-white/10">
