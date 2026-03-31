@@ -161,12 +161,17 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [mesoMarkers, setMesoMarkers] = useState([]);
   const [hailReports, setHailReports] = useState([]);
   const [showShareBanner, setShowShareBanner] = useState(false);
+  const [radarOpacity, setRadarOpacity] = useState(0.72);
+  const [showOpacitySlider, setShowOpacitySlider] = useState(false);
+  const [spotterReports, setSpotterReports] = useState([]);
+  const [srhData, setSrhData] = useState(null);
   const stormMarkerGroupRef = useRef(null);
   const hookLayerGroupRef = useRef(null);
   const countyWarningLayerRef = useRef(null);
   const vectorLayerGroupRef = useRef(null);
   const mesoLayerGroupRef = useRef(null);
   const hailLayerGroupRef = useRef(null);
+  const spotterLayerGroupRef = useRef(null);
   const baseLayerRef = useRef(null);
   const mapRef2 = useRef(null);
   const leafletMap2 = useRef(null);
@@ -221,7 +226,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
       if (loopTimerRef.current) clearTimeout(loopTimerRef.current);
       if (loopFadeRef.current) clearInterval(loopFadeRef.current);
-      [radarLayerRef, velLayerRef, tornadoLayerRef, thunderLayerRef, floodLayerRef, winterLayerRef, userLocationMarkerRef, prevLoopLayerRef, loopLayerRef, stormMarkerGroupRef, hookLayerGroupRef, countyWarningLayerRef, vectorLayerGroupRef, mesoLayerGroupRef, hailLayerGroupRef, baseLayerRef].forEach((r) => {
+      [radarLayerRef, velLayerRef, tornadoLayerRef, thunderLayerRef, floodLayerRef, winterLayerRef, userLocationMarkerRef, prevLoopLayerRef, loopLayerRef, stormMarkerGroupRef, hookLayerGroupRef, countyWarningLayerRef, vectorLayerGroupRef, mesoLayerGroupRef, hailLayerGroupRef, spotterLayerGroupRef, baseLayerRef].forEach((r) => {
         if (r.current && leafletMap.current?.hasLayer(r.current)) leafletMap.current.removeLayer(r.current);
         r.current = null;
       });
@@ -1007,6 +1012,108 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     };
   }, [isMapReady]);
 
+  // ── Radar Opacity Sync ───────────────────────────────────────────────────
+  useEffect(() => {
+    if (radarLayerRef.current?.setOpacity) radarLayerRef.current.setOpacity(radarOpacity);
+  }, [radarOpacity]);
+
+  // ── Storm Spotter Reports ─────────────────────────────────────────────────
+  useEffect(() => {
+    if (!isMapReady || !leafletMap.current) return;
+
+    const fetchSpotters = () => {
+      // NWS LSR wind + general storm reports (type=W for wind, F for funnel clouds)
+      Promise.all([
+        fetch('https://mesonet.agron.iastate.edu/geojson/lsr.php?hours=3&wfo=all&type=F').then(r => r.json()),
+        fetch('https://mesonet.agron.iastate.edu/geojson/lsr.php?hours=3&wfo=all&type=W').then(r => r.json()),
+      ]).then(([funnels, wind]) => {
+        if (!leafletMap.current) return;
+        if (spotterLayerGroupRef.current) leafletMap.current.removeLayer(spotterLayerGroupRef.current);
+        const group = L.layerGroup();
+        const allReports = [];
+
+        const addReports = (data, type, emoji, color) => {
+          (data?.features || []).forEach(feature => {
+            const props = feature?.properties || {};
+            const coords = feature?.geometry?.coordinates;
+            if (!coords) return;
+            const [lon, lat] = coords;
+
+            const icon = L.divIcon({
+              className: '',
+              html: `<div style="
+                width:26px;height:26px;
+                border:2px solid ${color};
+                border-radius:4px;
+                background:${color}22;
+                display:flex;align-items:center;justify-content:center;
+                font-size:13px;
+                box-shadow:0 0 6px ${color}66;
+              ">${emoji}</div>`,
+              iconSize: [26, 26],
+              iconAnchor: [13, 13],
+            });
+
+            const time = props.valid ? new Date(props.valid).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
+            const mag = props.magnitude ? ` ${props.magnitude}` : '';
+            L.marker([lat, lon], { icon, zIndexOffset: 350 })
+              .bindPopup(`<div style="font-family:sans-serif;min-width:150px">
+                <strong style="color:${color}">${emoji} ${type}${mag}</strong><br/>
+                <span style="font-size:11px;color:#888">${props.city || ''} ${props.state || ''}</span><br/>
+                <span style="font-size:11px;color:#aaa">${time}</span>
+              </div>`)
+              .addTo(group);
+            allReports.push({ type, lat, lon });
+          });
+        };
+
+        addReports(funnels, 'FUNNEL CLOUD', '🌪️', '#a78bfa');
+        addReports(wind, 'WIND DAMAGE', '💨', '#fb923c');
+
+        group.addTo(leafletMap.current);
+        spotterLayerGroupRef.current = group;
+        setSpotterReports(allReports);
+      }).catch(() => {});
+    };
+
+    fetchSpotters();
+    const interval = setInterval(fetchSpotters, 5 * 60 * 1000);
+    return () => {
+      clearInterval(interval);
+      if (spotterLayerGroupRef.current && leafletMap.current) leafletMap.current.removeLayer(spotterLayerGroupRef.current);
+    };
+  }, [isMapReady]);
+
+  // ── SRH / Wind Shear Data (Storm-Relative Helicity) ──────────────────────
+  useEffect(() => {
+    if (!userLocation) return;
+    // Fetch SPC mesoanalysis for SRH at user location via NWS point forecast
+    fetch(`https://api.weather.gov/points/${userLocation.lat.toFixed(4)},${userLocation.lon.toFixed(4)}`)
+      .then(r => r.json())
+      .then(data => {
+        const office = data?.properties?.gridId;
+        const x = data?.properties?.gridX;
+        const y = data?.properties?.gridY;
+        if (!office) return;
+        return fetch(`https://api.weather.gov/gridpoints/${office}/${x},${y}`);
+      })
+      .then(r => r?.json())
+      .then(data => {
+        if (!data) return;
+        // Extract wind speed for shear estimate
+        const windValues = data?.properties?.windSpeed?.values || [];
+        if (windValues.length === 0) return;
+        const surfaceWind = windValues[0]?.value || 0; // km/h
+        const upperWind = windValues[Math.min(6, windValues.length - 1)]?.value || 0;
+        const shearKt = Math.round(Math.abs(upperWind - surfaceWind) * 0.539957);
+        // Rough SRH estimate: shear > 30kt = elevated, > 50kt = significant
+        const srhCategory = shearKt > 50 ? 'Significant' : shearKt > 30 ? 'Elevated' : 'Low';
+        const srhColor = shearKt > 50 ? '#ef4444' : shearKt > 30 ? '#f97316' : '#22c55e';
+        setSrhData({ shearKt, srhCategory, srhColor });
+      })
+      .catch(() => {});
+  }, [userLocation]);
+
   // ── Share My Location ─────────────────────────────────────────────────────
   const handleShareLocation = () => {
     if (!navigator.geolocation) { alert("Location not available."); return; }
@@ -1167,6 +1274,43 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
           🌀 {mesoMarkers.length} meso
         </div>
       )}
+      {/* Spotter reports badge */}
+      {spotterReports.length > 0 && (
+        <div className="absolute z-[1000] flex items-center gap-1.5 rounded-full border border-violet-500/30 bg-slate-950/80 px-3 py-1.5 text-[11px] font-bold text-violet-300 shadow-lg backdrop-blur-sm"
+          style={{ top: "calc(7.5rem + env(safe-area-inset-top))", right: "1rem" }}>
+          👁️ {spotterReports.length} spotter
+        </div>
+      )}
+      {/* SRH / Wind shear panel */}
+      {srhData && (
+        <div className="absolute z-[1000] rounded-xl border border-white/10 bg-slate-950/85 px-3 py-2 shadow-lg backdrop-blur-sm"
+          style={{ bottom: "calc(13rem + env(safe-area-inset-bottom))", left: "calc(1.25rem + env(safe-area-inset-left))" }}>
+          <div className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-0.5">Wind Shear</div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-sm font-black" style={{ color: srhData.srhColor }}>{srhData.shearKt}kt</span>
+            <span className="text-[10px] font-semibold" style={{ color: srhData.srhColor }}>{srhData.srhCategory}</span>
+          </div>
+        </div>
+      )}
+      {/* Radar opacity slider */}
+      <div className="absolute z-[1000]"
+        style={{ bottom: "calc(9.5rem + env(safe-area-inset-bottom))", left: "50%", transform: "translateX(-50%)" }}>
+        {showOpacitySlider && (
+          <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-slate-900/95 px-3 py-2 shadow-lg backdrop-blur-sm mb-1">
+            <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Opacity</span>
+            <input type="range" min="0.2" max="1" step="0.05" value={radarOpacity}
+              onChange={e => setRadarOpacity(parseFloat(e.target.value))}
+              className="w-28 accent-cyan-400" />
+            <span className="text-[10px] font-bold text-cyan-300">{Math.round(radarOpacity * 100)}%</span>
+          </div>
+        )}
+        <button
+          onClick={() => setShowOpacitySlider(v => !v)}
+          className={`flex items-center gap-1 rounded-full border px-3 py-1.5 text-[11px] font-bold shadow backdrop-blur-sm transition-colors ${showOpacitySlider ? 'border-cyan-500/50 bg-cyan-950/90 text-cyan-300' : 'border-white/10 bg-slate-900/90 text-slate-400'}`}
+        >
+          🎚️ {Math.round(radarOpacity * 100)}%
+        </button>
+      </div>
       {dualPane ? (
         <div className="absolute inset-0 flex">
           <div className="relative flex-1 border-r border-white/10">
