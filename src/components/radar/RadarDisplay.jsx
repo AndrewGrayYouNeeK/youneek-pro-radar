@@ -3,7 +3,6 @@ import L from "leaflet";
 import { LocateFixed } from "lucide-react";
 import RadarLayersMenu from "./RadarLayersMenu";
 import ShelterAlert from "./ShelterAlert";
-import StormToolsPanel from "./StormToolsPanel";
 import StormAnalysisStrip from "./StormAnalysisStrip";
 import ProLegend from "./ProLegend";
 import RadarRangeRings from "./RadarRangeRings";
@@ -495,7 +494,6 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       <RadarLayersMenu showNexrad={showNexrad} showVelocity={showVelocityLocal} showRadio={showRadio} nexradStation={settings.station} radarProduct={settings.radarProduct} alertToggles={alertToggles} onShowNexradChange={handleShowNexradChange} onShowVelocityChange={handleShowVelocityChange} onShowRadioChange={onToggleRadio} onAlertToggleChange={handleAlertToggleChange} onRadarProductChange={handleRadarProductChange} />
       {showOverlayPanels && (
         <>
-          <StormToolsPanel metrics={stormMetrics} productLabel={activeProduct.label} />
           <StormAnalysisStrip metrics={stormMetrics} />
           <RadarStatusBar
             productLabel={activeProduct.label}
