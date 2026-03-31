@@ -32,6 +32,8 @@ export default function RadarScope() {
   });
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [showRadio, setShowRadio] = useState(true);
+
+  const urlParams = new URLSearchParams(location.search);
   const screenshotMode = useMemo(() => {
     const mode = urlParams.get("screenshot");
     return {
@@ -40,8 +42,6 @@ export default function RadarScope() {
       fakeHurricane: urlParams.get("fakeHurricane") === "1",
     };
   }, [location.search]);
-
-  const urlParams = new URLSearchParams(location.search);
   const dialogMode = urlParams.get("dialog");
   const selectedTargetId = urlParams.get("targetId");
   const pendingClick = dialogMode === "create"
