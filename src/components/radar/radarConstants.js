@@ -101,7 +101,7 @@ export function getGeometryPoints(geometry) {
   const flattenCoords = (coords) => { if (!Array.isArray(coords[0])) return [coords]; return coords.flatMap(flattenCoords); };
   return flattenCoords(geometry.coordinates).filter((point) => Array.isArray(point) && point.length >= 2);
 }
-export function isFeatureNearLocation(feature, userLocation, maxDistanceKm = 150) {
+export function featureIsNearUser(feature, userLocation, maxDistanceKm = 150) {
   const points = getGeometryPoints(feature?.geometry);
   return points.some(([lon, lat]) => haversineKm(lat, lon, userLocation.lat, userLocation.lon) <= maxDistanceKm);
 }
