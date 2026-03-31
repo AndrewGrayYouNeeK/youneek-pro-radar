@@ -165,6 +165,11 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [showOpacitySlider, setShowOpacitySlider] = useState(false);
   const [spotterReports, setSpotterReports] = useState([]);
   const [srhData, setSrhData] = useState(null);
+  const [lightningStrikes, setLightningStrikes] = useState([]);
+  const [showLightning, setShowLightning] = useState(true);
+  const [forecastHazards, setForecastHazards] = useState(null);
+  const [showForecast, setShowForecast] = useState(false);
+  const [nearestStation, setNearestStation] = useState(null);
   const stormMarkerGroupRef = useRef(null);
   const hookLayerGroupRef = useRef(null);
   const countyWarningLayerRef = useRef(null);
@@ -172,6 +177,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const mesoLayerGroupRef = useRef(null);
   const hailLayerGroupRef = useRef(null);
   const spotterLayerGroupRef = useRef(null);
+  const lightningLayerGroupRef = useRef(null);
   const baseLayerRef = useRef(null);
   const mapRef2 = useRef(null);
   const leafletMap2 = useRef(null);
@@ -226,7 +232,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
       if (loopTimerRef.current) clearTimeout(loopTimerRef.current);
       if (loopFadeRef.current) clearInterval(loopFadeRef.current);
-      [radarLayerRef, velLayerRef, tornadoLayerRef, thunderLayerRef, floodLayerRef, winterLayerRef, userLocationMarkerRef, prevLoopLayerRef, loopLayerRef, stormMarkerGroupRef, hookLayerGroupRef, countyWarningLayerRef, vectorLayerGroupRef, mesoLayerGroupRef, hailLayerGroupRef, spotterLayerGroupRef, baseLayerRef].forEach((r) => {
+      [radarLayerRef, velLayerRef, tornadoLayerRef, thunderLayerRef, floodLayerRef, winterLayerRef, userLocationMarkerRef, prevLoopLayerRef, loopLayerRef, stormMarkerGroupRef, hookLayerGroupRef, countyWarningLayerRef, vectorLayerGroupRef, mesoLayerGroupRef, hailLayerGroupRef, spotterLayerGroupRef, lightningLayerGroupRef, baseLayerRef].forEach((r) => {
         if (r.current && leafletMap.current?.hasLayer(r.current)) leafletMap.current.removeLayer(r.current);
         r.current = null;
       });
@@ -1114,6 +1120,105 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       .catch(() => {});
   }, [userLocation]);
 
+  // ── Lightning Strike Overlay (simulated from LSR lightning reports) ────────
+  useEffect(() => {
+    if (!isMapReady || !leafletMap.current || !showLightning) return;
+
+    const fetchLightning = () => {
+      fetch('https://mesonet.agron.iastate.edu/geojson/lsr.php?hours=1&wfo=all&type=L')
+        .then(r => r.json())
+        .then(data => {
+          if (!leafletMap.current) return;
+          if (lightningLayerGroupRef.current) leafletMap.current.removeLayer(lightningLayerGroupRef.current);
+          const group = L.layerGroup();
+          const strikes = [];
+
+          (data?.features || []).forEach(feature => {
+            const coords = feature?.geometry?.coordinates;
+            const props = feature?.properties || {};
+            if (!coords) return;
+            const [lon, lat] = coords;
+            const age = Date.now() - new Date(props.valid || Date.now()).getTime();
+            const minutesOld = age / 60000;
+            const opacity = Math.max(0.2, 1 - minutesOld / 60);
+
+            const icon = L.divIcon({
+              className: '',
+              html: `<div style="
+                font-size:16px;
+                opacity:${opacity};
+                filter:drop-shadow(0 0 6px #fbbf24) drop-shadow(0 0 12px #f59e0b);
+                line-height:1;
+              ">⚡</div>`,
+              iconSize: [16, 16],
+              iconAnchor: [8, 8],
+            });
+
+            L.marker([lat, lon], { icon, zIndexOffset: 200, interactive: false }).addTo(group);
+            strikes.push({ lat, lon });
+          });
+
+          group.addTo(leafletMap.current);
+          lightningLayerGroupRef.current = group;
+          setLightningStrikes(strikes);
+        })
+        .catch(() => {});
+    };
+
+    fetchLightning();
+    const interval = setInterval(fetchLightning, 2 * 60 * 1000);
+    return () => {
+      clearInterval(interval);
+      if (lightningLayerGroupRef.current && leafletMap.current) leafletMap.current.removeLayer(lightningLayerGroupRef.current);
+    };
+  }, [isMapReady, showLightning]);
+
+  // ── Forecast Hazards Panel (from NWS for user location) ──────────────────
+  useEffect(() => {
+    if (!userLocation) return;
+    fetch(`https://api.weather.gov/points/${userLocation.lat.toFixed(4)},${userLocation.lon.toFixed(4)}`)
+      .then(r => r.json())
+      .then(data => {
+        const forecastUrl = data?.properties?.forecast;
+        const zone = data?.properties?.county;
+        const city = data?.properties?.relativeLocation?.properties?.city;
+        const state = data?.properties?.relativeLocation?.properties?.state;
+        setNearestStation({ city, state, zone });
+        if (!forecastUrl) return;
+        return fetch(forecastUrl);
+      })
+      .then(r => r?.json())
+      .then(data => {
+        if (!data) return;
+        const periods = data?.properties?.periods?.slice(0, 4) || [];
+        const hazards = periods.map(p => ({
+          name: p.name,
+          temp: p.temperature,
+          unit: p.temperatureUnit,
+          wind: p.windSpeed,
+          icon: p.isDaytime ? '☀️' : '🌙',
+          short: p.shortForecast,
+          hasTstorm: /thunder|storm/i.test(p.shortForecast),
+          hasTornado: /tornado/i.test(p.shortForecast),
+          hasHail: /hail/i.test(p.shortForecast),
+        }));
+        setForecastHazards(hazards);
+      })
+      .catch(() => {});
+  }, [userLocation]);
+
+  // ── Nearest NEXRAD Station Finder ─────────────────────────────────────────
+  useEffect(() => {
+    if (!userLocation) return;
+    let closestStation = null;
+    let closestDist = Infinity;
+    Object.entries(STATION_COORDS).forEach(([id, [lat, lon]]) => {
+      const dist = haversineKm(userLocation.lat, userLocation.lon, lat, lon);
+      if (dist < closestDist) { closestDist = dist; closestStation = { id, dist: Math.round(dist * 0.621371) }; }
+    });
+    if (closestStation) setNearestStation(prev => ({ ...prev, ...closestStation }));
+  }, [userLocation]);
+
   // ── Share My Location ─────────────────────────────────────────────────────
   const handleShareLocation = () => {
     if (!navigator.geolocation) { alert("Location not available."); return; }
@@ -1328,6 +1433,60 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       <div style={{ position: "absolute", bottom: "10px", left: "10px", zIndex: 999, color: "rgba(255,255,255,0.35)", fontSize: "13px", fontWeight: "600", letterSpacing: "1px", pointerEvents: "none", userSelect: "none" }}>
         YouNeeK Pro Radar — by Andrew Gray
       </div>
+      {/* Lightning toggle */}
+      <button
+        onClick={() => setShowLightning(v => !v)}
+        className={`absolute z-[1000] flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-bold shadow-lg backdrop-blur-sm transition-colors ${showLightning ? 'border-yellow-500/40 bg-yellow-950/80 text-yellow-300' : 'border-white/10 bg-slate-900/80 text-slate-500'}`}
+        style={{ bottom: "calc(13rem + env(safe-area-inset-bottom))", right: "calc(1.25rem + env(safe-area-inset-right))" }}
+        aria-label="Toggle lightning overlay"
+      >
+        ⚡ {showLightning ? `${lightningStrikes.length} strikes` : 'Lightning off'}
+      </button>
+      {/* Nearest station badge */}
+      {nearestStation?.id && (
+        <div className="absolute z-[1000] rounded-xl border border-white/10 bg-slate-950/85 px-3 py-2 shadow-lg backdrop-blur-sm pointer-events-none"
+          style={{ bottom: "calc(10px)", right: "calc(1rem + env(safe-area-inset-right))" }}>
+          <div className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Nearest Radar</div>
+          <div className="text-sm font-black text-cyan-300">{nearestStation.id}</div>
+          <div className="text-[10px] text-slate-400">{nearestStation.dist} mi away</div>
+        </div>
+      )}
+      {/* Forecast hazards panel */}
+      {forecastHazards && (
+        <div className="absolute z-[1100] right-0 top-0 h-full w-72 max-w-[90vw]"
+          style={{ pointerEvents: showForecast ? 'auto' : 'none' }}>
+          <div className={`absolute right-0 top-1/2 -translate-y-1/2 transition-transform duration-300 ${showForecast ? 'translate-x-0' : 'translate-x-full'}`}>
+            <div className="rounded-l-2xl border border-white/10 bg-slate-950/95 p-4 shadow-2xl backdrop-blur-xl w-64">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-black uppercase tracking-widest text-white">Forecast</span>
+                {nearestStation?.city && <span className="text-[10px] text-slate-400">{nearestStation.city}, {nearestStation.state}</span>}
+              </div>
+              <div className="space-y-2">
+                {forecastHazards.map((p, i) => (
+                  <div key={i} className={`rounded-xl p-2.5 border ${p.hasTornado ? 'border-red-500/40 bg-red-950/40' : p.hasTstorm ? 'border-orange-500/30 bg-orange-950/30' : 'border-white/5 bg-white/5'}`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-white">{p.icon} {p.name}</span>
+                      <span className="text-[11px] font-black text-cyan-300">{p.temp}°{p.unit}</span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 mt-0.5">{p.short}</div>
+                    <div className="text-[9px] text-slate-500 mt-0.5">💨 {p.wind}</div>
+                    {p.hasTornado && <div className="text-[10px] font-bold text-red-400 mt-1">⚠️ Tornado possible</div>}
+                    {p.hasHail && <div className="text-[10px] font-bold text-blue-400 mt-0.5">🌨️ Hail possible</div>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowForecast(v => !v)}
+            className={`absolute right-64 top-1/2 -translate-y-1/2 flex h-10 w-7 items-center justify-center rounded-l-xl border border-white/10 shadow-lg backdrop-blur-sm transition-colors ${showForecast ? 'bg-cyan-700 text-white' : 'bg-slate-900/90 text-slate-400'}`}
+            style={{ pointerEvents: 'auto' }}
+            aria-label="Toggle forecast panel"
+          >
+            {showForecast ? '›' : '‹'}
+          </button>
+        </div>
+      )}
       <ShelterAlert activeTornadoWarning={activeTornadoWarning} activeTornadoWatch={activeTornadoWatch} userLocation={userLocation} />
     </div>
   );
