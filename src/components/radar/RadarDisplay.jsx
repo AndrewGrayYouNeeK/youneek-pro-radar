@@ -473,7 +473,6 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         onConus={handleConusView}
         onZoomIn={() => leafletMap.current?.zoomIn()}
         onZoomOut={() => leafletMap.current?.zoomOut()}
-        onLocate={handleLocateMe}
         onToggleRings={() => setShowRangeRings((value) => !value)}
         showRangeRings={showRangeRings}
         onToggleLoop={handleLoopToggle}
@@ -489,16 +488,6 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       {showRangeRings && <RadarRangeRings />}
       <RadarLayersMenu showNexrad={showNexrad} showVelocity={showVelocityLocal} showRadio={showRadio} nexradStation={settings.station} radarProduct={settings.radarProduct} alertToggles={alertToggles} onShowNexradChange={handleShowNexradChange} onShowVelocityChange={handleShowVelocityChange} onShowRadioChange={onToggleRadio} onAlertToggleChange={handleAlertToggleChange} onRadarProductChange={handleRadarProductChange} />
       <StormToolsPanel metrics={stormMetrics} productLabel={activeProduct.label} />
-      <StormAnalysisStrip metrics={stormMetrics} />
-      <RadarStatusBar
-        productLabel={activeProduct.label}
-        isLooping={isLooping}
-        frameLabel={isLooping ? loopFrames[loopFrameIndex]?.label : "Live"}
-        warnings={activeWarningsCount}
-      />
-      <ProLegend productLabel={activeProduct.label} />
-      <RadarDataDock metrics={stormMetrics} productLabel={activeProduct.label} station={settings.station} />
-      <RadarInspectorPanel inspector={inspector} productLabel={activeProduct.label} />
       <button onClick={handleLocateMe} className="absolute z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700" style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))", right: "calc(1.25rem + env(safe-area-inset-right))" }} aria-label="Center radar on my location">
         <LocateFixed size={24} aria-hidden="true" />
       </button>
