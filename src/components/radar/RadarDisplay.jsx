@@ -5,7 +5,6 @@ import RadarLayersMenu from "./RadarLayersMenu";
 import ShelterAlert from "./ShelterAlert";
 import StormAnalysisStrip from "./StormAnalysisStrip";
 import ProLegend from "./ProLegend";
-import RadarRangeRings from "./RadarRangeRings";
 import RadarInspectorPanel from "./RadarInspectorPanel";
 import RadarQuickActions from "./RadarQuickActions";
 import RadarDataDock from "./RadarDataDock";
@@ -145,7 +144,6 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [activeTornadoWatch, setActiveTornadoWatch] = useState(false);
   const [isMapReady, setIsMapReady] = useState(false);
   const [showQuickControls, setShowQuickControls] = useState(false);
-  const [showRangeRings, setShowRangeRings] = useState(false);
   const [showOverlayPanels, setShowOverlayPanels] = useState(true);
   const [inspector, setInspector] = useState({ active: false, lat: "--", lon: "--", bearing: "--", range: "--" });
 
@@ -479,8 +477,6 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         onConus={handleConusView}
         onZoomIn={() => leafletMap.current?.zoomIn()}
         onZoomOut={() => leafletMap.current?.zoomOut()}
-        onToggleRings={() => setShowRangeRings((value) => !value)}
-        showRangeRings={showRangeRings}
         onToggleLoop={handleLoopToggle}
         isLooping={isLooping}
       />
@@ -495,8 +491,6 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
           <div className="mt-1 text-[11px] text-slate-300">{loopFrames[loopFrameIndex]?.label}</div>
         </div>
       )}
-      {showRangeRings && <RadarRangeRings />}
-
       <RadarLayersMenu showNexrad={showNexrad} showVelocity={showVelocityLocal} showRadio={showRadio} nexradStation={settings.station} radarProduct={settings.radarProduct} alertToggles={alertToggles} onShowNexradChange={handleShowNexradChange} onShowVelocityChange={handleShowVelocityChange} onShowRadioChange={onToggleRadio} onAlertToggleChange={handleAlertToggleChange} onRadarProductChange={handleRadarProductChange} />
       {showOverlayPanels && (
         <>

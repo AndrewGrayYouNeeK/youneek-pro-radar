@@ -19,8 +19,6 @@ export default function RadarQuickActions({
   onConus,
   onZoomIn,
   onZoomOut,
-  onToggleRings,
-  showRangeRings,
   onToggleLoop,
   isLooping,
 }) {
@@ -38,7 +36,6 @@ export default function RadarQuickActions({
           <ActionButton icon={Map} label="CONUS" onClick={onConus} />
           <ActionButton icon={Crosshair} label="Zoom In" onClick={onZoomIn} />
           <ActionButton icon={CircleDot} label="Zoom Out" onClick={onZoomOut} />
-          <ActionButton icon={CircleDot} label={showRangeRings ? "Hide Rings" : "Show Rings"} onClick={onToggleRings} />
           <ActionButton icon={Play} label={isLooping ? "Stop Loop" : "Start Loop"} onClick={onToggleLoop} />
         </div>
       )}
