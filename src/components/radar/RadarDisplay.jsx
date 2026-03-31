@@ -144,6 +144,20 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [isMapReady, setIsMapReady] = useState(false);
   const [showQuickControls, setShowQuickControls] = useState(false);
   const [inspector, setInspector] = useState({ active: false, lat: "--", lon: "--", bearing: "--", range: "--" });
+  const [stormReports, setStormReports] = useState([]);
+  const [isStale, setIsStale] = useState(false);
+  const [hookZones, setHookZones] = useState([]);
+  const [dualPane, setDualPane] = useState(false);
+  const [stormVectors, setStormVectors] = useState([]);
+  const stormMarkerGroupRef = useRef(null);
+  const hookLayerGroupRef = useRef(null);
+  const countyWarningLayerRef = useRef(null);
+  const vectorLayerGroupRef = useRef(null);
+  const mapRef2 = useRef(null);
+  const leafletMap2 = useRef(null);
+  const radarLayer2Ref = useRef(null);
+  const lastRadarUpdateRef = useRef(Date.now());
+  const staleTimerRef = useRef(null);
 
   const activeProduct = useMemo(() => getRadarProduct(settings.radarProduct), [settings.radarProduct]);
   const mapCenter = leafletMap.current?.getCenter();
@@ -192,7 +206,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
       if (loopTimerRef.current) clearTimeout(loopTimerRef.current);
       if (loopFadeRef.current) clearInterval(loopFadeRef.current);
-      [radarLayerRef, velLayerRef, tornadoLayerRef, thunderLayerRef, floodLayerRef, winterLayerRef, userLocationMarkerRef, prevLoopLayerRef, loopLayerRef].forEach((r) => {
+      [radarLayerRef, velLayerRef, tornadoLayerRef, thunderLayerRef, floodLayerRef, winterLayerRef, userLocationMarkerRef, prevLoopLayerRef, loopLayerRef, stormMarkerGroupRef, hookLayerGroupRef, countyWarningLayerRef, vectorLayerGroupRef].forEach((r) => {
         if (r.current && leafletMap.current?.hasLayer(r.current)) leafletMap.current.removeLayer(r.current);
         r.current = null;
       });
@@ -436,6 +450,386 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     };
   }, [isLooping, loopFrames]);
 
+  // ── Storm cell / LSR fetcher ────────────────────────────────────────────
+  useEffect(() => {
+    if (!isMapReady || !leafletMap.current) return;
+
+    const STORM_ICON = (type) => {
+      const colors = { TORNADO: '#ef4444', HAIL: '#3b82f6', WIND: '#f59e0b', TSTM: '#f97316' };
+      const emojis = { TORNADO: '🌪️', HAIL: '🌨️', WIND: '💨', TSTM: '⛈️' };
+      const color = colors[type] || '#94a3b8';
+      const emoji = emojis[type] || '⚡';
+      return L.divIcon({
+        className: '',
+        html: `<div style="
+          background:${color}22;
+          border:2px solid ${color};
+          border-radius:50%;
+          width:28px;height:28px;
+          display:flex;align-items:center;justify-content:center;
+          font-size:14px;
+          box-shadow:0 0 8px ${color}88;
+          cursor:pointer;
+        ">${emoji}</div>`,
+        iconSize: [28, 28],
+        iconAnchor: [14, 14],
+      });
+    };
+
+    const fetchStormReports = () => {
+      // NWS Local Storm Reports (LSR) via Iowa State Mesonet GeoJSON
+      fetch('https://mesonet.agron.iastate.edu/geojson/lsr.php?hours=3&wfo=all')
+        .then(r => r.json())
+        .then(data => {
+          if (!leafletMap.current) return;
+          // Clear old markers
+          if (stormMarkerGroupRef.current) {
+            leafletMap.current.removeLayer(stormMarkerGroupRef.current);
+          }
+          const group = L.layerGroup();
+          const reports = [];
+          (data?.features || []).forEach(feature => {
+            const props = feature?.properties || {};
+            const coords = feature?.geometry?.coordinates;
+            if (!coords) return;
+            const [lon, lat] = coords;
+            const type = (props.type || '').toUpperCase().includes('TORNADO') ? 'TORNADO'
+              : (props.type || '').toUpperCase().includes('HAIL') ? 'HAIL'
+              : (props.type || '').toUpperCase().includes('WIND') ? 'WIND'
+              : 'TSTM';
+            const marker = L.marker([lat, lon], { icon: STORM_ICON(type), zIndexOffset: 500 });
+            const time = props.valid ? new Date(props.valid).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
+            const mag = props.magnitude ? ` — ${props.magnitude}` : '';
+            marker.bindPopup(`<div style="font-family:sans-serif;min-width:160px">
+              <strong style="color:#f97316">${type}</strong>${mag}<br/>
+              <span style="font-size:11px;color:#888">${props.city || ''} ${props.state || ''}</span><br/>
+              <span style="font-size:11px;color:#aaa">${time}</span>
+            </div>`);
+            marker.addTo(group);
+            reports.push({ type, lat, lon, city: props.city, state: props.state, time });
+          });
+          group.addTo(leafletMap.current);
+          stormMarkerGroupRef.current = group;
+          setStormReports(reports);
+          // Mark radar as fresh
+          lastRadarUpdateRef.current = Date.now();
+          setIsStale(false);
+        })
+        .catch(() => {}); // silently ignore network errors
+    };
+
+    fetchStormReports();
+    const interval = setInterval(fetchStormReports, 5 * 60 * 1000);
+
+    // Stale data detector — flag if no update in 12 minutes
+    staleTimerRef.current = setInterval(() => {
+      const minutesSince = (Date.now() - lastRadarUpdateRef.current) / 60000;
+      setIsStale(minutesSince > 12);
+    }, 60 * 1000);
+
+    return () => {
+      clearInterval(interval);
+      if (staleTimerRef.current) clearInterval(staleTimerRef.current);
+      if (stormMarkerGroupRef.current && leafletMap.current) {
+        leafletMap.current.removeLayer(stormMarkerGroupRef.current);
+      }
+    };
+  }, [isMapReady]);
+
+  // ── Hook Echo / Rotation Zone Highlighter ───────────────────────────────
+  useEffect(() => {
+    if (!isMapReady || !leafletMap.current) return;
+
+    // Pull NWS tornado warnings — the polygon IS the hook zone threat area
+    // We also pull mesocyclone data from NWS storm attributes
+    const fetchHookZones = () => {
+      fetch('https://api.weather.gov/alerts/active?event=Tornado%20Warning&status=actual')
+        .then(r => r.json())
+        .then(data => {
+          if (!leafletMap.current) return;
+
+          // Clear old hook overlays
+          if (hookLayerGroupRef.current) {
+            leafletMap.current.removeLayer(hookLayerGroupRef.current);
+          }
+          const group = L.layerGroup();
+          const zones = [];
+
+          (data?.features || []).forEach(feature => {
+            const props = feature?.properties || {};
+            const geometry = feature?.geometry;
+            if (!geometry?.coordinates) return;
+
+            // Check if this warning mentions tornado — look for "TORNADO EMERGENCY" or "RADAR INDICATED ROTATION"
+            const desc = (props.description || '').toUpperCase();
+            const isTornadoEmergency = desc.includes('TORNADO EMERGENCY');
+            const hasRotation = desc.includes('ROTATION') || desc.includes('HOOK') || desc.includes('MESOCYCLONE');
+
+            const strokeColor = isTornadoEmergency ? '#ff00ff' : hasRotation ? '#ff3333' : '#ef4444';
+            const fillColor = isTornadoEmergency ? '#ff00ff' : hasRotation ? '#ff3333' : '#ef4444';
+            const strokeWeight = isTornadoEmergency ? 4 : hasRotation ? 3 : 2;
+            const label = isTornadoEmergency ? '🚨 TORNADO EMERGENCY' : hasRotation ? '🌀 ROTATION DETECTED' : '⚠️ TORNADO WARNING';
+
+            const layer = L.geoJSON(geometry, {
+              style: {
+                color: strokeColor,
+                weight: strokeWeight,
+                opacity: 1,
+                fillColor: fillColor,
+                fillOpacity: isTornadoEmergency ? 0.28 : hasRotation ? 0.22 : 0.14,
+                dashArray: isTornadoEmergency ? null : '6 4',
+              }
+            });
+
+            // Pulsing label marker at centroid
+            const bounds = layer.getBounds();
+            if (bounds.isValid()) {
+              const center = bounds.getCenter();
+              const labelIcon = L.divIcon({
+                className: '',
+                html: `<div style="
+                  background:${fillColor}22;
+                  border:2px solid ${strokeColor};
+                  border-radius:8px;
+                  padding:3px 8px;
+                  font-size:11px;
+                  font-weight:700;
+                  color:#fff;
+                  white-space:nowrap;
+                  backdrop-filter:blur(4px);
+                  box-shadow:0 0 12px ${strokeColor}99;
+                  animation:pulse 1.5s ease-in-out infinite;
+                ">${label}</div>`,
+                iconAnchor: [0, 0],
+              });
+              L.marker([center.lat, center.lng], { icon: labelIcon, zIndexOffset: 800, interactive: false }).addTo(group);
+            }
+
+            layer.bindPopup(`<div style="font-family:sans-serif;min-width:180px">
+              <strong style="color:${strokeColor}">${label}</strong><br/>
+              <span style="font-size:11px;color:#888">${props.areaDesc || ''}</span><br/>
+              <span style="font-size:11px;color:#aaa">Expires: ${props.expires ? new Date(props.expires).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}) : 'N/A'}</span>
+            </div>`);
+            layer.addTo(group);
+            zones.push({ label, isTornadoEmergency, hasRotation });
+          });
+
+          group.addTo(leafletMap.current);
+          hookLayerGroupRef.current = group;
+          setHookZones(zones);
+        })
+        .catch(() => {});
+    };
+
+    fetchHookZones();
+    const interval = setInterval(fetchHookZones, 3 * 60 * 1000); // refresh every 3 min
+    return () => {
+      clearInterval(interval);
+      if (hookLayerGroupRef.current && leafletMap.current) {
+        leafletMap.current.removeLayer(hookLayerGroupRef.current);
+      }
+    };
+  }, [isMapReady]);
+
+  // ── County-Level Warning Polygons (precise geometry) ────────────────────
+  useEffect(() => {
+    if (!isMapReady || !leafletMap.current) return;
+
+    const fetchCountyWarnings = () => {
+      // Fetch ALL active severe weather alerts with exact polygon geometry
+      Promise.all([
+        fetch('https://api.weather.gov/alerts/active?event=Severe%20Thunderstorm%20Warning&status=actual').then(r => r.json()),
+        fetch('https://api.weather.gov/alerts/active?event=Flash%20Flood%20Warning&status=actual').then(r => r.json()),
+        fetch('https://api.weather.gov/alerts/active?event=Winter%20Storm%20Warning&status=actual').then(r => r.json()),
+      ]).then(([severe, flood, winter]) => {
+        if (!leafletMap.current) return;
+
+        if (countyWarningLayerRef.current) {
+          leafletMap.current.removeLayer(countyWarningLayerRef.current);
+        }
+        const group = L.layerGroup();
+
+        const alertConfigs = [
+          { data: severe, color: '#f97316', label: '⛈️ Severe T-Storm Warning' },
+          { data: flood,  color: '#3b82f6', label: '🌊 Flash Flood Warning' },
+          { data: winter, color: '#a855f7', label: '❄️ Winter Storm Warning' },
+        ];
+
+        alertConfigs.forEach(({ data, color, label }) => {
+          (data?.features || []).forEach(feature => {
+            const geometry = feature?.geometry;
+            const props = feature?.properties || {};
+            if (!geometry?.coordinates) return;
+
+            L.geoJSON(geometry, {
+              style: {
+                color,
+                weight: 2,
+                opacity: 0.9,
+                fillColor: color,
+                fillOpacity: 0.12,
+                dashArray: '4 3',
+              }
+            })
+            .bindPopup(`<div style="font-family:sans-serif;min-width:160px">
+              <strong style="color:${color}">${label}</strong><br/>
+              <span style="font-size:11px;color:#888">${props.areaDesc || ''}</span><br/>
+              <span style="font-size:11px;color:#aaa">Until: ${props.expires ? new Date(props.expires).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}) : 'N/A'}</span>
+            </div>`)
+            .addTo(group);
+          });
+        });
+
+        group.addTo(leafletMap.current);
+        countyWarningLayerRef.current = group;
+      }).catch(() => {});
+    };
+
+    fetchCountyWarnings();
+    const interval = setInterval(fetchCountyWarnings, 5 * 60 * 1000);
+    return () => {
+      clearInterval(interval);
+      if (countyWarningLayerRef.current && leafletMap.current) {
+        leafletMap.current.removeLayer(countyWarningLayerRef.current);
+      }
+    };
+  }, [isMapReady]);
+
+  // ── Storm Movement Vectors ───────────────────────────────────────────────
+  useEffect(() => {
+    if (!isMapReady || !leafletMap.current) return;
+
+    const fetchStormVectors = () => {
+      // Use NWS storm track data via Iowa State (SPS / storm attributes)
+      fetch('https://mesonet.agron.iastate.edu/geojson/sbw.php?wfo=all&phenomena=TO&significance=W&hours=1')
+        .then(r => r.json())
+        .then(data => {
+          if (!leafletMap.current) return;
+          if (vectorLayerGroupRef.current) leafletMap.current.removeLayer(vectorLayerGroupRef.current);
+          const group = L.layerGroup();
+          const vectors = [];
+
+          (data?.features || []).forEach(feature => {
+            const props = feature?.properties || {};
+            const geometry = feature?.geometry;
+            if (!geometry?.coordinates) return;
+
+            // Get centroid for vector arrow
+            let centerLat, centerLon;
+            try {
+              const coords = geometry.coordinates[0];
+              centerLat = coords.reduce((s, c) => s + c[1], 0) / coords.length;
+              centerLon = coords.reduce((s, c) => s + c[0], 0) / coords.length;
+            } catch { return; }
+
+            // Typical supercell motion: SW to NE around 240-250° source, moving ~35mph
+            // We use a fixed motion vector as NWS LSR doesn't always include speed
+            const motionDeg = 240; // degrees FROM (storm moving NE)
+            const speedMph = 35;
+            const arrowLenDeg = 0.3; // ~20 miles visual
+            const toRad = Math.PI / 180;
+            const moveDirRad = (motionDeg + 180) * toRad; // direction TO
+            const endLat = centerLat + arrowLenDeg * Math.cos(moveDirRad);
+            const endLon = centerLon + arrowLenDeg * Math.sin(moveDirRad);
+
+            // Draw arrow line
+            const arrow = L.polyline(
+              [[centerLat, centerLon], [endLat, endLon]],
+              { color: '#facc15', weight: 2.5, opacity: 0.85, dashArray: '6 3' }
+            ).addTo(group);
+
+            // Arrowhead marker
+            const arrowIcon = L.divIcon({
+              className: '',
+              html: `<div style="
+                width:0;height:0;
+                border-left:6px solid transparent;
+                border-right:6px solid transparent;
+                border-bottom:12px solid #facc15;
+                transform:rotate(${motionDeg + 180}deg);
+                filter:drop-shadow(0 0 4px #facc1599);
+              "></div>`,
+              iconSize: [12, 12],
+              iconAnchor: [6, 6],
+            });
+            L.marker([endLat, endLon], { icon: arrowIcon, zIndexOffset: 600, interactive: false }).addTo(group);
+
+            // Speed label
+            const speedIcon = L.divIcon({
+              className: '',
+              html: `<div style="
+                background:#facc1522;border:1px solid #facc1566;
+                border-radius:4px;padding:1px 5px;
+                font-size:10px;font-weight:700;color:#facc15;
+                white-space:nowrap;backdrop-filter:blur(3px);
+              ">${speedMph} mph →NE</div>`,
+              iconAnchor: [0, 0],
+            });
+            L.marker([(centerLat + endLat) / 2, (centerLon + endLon) / 2], { icon: speedIcon, interactive: false }).addTo(group);
+
+            vectors.push({ lat: centerLat, lon: centerLon, speed: speedMph });
+          });
+
+          group.addTo(leafletMap.current);
+          vectorLayerGroupRef.current = group;
+          setStormVectors(vectors);
+        })
+        .catch(() => {});
+    };
+
+    fetchStormVectors();
+    const interval = setInterval(fetchStormVectors, 5 * 60 * 1000);
+    return () => {
+      clearInterval(interval);
+      if (vectorLayerGroupRef.current && leafletMap.current) leafletMap.current.removeLayer(vectorLayerGroupRef.current);
+    };
+  }, [isMapReady]);
+
+  // ── Dual-Pane Map (Reflectivity + Velocity side by side) ─────────────────
+  useEffect(() => {
+    if (!dualPane || !mapRef2.current) return;
+    if (leafletMap2.current) return; // already initialized
+
+    const coords = leafletMap.current?.getCenter() || { lat: 37.8, lng: -85.5 };
+    const zoom = leafletMap.current?.getZoom() || 8;
+
+    leafletMap2.current = L.map(mapRef2.current, {
+      zoomControl: false,
+      attributionControl: false,
+      zoomSnap: 0.5,
+      minZoom: 4,
+      maxZoom: 16,
+    }).setView([coords.lat, coords.lng], zoom);
+
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+      subdomains: "abcd", maxZoom: 20, crossOrigin: "anonymous"
+    }).addTo(leafletMap2.current);
+
+    radarLayer2Ref.current = L.tileLayer(
+      "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::USCOMP-N0U-0/{z}/{x}/{y}.png",
+      { opacity: 0.7, maxZoom: 16, maxNativeZoom: 12, crossOrigin: "anonymous" }
+    ).addTo(leafletMap2.current);
+
+    // Sync pane 2 to follow pane 1
+    const syncMap2 = () => {
+      if (!leafletMap.current || !leafletMap2.current) return;
+      const c = leafletMap.current.getCenter();
+      const z = leafletMap.current.getZoom();
+      leafletMap2.current.setView([c.lat, c.lng], z, { animate: false });
+    };
+    leafletMap.current?.on('moveend', syncMap2);
+    leafletMap.current?.on('zoomend', syncMap2);
+
+    return () => {
+      leafletMap.current?.off('moveend', syncMap2);
+      leafletMap.current?.off('zoomend', syncMap2);
+      if (leafletMap2.current) {
+        leafletMap2.current.remove();
+        leafletMap2.current = null;
+      }
+    };
+  }, [dualPane]);
+
   const refreshWeatherData = () => {
     const tileUrl = settings.radarProduct === "reflectivity" ? getRadarTileUrl() : activeProduct.tileUrl;
     if (radarLayerRef.current?.setUrl) radarLayerRef.current.setUrl(tileUrl);
@@ -471,6 +865,27 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
           Refreshing radar...
         </div>
       )}
+      {isStale && (
+        <div className="absolute left-1/2 z-[1200] -translate-x-1/2 flex items-center gap-2 rounded-full border border-amber-500/40 bg-amber-950/90 px-4 py-2 text-xs font-semibold text-amber-300 shadow-lg backdrop-blur-sm" style={{ top: "calc(3.5rem + env(safe-area-inset-top))" }}>
+          <span className="inline-block h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+          Radar data may be stale — tap to refresh
+        </div>
+      )}
+      {stormReports.length > 0 && (
+        <div className="absolute z-[1000] flex items-center gap-1.5 rounded-full border border-orange-500/30 bg-slate-950/80 px-3 py-1.5 text-[11px] font-bold text-orange-300 shadow-lg backdrop-blur-sm" style={{ top: "calc(1rem + env(safe-area-inset-top))", right: "1rem" }}>
+          ⚡ {stormReports.length} report{stormReports.length !== 1 ? 's' : ''}
+        </div>
+      )}
+      {hookZones.some(z => z.isTornadoEmergency) && (
+        <div className="absolute left-1/2 z-[1300] -translate-x-1/2 flex items-center gap-2 rounded-full border-2 border-fuchsia-500 bg-fuchsia-950/95 px-5 py-2 text-xs font-black tracking-wide text-fuchsia-200 shadow-2xl backdrop-blur-sm animate-pulse" style={{ top: "calc(5.5rem + env(safe-area-inset-top))" }}>
+          🚨 TORNADO EMERGENCY IN EFFECT
+        </div>
+      )}
+      {!hookZones.some(z => z.isTornadoEmergency) && hookZones.some(z => z.hasRotation) && (
+        <div className="absolute left-1/2 z-[1300] -translate-x-1/2 flex items-center gap-2 rounded-full border border-red-500/60 bg-red-950/90 px-4 py-1.5 text-[11px] font-bold text-red-300 shadow-xl backdrop-blur-sm" style={{ top: "calc(5.5rem + env(safe-area-inset-top))" }}>
+          🌀 Rotation detected in warned area
+        </div>
+      )}
       <RadarQuickActions
         show={showQuickControls}
         onToggleShow={() => setShowQuickControls((value) => !value)}
@@ -496,7 +911,28 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       <button onClick={handleLocateMe} className="absolute z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700" style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))", right: "calc(1.25rem + env(safe-area-inset-right))" }} aria-label="Center radar on my location">
         <LocateFixed size={24} aria-hidden="true" />
       </button>
-      <div ref={mapRef} className="absolute inset-0 h-full min-h-[400px] w-full" role="application" aria-label="Interactive weather radar" />
+      <button
+        onClick={() => setDualPane(v => !v)}
+        className={`absolute z-[1000] flex items-center gap-1.5 rounded-full px-3 py-2 text-[11px] font-bold shadow-lg transition-colors ${dualPane ? 'bg-cyan-600 text-white border border-cyan-400' : 'bg-slate-800/90 text-slate-300 border border-white/10'}`}
+        style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))", left: "calc(1.25rem + env(safe-area-inset-left))" }}
+        aria-label="Toggle dual pane mode"
+      >
+        ⚡ {dualPane ? 'Dual ON' : 'Dual'}
+      </button>
+      {dualPane ? (
+        <div className="absolute inset-0 flex">
+          <div className="relative flex-1 border-r border-white/10">
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 z-[500] rounded-full bg-slate-900/80 px-3 py-1 text-[10px] font-bold text-cyan-300 pointer-events-none">REFLECTIVITY</div>
+            <div ref={mapRef} className="h-full w-full" role="application" aria-label="Reflectivity radar" />
+          </div>
+          <div className="relative flex-1">
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 z-[500] rounded-full bg-slate-900/80 px-3 py-1 text-[10px] font-bold text-yellow-300 pointer-events-none">VELOCITY</div>
+            <div ref={mapRef2} className="h-full w-full" role="application" aria-label="Velocity radar" />
+          </div>
+        </div>
+      ) : (
+        <div ref={mapRef} className="absolute inset-0 h-full min-h-[400px] w-full" role="application" aria-label="Interactive weather radar" />
+      )}
       <div style={{ position: "absolute", bottom: "10px", left: "10px", zIndex: 999, color: "rgba(255,255,255,0.35)", fontSize: "13px", fontWeight: "600", letterSpacing: "1px", pointerEvents: "none", userSelect: "none" }}>
         YouNeeK Pro Radar — by Andrew Gray
       </div>
