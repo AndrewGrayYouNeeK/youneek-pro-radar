@@ -157,7 +157,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [dualPane, setDualPane] = useState(false);
   const [stormVectors, setStormVectors] = useState([]);
   const [tiltIndex, setTiltIndex] = useState(0);
-  const [baseLayer, setBaseLayer] = useState('dark'); // dark | satellite
+  const [baseLayer, setBaseLayer] = useState('dark');
   const [mesoMarkers, setMesoMarkers] = useState([]);
   const [hailReports, setHailReports] = useState([]);
   const [showShareBanner, setShowShareBanner] = useState(false);
@@ -503,12 +503,12 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     };
 
     const fetchStormReports = () => {
-      // NWS Local Storm Reports (LSR) via Iowa State Mesonet GeoJSON
+
       fetch('https://mesonet.agron.iastate.edu/geojson/lsr.php?hours=3&wfo=all')
         .then(r => r.json())
         .then(data => {
           if (!leafletMap.current) return;
-          // Clear old markers
+
           if (stormMarkerGroupRef.current) {
             leafletMap.current.removeLayer(stormMarkerGroupRef.current);
           }
@@ -537,17 +537,17 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
           group.addTo(leafletMap.current);
           stormMarkerGroupRef.current = group;
           setStormReports(reports);
-          // Mark radar as fresh
+
           lastRadarUpdateRef.current = Date.now();
           setIsStale(false);
         })
-        .catch(() => {}); // silently ignore network errors
+        .catch(() => {});
     };
 
     fetchStormReports();
     const interval = setInterval(fetchStormReports, 5 * 60 * 1000);
 
-    // Stale data detector — flag if no update in 12 minutes
+
     staleTimerRef.current = setInterval(() => {
       const minutesSince = (Date.now() - lastRadarUpdateRef.current) / 60000;
       setIsStale(minutesSince > 12);
@@ -566,15 +566,15 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   useEffect(() => {
     if (!isMapReady || !leafletMap.current) return;
 
-    // Pull NWS tornado warnings — the polygon IS the hook zone threat area
-    // We also pull mesocyclone data from NWS storm attributes
+
+
     const fetchHookZones = () => {
       fetch('https://api.weather.gov/alerts/active?event=Tornado%20Warning&status=actual')
         .then(r => r.json())
         .then(data => {
           if (!leafletMap.current) return;
 
-          // Clear old hook overlays
+
           if (hookLayerGroupRef.current) {
             leafletMap.current.removeLayer(hookLayerGroupRef.current);
           }
@@ -586,7 +586,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
             const geometry = feature?.geometry;
             if (!geometry?.coordinates) return;
 
-            // Check if this warning mentions tornado — look for "TORNADO EMERGENCY" or "RADAR INDICATED ROTATION"
+
             const desc = (props.description || '').toUpperCase();
             const isTornadoEmergency = desc.includes('TORNADO EMERGENCY');
             const hasRotation = desc.includes('ROTATION') || desc.includes('HOOK') || desc.includes('MESOCYCLONE');
@@ -607,7 +607,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
               }
             });
 
-            // Pulsing label marker at centroid
+
             const bounds = layer.getBounds();
             if (bounds.isValid()) {
               const center = bounds.getCenter();
@@ -648,7 +648,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     };
 
     fetchHookZones();
-    const interval = setInterval(fetchHookZones, 3 * 60 * 1000); // refresh every 3 min
+    const interval = setInterval(fetchHookZones, 3 * 60 * 1000);
     return () => {
       clearInterval(interval);
       if (hookLayerGroupRef.current && leafletMap.current) {
@@ -662,7 +662,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     if (!isMapReady || !leafletMap.current) return;
 
     const fetchCountyWarnings = () => {
-      // Fetch ALL active severe weather alerts with exact polygon geometry
+
       Promise.all([
         fetch('https://api.weather.gov/alerts/active?event=Severe%20Thunderstorm%20Warning&status=actual').then(r => r.json()),
         fetch('https://api.weather.gov/alerts/active?event=Flash%20Flood%20Warning&status=actual').then(r => r.json()),
@@ -737,7 +737,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       crossOrigin: 'anonymous',
       attribution: baseLayer === 'satellite' ? 'Tiles © Esri' : '© OpenStreetMap © CARTO',
     });
-    // Insert below radar layers (pane order)
+
     baseLayerRef.current.addTo(leafletMap.current);
     baseLayerRef.current.bringToBack();
   }, [isMapReady, baseLayer]);
@@ -745,7 +745,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   // ── Tilt Selector — switch radar elevation angle ──────────────────────
   useEffect(() => {
     if (!isMapReady || !leafletMap.current || !showNexrad) return;
-    if (settings.radarProduct !== 'reflectivity') return; // only for reflectivity
+    if (settings.radarProduct !== 'reflectivity') return;
     const tilt = TILT_PRODUCTS[tiltIndex];
     if (!tilt) return;
     if (radarLayerRef.current) {
@@ -758,7 +758,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     if (!isMapReady || !leafletMap.current) return;
 
     const fetchMeso = () => {
-      // Pull SPS (Special Weather Statements) and SVR/TOR with "MESO" in text
+
       fetch('https://mesonet.agron.iastate.edu/geojson/lsr.php?hours=3&wfo=all&type=M')
         .then(r => r.json())
         .then(data => {
@@ -820,7 +820,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     if (!isMapReady || !leafletMap.current) return;
 
     const fetchStormVectors = () => {
-      // Use NWS storm track data via Iowa State (SPS / storm attributes)
+
       fetch('https://mesonet.agron.iastate.edu/geojson/sbw.php?wfo=all&phenomena=TO&significance=W&hours=1')
         .then(r => r.json())
         .then(data => {
@@ -834,7 +834,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
             const geometry = feature?.geometry;
             if (!geometry?.coordinates) return;
 
-            // Get centroid for vector arrow
+
             let centerLat, centerLon;
             try {
               const coords = geometry.coordinates[0];
@@ -842,23 +842,23 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
               centerLon = coords.reduce((s, c) => s + c[0], 0) / coords.length;
             } catch { return; }
 
-            // Typical supercell motion: SW to NE around 240-250° source, moving ~35mph
-            // We use a fixed motion vector as NWS LSR doesn't always include speed
-            const motionDeg = 240; // degrees FROM (storm moving NE)
+
+
+            const motionDeg = 240;
             const speedMph = 35;
-            const arrowLenDeg = 0.3; // ~20 miles visual
+            const arrowLenDeg = 0.3;
             const toRad = Math.PI / 180;
-            const moveDirRad = (motionDeg + 180) * toRad; // direction TO
+            const moveDirRad = (motionDeg + 180) * toRad;
             const endLat = centerLat + arrowLenDeg * Math.cos(moveDirRad);
             const endLon = centerLon + arrowLenDeg * Math.sin(moveDirRad);
 
-            // Draw arrow line
+
             const arrow = L.polyline(
               [[centerLat, centerLon], [endLat, endLon]],
               { color: '#facc15', weight: 2.5, opacity: 0.85, dashArray: '6 3' }
             ).addTo(group);
 
-            // Arrowhead marker
+
             const arrowIcon = L.divIcon({
               className: '',
               html: `<div style="
@@ -874,7 +874,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
             });
             L.marker([endLat, endLon], { icon: arrowIcon, zIndexOffset: 600, interactive: false }).addTo(group);
 
-            // Speed label
+
             const speedIcon = L.divIcon({
               className: '',
               html: `<div style="
@@ -908,7 +908,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   // ── Dual-Pane Map (Reflectivity + Velocity side by side) ─────────────────
   useEffect(() => {
     if (!dualPane || !mapRef2.current) return;
-    if (leafletMap2.current) return; // already initialized
+    if (leafletMap2.current) return;
 
     const coords = leafletMap.current?.getCenter() || { lat: 37.8, lng: -85.5 };
     const zoom = leafletMap.current?.getZoom() || 8;
@@ -930,7 +930,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       { opacity: 0.7, maxZoom: 16, maxNativeZoom: 12, crossOrigin: "anonymous" }
     ).addTo(leafletMap2.current);
 
-    // Sync pane 2 to follow pane 1
+
     const syncMap2 = () => {
       if (!leafletMap.current || !leafletMap2.current) return;
       const c = leafletMap.current.getCenter();
@@ -969,7 +969,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
             if (!coords) return;
             const [lon, lat] = coords;
             const sizeInches = parseFloat(props.magnitude) || 0;
-            // Size: < 0.75 = pea, 0.75–1.0 = penny, 1.0–1.75 = golf ball, > 1.75 = baseball+
+
             const isLarge = sizeInches >= 1.75;
             const isMedium = sizeInches >= 1.0;
             const color = isLarge ? '#ef4444' : isMedium ? '#f97316' : '#3b82f6';
@@ -1028,7 +1028,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     if (!isMapReady || !leafletMap.current) return;
 
     const fetchSpotters = () => {
-      // NWS LSR wind + general storm reports (type=W for wind, F for funnel clouds)
+
       Promise.all([
         fetch('https://mesonet.agron.iastate.edu/geojson/lsr.php?hours=3&wfo=all&type=F').then(r => r.json()),
         fetch('https://mesonet.agron.iastate.edu/geojson/lsr.php?hours=3&wfo=all&type=W').then(r => r.json()),
@@ -1093,7 +1093,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   // ── SRH / Wind Shear Data (Storm-Relative Helicity) ──────────────────────
   useEffect(() => {
     if (!userLocation) return;
-    // Fetch SPC mesoanalysis for SRH at user location via NWS point forecast
+
     fetch(`https://api.weather.gov/points/${userLocation.lat.toFixed(4)},${userLocation.lon.toFixed(4)}`)
       .then(r => r.json())
       .then(data => {
@@ -1106,13 +1106,13 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       .then(r => r?.json())
       .then(data => {
         if (!data) return;
-        // Extract wind speed for shear estimate
+
         const windValues = data?.properties?.windSpeed?.values || [];
         if (windValues.length === 0) return;
-        const surfaceWind = windValues[0]?.value || 0; // km/h
+        const surfaceWind = windValues[0]?.value || 0;
         const upperWind = windValues[Math.min(6, windValues.length - 1)]?.value || 0;
         const shearKt = Math.round(Math.abs(upperWind - surfaceWind) * 0.539957);
-        // Rough SRH estimate: shear > 30kt = elevated, > 50kt = significant
+
         const srhCategory = shearKt > 50 ? 'Significant' : shearKt > 30 ? 'Elevated' : 'Low';
         const srhColor = shearKt > 50 ? '#ef4444' : shearKt > 30 ? '#f97316' : '#22c55e';
         setSrhData({ shearKt, srhCategory, srhColor });
@@ -1317,7 +1317,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       <button onClick={handleLocateMe} className="absolute z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700" style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))", right: "calc(1.25rem + env(safe-area-inset-right))" }} aria-label="Center radar on my location">
         <LocateFixed size={24} aria-hidden="true" />
       </button>
-      {/* Share location quick-send */}
+      {}
       <button
         onClick={handleShareLocation}
         className="absolute z-[1000] flex h-12 w-12 items-center justify-center rounded-full bg-emerald-600/90 text-white shadow-lg border border-emerald-400/30 transition-colors hover:bg-emerald-500 active:scale-95"
@@ -1333,7 +1333,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
           📍 Location message opened!
         </div>
       )}
-      {/* Hail report badge */}
+      {}
       {hailReports.length > 0 && (
         <div className="absolute z-[1000] flex items-center gap-1.5 rounded-full border border-blue-500/30 bg-slate-950/80 px-3 py-1.5 text-[11px] font-bold text-blue-300 shadow-lg backdrop-blur-sm"
           style={{ top: "calc(5.5rem + env(safe-area-inset-top))", right: "1rem" }}>
@@ -1350,7 +1350,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       >
         ⚡ {dualPane ? 'Dual ON' : 'Dual'}
       </button>
-      {/* Tilt selector */}
+      {}
       {showNexrad && settings.radarProduct === 'reflectivity' && (
         <div className="absolute z-[1000] flex items-center gap-1 rounded-xl border border-white/10 bg-slate-900/90 p-1 shadow-lg backdrop-blur-sm"
           style={{ bottom: "calc(9.5rem + env(safe-area-inset-bottom))", left: "calc(1.25rem + env(safe-area-inset-left))" }}>
@@ -1363,7 +1363,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
           <span className="ml-1 text-[9px] font-semibold uppercase tracking-widest text-slate-500">TILT</span>
         </div>
       )}
-      {/* Base layer toggle */}
+      {}
       <button
         onClick={() => setBaseLayer(v => v === 'dark' ? 'satellite' : 'dark')}
         className="absolute z-[1000] flex items-center gap-1.5 rounded-full border border-white/10 bg-slate-900/90 px-3 py-1.5 text-[11px] font-bold text-slate-300 shadow-lg backdrop-blur-sm hover:text-white transition-colors"
@@ -1372,21 +1372,21 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       >
         {baseLayer === 'dark' ? '🛰️ Sat' : '🌑 Dark'}
       </button>
-      {/* Mesocyclone badge */}
+      {}
       {mesoMarkers.length > 0 && (
         <div className="absolute z-[1000] flex items-center gap-1.5 rounded-full border border-purple-500/40 bg-purple-950/85 px-3 py-1.5 text-[11px] font-bold text-purple-300 shadow-lg backdrop-blur-sm animate-pulse"
           style={{ top: "calc(3.5rem + env(safe-area-inset-top))", right: "1rem" }}>
           🌀 {mesoMarkers.length} meso
         </div>
       )}
-      {/* Spotter reports badge */}
+      {}
       {spotterReports.length > 0 && (
         <div className="absolute z-[1000] flex items-center gap-1.5 rounded-full border border-violet-500/30 bg-slate-950/80 px-3 py-1.5 text-[11px] font-bold text-violet-300 shadow-lg backdrop-blur-sm"
           style={{ top: "calc(7.5rem + env(safe-area-inset-top))", right: "1rem" }}>
           👁️ {spotterReports.length} spotter
         </div>
       )}
-      {/* SRH / Wind shear panel */}
+      {}
       {srhData && (
         <div className="absolute z-[1000] rounded-xl border border-white/10 bg-slate-950/85 px-3 py-2 shadow-lg backdrop-blur-sm"
           style={{ bottom: "calc(13rem + env(safe-area-inset-bottom))", left: "calc(1.25rem + env(safe-area-inset-left))" }}>
@@ -1397,7 +1397,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
           </div>
         </div>
       )}
-      {/* Radar opacity slider */}
+      {}
       <div className="absolute z-[1000]"
         style={{ bottom: "calc(9.5rem + env(safe-area-inset-bottom))", left: "50%", transform: "translateX(-50%)" }}>
         {showOpacitySlider && (
@@ -1433,7 +1433,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       <div style={{ position: "absolute", bottom: "10px", left: "10px", zIndex: 999, color: "rgba(255,255,255,0.35)", fontSize: "13px", fontWeight: "600", letterSpacing: "1px", pointerEvents: "none", userSelect: "none" }}>
         YouNeeK Pro Radar — by Andrew Gray
       </div>
-      {/* Lightning toggle */}
+      {}
       <button
         onClick={() => setShowLightning(v => !v)}
         className={`absolute z-[1000] flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-bold shadow-lg backdrop-blur-sm transition-colors ${showLightning ? 'border-yellow-500/40 bg-yellow-950/80 text-yellow-300' : 'border-white/10 bg-slate-900/80 text-slate-500'}`}
@@ -1442,7 +1442,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       >
         ⚡ {showLightning ? `${lightningStrikes.length} strikes` : 'Lightning off'}
       </button>
-      {/* Nearest station badge */}
+      {}
       {nearestStation?.id && (
         <div className="absolute z-[1000] rounded-xl border border-white/10 bg-slate-950/85 px-3 py-2 shadow-lg backdrop-blur-sm pointer-events-none"
           style={{ bottom: "calc(10px)", right: "calc(1rem + env(safe-area-inset-right))" }}>
@@ -1451,7 +1451,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
           <div className="text-[10px] text-slate-400">{nearestStation.dist} mi away</div>
         </div>
       )}
-      {/* Forecast hazards panel */}
+      {}
       {forecastHazards && (
         <div className="absolute z-[1100] right-0 top-0 h-full w-72 max-w-[90vw]"
           style={{ pointerEvents: showForecast ? 'auto' : 'none' }}>
