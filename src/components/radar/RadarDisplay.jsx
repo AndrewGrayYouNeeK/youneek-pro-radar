@@ -8,7 +8,6 @@ import ProLegend from "./ProLegend";
 import RadarRangeRings from "./RadarRangeRings";
 import RadarInspectorPanel from "./RadarInspectorPanel";
 import RadarQuickActions from "./RadarQuickActions";
-import RadarStatusBar from "./RadarStatusBar";
 import RadarDataDock from "./RadarDataDock";
 import RadarOverlayToggle from "./RadarOverlayToggle";
 import { getRadarProduct } from "./radarProducts";
@@ -495,12 +494,6 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       {showOverlayPanels && (
         <>
           <StormAnalysisStrip metrics={stormMetrics} />
-          <RadarStatusBar
-            productLabel={activeProduct.label}
-            isLooping={isLooping}
-            frameLabel={isLooping ? loopFrames[loopFrameIndex]?.label : "Live"}
-            warnings={activeWarningsCount}
-          />
           <ProLegend productLabel={activeProduct.label} />
           <RadarDataDock metrics={stormMetrics} productLabel={activeProduct.label} station={settings.station} />
           <RadarInspectorPanel inspector={inspector} productLabel={activeProduct.label} />
