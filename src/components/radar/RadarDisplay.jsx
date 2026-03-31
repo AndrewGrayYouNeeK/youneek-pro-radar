@@ -201,7 +201,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
           if (!leafletMap.current) return;
           if (toggleKey === "tornado") {
             const features = data?.features || [];
-            setActiveTornadoWarning(Boolean(userLocation) && features.some((f) => isFeatureNearLocation(f, userLocation, 150)));
+            setActiveTornadoWarning(Boolean(userLocation) && features.some((f) => featureIsNearUser(f, userLocation, 150)));
           }
           if (!alertTogglesRef.current[toggleKey]) return;
           layerRef.current = L.geoJSON(data, {
@@ -216,7 +216,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         .then((r) => r.json())
         .then((data) => {
           const features = data?.features || [];
-          setActiveTornadoWatch(Boolean(userLocation) && features.some((f) => isFeatureNearLocation(f, userLocation, 150)));
+          setActiveTornadoWatch(Boolean(userLocation) && features.some((f) => featureIsNearUser(f, userLocation, 150)));
         });
       refreshAlertLayer(thunderLayerRef, "severe", "thunderstorm", "#f97316");
       refreshAlertLayer(floodLayerRef, "flood", "flood", "#3b82f6");
