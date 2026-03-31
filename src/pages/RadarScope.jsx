@@ -1,4 +1,4 @@
-import { useState, useCallback, Suspense, lazy, useMemo } from "react";
+import { useState, useCallback, Suspense, lazy } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 const RadarDisplay = lazy(() => import("../components/radar/RadarDisplay"));
@@ -34,14 +34,6 @@ export default function RadarScope() {
   const [showRadio, setShowRadio] = useState(true);
 
   const urlParams = new URLSearchParams(location.search);
-  const screenshotMode = useMemo(() => {
-    const mode = urlParams.get("screenshot");
-    return {
-      enabled: mode === "storm",
-      fakeTornado: urlParams.get("fakeTornado") === "1",
-      fakeHurricane: urlParams.get("fakeHurricane") === "1",
-    };
-  }, [location.search]);
   const dialogMode = urlParams.get("dialog");
   const selectedTargetId = urlParams.get("targetId");
   const pendingClick = dialogMode === "create"
@@ -156,7 +148,6 @@ export default function RadarScope() {
             onSettingsChange={setSettings}
             showRadio={showRadio}
             onToggleRadio={setShowRadio}
-            screenshotMode={screenshotMode}
           />
         </Suspense>
       </div>
