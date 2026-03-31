@@ -8,7 +8,6 @@ import ProLegend from "./ProLegend";
 import RadarInspectorPanel from "./RadarInspectorPanel";
 import RadarQuickActions from "./RadarQuickActions";
 import RadarDataDock from "./RadarDataDock";
-import RadarOverlayToggle from "./RadarOverlayToggle";
 import { getRadarProduct } from "./radarProducts";
 import usePullToRefresh from "@/hooks/usePullToRefresh";
 import "leaflet/dist/leaflet.css";
@@ -144,7 +143,6 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [activeTornadoWatch, setActiveTornadoWatch] = useState(false);
   const [isMapReady, setIsMapReady] = useState(false);
   const [showQuickControls, setShowQuickControls] = useState(false);
-  const [showOverlayPanels, setShowOverlayPanels] = useState(true);
   const [inspector, setInspector] = useState({ active: false, lat: "--", lon: "--", bearing: "--", range: "--" });
 
   const activeProduct = useMemo(() => getRadarProduct(settings.radarProduct), [settings.radarProduct]);
@@ -480,10 +478,6 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         onToggleLoop={handleLoopToggle}
         isLooping={isLooping}
       />
-      <RadarOverlayToggle
-        collapsed={!showOverlayPanels}
-        onToggle={() => setShowOverlayPanels((value) => !value)}
-      />
       {isLooping && loopFrames.length > 0 && (
         <div className="absolute left-3 bottom-24 z-[1000] rounded-2xl border border-white/10 bg-slate-950/78 px-3 py-2 text-xs font-medium text-slate-200 shadow-lg backdrop-blur-sm">
           Frame {loopFrameIndex + 1}/{loopFrames.length}
@@ -492,14 +486,12 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         </div>
       )}
       <RadarLayersMenu showNexrad={showNexrad} showVelocity={showVelocityLocal} showRadio={showRadio} nexradStation={settings.station} radarProduct={settings.radarProduct} alertToggles={alertToggles} onShowNexradChange={handleShowNexradChange} onShowVelocityChange={handleShowVelocityChange} onShowRadioChange={onToggleRadio} onAlertToggleChange={handleAlertToggleChange} onRadarProductChange={handleRadarProductChange} />
-      {showOverlayPanels && (
-        <>
-          <StormAnalysisStrip metrics={stormMetrics} />
-          <ProLegend productLabel={activeProduct.label} />
-          <RadarDataDock metrics={stormMetrics} productLabel={activeProduct.label} station={settings.station} />
-          <RadarInspectorPanel inspector={inspector} productLabel={activeProduct.label} />
-        </>
-      )}
+      <>
+        <StormAnalysisStrip metrics={stormMetrics} />
+        <ProLegend productLabel={activeProduct.label} />
+        <RadarDataDock metrics={stormMetrics} productLabel={activeProduct.label} station={settings.station} />
+        <RadarInspectorPanel inspector={inspector} productLabel={activeProduct.label} />
+      </>
       <button onClick={handleLocateMe} className="absolute z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700" style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))", right: "calc(1.25rem + env(safe-area-inset-right))" }} aria-label="Center radar on my location">
         <LocateFixed size={24} aria-hidden="true" />
       </button>
