@@ -1,4 +1,4 @@
-import { Crosshair, Map, Play, Radar, CircleDot } from "lucide-react";
+import { Map, Play, Radar } from "lucide-react";
 
 function ActionButton({ icon: IconComponent, label, onClick }) {
   return (
@@ -17,10 +17,6 @@ export default function RadarQuickActions({
   onToggleShow,
   onHookZone,
   onConus,
-  onZoomIn,
-  onZoomOut,
-  onToggleRings,
-  showRangeRings,
   onToggleLoop,
   isLooping,
 }) {
@@ -36,9 +32,6 @@ export default function RadarQuickActions({
         <div className="space-y-2 rounded-2xl border border-white/10 bg-slate-950/74 p-2 shadow-2xl backdrop-blur-xl">
           <ActionButton icon={Radar} label="Hook Zone" onClick={onHookZone} />
           <ActionButton icon={Map} label="CONUS" onClick={onConus} />
-          <ActionButton icon={Crosshair} label="Zoom In" onClick={onZoomIn} />
-          <ActionButton icon={CircleDot} label="Zoom Out" onClick={onZoomOut} />
-          <ActionButton icon={CircleDot} label={showRangeRings ? "Hide Rings" : "Show Rings"} onClick={onToggleRings} />
           <ActionButton icon={Play} label={isLooping ? "Stop Loop" : "Start Loop"} onClick={onToggleLoop} />
         </div>
       )}
