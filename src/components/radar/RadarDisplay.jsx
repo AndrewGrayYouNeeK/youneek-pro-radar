@@ -111,7 +111,7 @@ function isFeatureNearLocation(feature, userLocation, maxDistanceKm = 150) {
   return points.some(([lon, lat]) => haversineKm(lat, lon, userLocation.lat, userLocation.lon) <= maxDistanceKm);
 }
 
-export default function RadarDisplay({ settings, showNexrad, onSettingsChange, showRadio, onToggleRadio }) {
+export default function RadarDisplay({ settings, showNexrad, onSettingsChange, showRadio, onToggleRadio, screenshotMode }) {
   const mapRef = useRef(null);
   const leafletMap = useRef(null);
   const radarLayerRef = useRef(null);
@@ -497,10 +497,32 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         <LocateFixed size={24} aria-hidden="true" />
       </button>
       <div ref={mapRef} className="absolute inset-0 h-full min-h-[400px] w-full" role="application" aria-label="Interactive weather radar" />
+      {screenshotMode?.enabled && screenshotMode?.fakeTornado && (
+        <>
+          <div className="pointer-events-none absolute left-1/2 top-[24%] z-[1050] h-40 w-40 -translate-x-1/2 rounded-full border border-red-400/50 bg-red-500/20 blur-2xl" />
+          <div className="pointer-events-none absolute left-1/2 top-[36%] z-[1060] h-0 w-0 -translate-x-1/2 border-l-[56px] border-r-[56px] border-t-[180px] border-l-transparent border-r-transparent border-t-slate-900/85 drop-shadow-[0_0_28px_rgba(248,113,113,0.55)]" />
+          <div className="pointer-events-none absolute left-1/2 top-[68%] z-[1060] h-16 w-28 -translate-x-1/2 rounded-full bg-slate-800/70 blur-xl" />
+          <div className="pointer-events-none absolute left-1/2 top-[16%] z-[1060] -translate-x-1/2 rounded-full border border-red-500/50 bg-red-950/85 px-4 py-2 text-xs font-black uppercase tracking-[0.24em] text-red-200 shadow-2xl">
+            Tornado Simulation
+          </div>
+        </>
+      )}
+      {screenshotMode?.enabled && screenshotMode?.fakeHurricane && (
+        <>
+          <div className="pointer-events-none absolute left-1/2 top-1/2 z-[1040] h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-400/15 blur-3xl" />
+          <div className="pointer-events-none absolute left-1/2 top-1/2 z-[1050] h-80 w-80 -translate-x-1/2 -translate-y-1/2 rounded-full border border-cyan-300/30" />
+          <div className="pointer-events-none absolute left-1/2 top-1/2 z-[1060] h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full border-[18px] border-cyan-300/35 border-r-transparent border-b-sky-500/20 animate-spin" style={{ animationDuration: '12s' }} />
+          <div className="pointer-events-none absolute left-1/2 top-1/2 z-[1060] h-44 w-44 -translate-x-1/2 -translate-y-1/2 rounded-full border-[16px] border-sky-400/30 border-l-transparent border-t-transparent animate-spin" style={{ animationDuration: '9s', animationDirection: 'reverse' }} />
+          <div className="pointer-events-none absolute left-1/2 top-1/2 z-[1070] h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-950/90 ring-8 ring-cyan-200/20" />
+          <div className="pointer-events-none absolute left-1/2 top-[14%] z-[1070] -translate-x-1/2 rounded-full border border-cyan-400/40 bg-cyan-950/85 px-4 py-2 text-xs font-black uppercase tracking-[0.24em] text-cyan-100 shadow-2xl">
+            Hurricane Simulation
+          </div>
+        </>
+      )}
       <div style={{ position: "absolute", bottom: "10px", left: "10px", zIndex: 999, color: "rgba(255,255,255,0.35)", fontSize: "13px", fontWeight: "600", letterSpacing: "1px", pointerEvents: "none", userSelect: "none" }}>
         YouNeeK Pro Radar — by Andrew Gray
       </div>
-      <ShelterAlert activeTornadoWarning={activeTornadoWarning} activeTornadoWatch={activeTornadoWatch} userLocation={userLocation} />
+      <ShelterAlert activeTornadoWarning={screenshotMode?.enabled && screenshotMode?.fakeTornado ? true : activeTornadoWarning} activeTornadoWatch={screenshotMode?.enabled && screenshotMode?.fakeHurricane ? true : activeTornadoWatch} userLocation={userLocation} />
     </div>
   );
 }

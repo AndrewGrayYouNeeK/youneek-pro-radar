@@ -125,7 +125,7 @@ export default function ShelterAlert({ activeTornadoWarning, activeTornadoWatch 
                   onClick={() => handleShelter(activeTornadoWarning ? '⚠️ TORNADO WARNING' : '🟡 TORNADO WATCH')}
                   className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-bold text-slate-950 shadow-[0_0_30px_rgba(74,222,128,0.3)] transition-colors hover:bg-emerald-400 active:scale-[0.98]"
                 >
-                  {activeTornadoWarning ? "🏠 I'm Sheltering — Alert All Contacts" : '🟡 Heads Up — Alert All Contacts'}
+                  {activeTornadoWarning ? "🏠 I’m Safe — Alert All Contacts" : '🟡 Heads Up — Alert All Contacts'}
                 </button>
               )}
 
