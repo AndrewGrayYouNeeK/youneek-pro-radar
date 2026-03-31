@@ -1,4 +1,4 @@
-import { useState, useCallback, Suspense, lazy, useMemo } from "react";
+import { useState, useCallback, Suspense, lazy } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 const RadarDisplay = lazy(() => import("../components/radar/RadarDisplay"));
@@ -32,16 +32,13 @@ export default function RadarScope() {
   });
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [showRadio, setShowRadio] = useState(true);
+  const [screenshotMode, setScreenshotMode] = useState({
+    enabled: false,
+    fakeTornado: false,
+    fakeHurricane: false,
+  });
 
   const urlParams = new URLSearchParams(location.search);
-  const screenshotMode = useMemo(() => {
-    const mode = urlParams.get("screenshot");
-    return {
-      enabled: mode === "storm",
-      fakeTornado: urlParams.get("fakeTornado") === "1",
-      fakeHurricane: urlParams.get("fakeHurricane") === "1",
-    };
-  }, [location.search]);
   const dialogMode = urlParams.get("dialog");
   const selectedTargetId = urlParams.get("targetId");
   const pendingClick = dialogMode === "create"
@@ -143,6 +140,30 @@ export default function RadarScope() {
       <AppHeader title="Radar" />
       <div className="relative h-[calc(100%-3.5rem-env(safe-area-inset-top))] w-full overflow-hidden">
         <RainArrivalAlert />
+        <div className="absolute left-3 top-3 z-[1200] flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => setScreenshotMode((current) => ({
+              enabled: !current.enabled || !current.fakeTornado,
+              fakeTornado: !current.fakeTornado,
+              fakeHurricane: false,
+            }))}
+            className="rounded-full border border-red-400/40 bg-slate-950/85 px-3 py-2 text-xs font-semibold text-red-200 shadow-lg backdrop-blur-sm"
+          >
+            Fake Tornado
+          </button>
+          <button
+            type="button"
+            onClick={() => setScreenshotMode((current) => ({
+              enabled: !current.enabled || !current.fakeHurricane,
+              fakeTornado: false,
+              fakeHurricane: !current.fakeHurricane,
+            }))}
+            className="rounded-full border border-cyan-400/40 bg-slate-950/85 px-3 py-2 text-xs font-semibold text-cyan-100 shadow-lg backdrop-blur-sm"
+          >
+            Fake Hurricane
+          </button>
+        </div>
         <Suspense
           fallback={(
             <div className="flex h-full items-center justify-center">
