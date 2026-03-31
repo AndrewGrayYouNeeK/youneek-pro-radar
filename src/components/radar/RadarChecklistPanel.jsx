@@ -13,7 +13,7 @@ function ChecklistItem({ done, label }) {
 
 export default function RadarChecklistPanel({ items }) {
   return (
-    <div className="pointer-events-none absolute right-3 top-[17.9rem] z-[1000] w-[12.5rem] space-y-2">
+    <div className="pointer-events-none absolute left-3 top-[33.5rem] z-[1000] w-[13rem] space-y-2">
       <div className="rounded-2xl border border-white/10 bg-slate-950/82 px-3 py-2 shadow-lg backdrop-blur-md">
         <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-200/70">
           <ListChecks className="h-3.5 w-3.5 text-cyan-300" aria-hidden="true" />

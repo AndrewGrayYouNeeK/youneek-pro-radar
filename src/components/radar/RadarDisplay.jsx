@@ -481,9 +481,6 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
           <div className="mt-1 text-[11px] text-slate-300">{loopFrames[loopFrameIndex]?.label}</div>
         </div>
       )}
-      <div className="absolute left-3 top-[26.5rem] z-[1000] rounded-2xl border border-cyan-400/15 bg-slate-950/82 px-3 py-2 text-[11px] font-medium text-cyan-100 shadow-lg backdrop-blur-sm">
-        Pro mode: {activeProduct.label}
-      </div>
       {showRangeRings && <RadarRangeRings />}
       <RadarLayersMenu showNexrad={showNexrad} showVelocity={showVelocityLocal} showRadio={showRadio} nexradStation={settings.station} radarProduct={settings.radarProduct} alertToggles={alertToggles} onShowNexradChange={handleShowNexradChange} onShowVelocityChange={handleShowVelocityChange} onShowRadioChange={onToggleRadio} onAlertToggleChange={handleAlertToggleChange} onRadarProductChange={handleRadarProductChange} />
       <StormToolsPanel metrics={stormMetrics} productLabel={activeProduct.label} />
@@ -496,8 +493,8 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       />
       <ProLegend productLabel={activeProduct.label} />
       <RadarDataDock metrics={stormMetrics} productLabel={activeProduct.label} station={settings.station} />
-      <RadarInspectorPanel inspector={inspector} productLabel={activeProduct.label} />
       <RadarChecklistPanel items={checklistItems} />
+      <RadarInspectorPanel inspector={inspector} productLabel={activeProduct.label} />
       <button onClick={handleLocateMe} className="absolute z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700" style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))", right: "calc(1.25rem + env(safe-area-inset-right))" }} aria-label="Center radar on my location">
         <LocateFixed size={24} aria-hidden="true" />
       </button>
