@@ -14,8 +14,8 @@ function ToolChip({ icon: IconComponent, label, value, accent = "text-cyan-300" 
 
 export default function StormToolsPanel({ metrics, productLabel }) {
   return (
-    <div className="pointer-events-none absolute inset-x-3 top-[4.65rem] z-[1000] space-y-2">
-      <div className="rounded-2xl border border-cyan-400/15 bg-slate-950/78 px-3 py-2 shadow-2xl backdrop-blur-xl">
+    <div className="pointer-events-none absolute inset-x-3 top-[4.65rem] z-[1000]">
+      <div className="rounded-2xl border border-cyan-400/15 bg-slate-950/72 px-3 py-2 shadow-xl backdrop-blur-md">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-300">
           <div className="flex items-center gap-1.5 text-cyan-300">
             <Radar className="h-3.5 w-3.5" aria-hidden="true" />
@@ -29,20 +29,6 @@ export default function StormToolsPanel({ metrics, productLabel }) {
             <ShieldAlert className="h-3.5 w-3.5" aria-hidden="true" />
             {metrics.stormMode}
           </div>
-        </div>
-      </div>
-
-      <div className="mr-16 rounded-3xl border border-white/10 bg-slate-900/45 p-2 shadow-2xl backdrop-blur-xl">
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-6">
-          <ToolChip icon={ScanSearch} label="Product" value={productLabel} />
-          <ToolChip icon={Navigation} label="Bearing" value={`${metrics.bearing}°`} />
-          <ToolChip icon={Gauge} label="Range" value={`${metrics.range} mi`} accent="text-emerald-300" />
-          <ToolChip icon={Crosshair} label="Tilt Focus" value={metrics.focus} accent="text-amber-300" />
-          <ToolChip icon={Expand} label="Zoom" value={metrics.zoom} accent="text-violet-300" />
-          <ToolChip icon={ShieldAlert} label="Alerts On" value={String(metrics.warnings)} accent="text-red-300" />
-          <ToolChip icon={CircleDot} label="Inspector" value={metrics.inspectorStatus || "Standby"} accent="text-emerald-300" />
-          <ToolChip icon={MapPinned} label="Latitude" value={`${metrics.latitude}° ${metrics.latHemisphere}`} accent="text-sky-300" />
-          <ToolChip icon={MapPinned} label="Longitude" value={`${metrics.longitude}° ${metrics.lonHemisphere}`} accent="text-sky-300" />
         </div>
       </div>
     </div>

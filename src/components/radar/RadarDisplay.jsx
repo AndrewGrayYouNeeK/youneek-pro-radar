@@ -475,7 +475,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         isLooping={isLooping}
       />
       {isLooping && loopFrames.length > 0 && (
-        <div className="absolute left-3 top-[30rem] z-[1000] rounded-2xl border border-white/10 bg-slate-950/82 px-3 py-2 text-xs font-medium text-slate-200 shadow-lg backdrop-blur-sm">
+        <div className="absolute left-3 bottom-24 z-[1000] rounded-2xl border border-white/10 bg-slate-950/78 px-3 py-2 text-xs font-medium text-slate-200 shadow-lg backdrop-blur-sm">
           Frame {loopFrameIndex + 1}/{loopFrames.length}
           <div className="mt-1 text-[11px] text-slate-200">{loopFrames[loopFrameIndex]?.typeLabel}</div>
           <div className="mt-1 text-[11px] text-slate-300">{loopFrames[loopFrameIndex]?.label}</div>
