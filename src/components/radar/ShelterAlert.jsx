@@ -21,14 +21,18 @@ export default function ShelterAlert({ activeTornadoWarning, activeTornadoWatch 
   if (!contacts.length) return null;
 
   const handleShelter = (messagePrefix = "⚠️ TORNADO WARNING") => {
+    const openSmsDraft = (phone, body) => {
+      const separator = /iPad|iPhone|iPod/.test(navigator.userAgent) ? "&" : "?";
+      window.location.href = `sms:${phone}${separator}body=${body}`;
+    };
+
     const send = (locationLine) => {
       const body = encodeURIComponent(
         `${messagePrefix} — I'm safe and sheltering.\n${locationLine}\n— sent via YouNeeK Pro Radar`
       );
       const uniquePhones = [...new Set(contacts.map((c) => c.phone).filter(Boolean))];
-      const recipients = uniquePhones.join(",");
-      if (!recipients) return;
-      window.location.href = `sms:${recipients}?body=${body}`;
+      if (!uniquePhones.length) return;
+      openSmsDraft(uniquePhones[0], body);
       setSent(true);
       if (sendTimerRef.current) window.clearTimeout(sendTimerRef.current);
       sendTimerRef.current = window.setTimeout(() => {
