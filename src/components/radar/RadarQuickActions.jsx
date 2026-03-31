@@ -21,15 +21,19 @@ export default function RadarQuickActions({
   isLooping,
 }) {
   return (
-    <div className="absolute left-3 top-28 z-[1000] flex w-[13rem] flex-col gap-2">
+    <div
+      className="absolute z-[1000]"
+      style={{ top: 'calc(0.75rem + env(safe-area-inset-top))', right: 'calc(3.75rem + env(safe-area-inset-right))' }}
+    >
       <button
         onClick={onToggleShow}
-        className="rounded-xl border border-white/10 bg-slate-950/88 px-3 py-2.5 text-sm font-semibold text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-900/90"
+        className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-900/80 text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90"
+        aria-label={show ? "Close tools menu" : "Open tools menu"}
       >
-        {show ? "Hide Tools" : "Show Tools"}
+        <span className="text-xl" aria-hidden="true">🧰</span>
       </button>
       {show && (
-        <div className="space-y-2 rounded-2xl border border-white/10 bg-slate-950/74 p-2 shadow-2xl backdrop-blur-xl">
+        <div className="mt-2 w-[min(14rem,calc(100vw-1.5rem))] space-y-2 rounded-2xl border border-white/10 bg-slate-950/74 p-2 shadow-2xl backdrop-blur-xl">
           <ActionButton icon={Radar} label="Hook Zone" onClick={onHookZone} />
           <ActionButton icon={Map} label="CONUS" onClick={onConus} />
           <ActionButton icon={Play} label={isLooping ? "Stop Loop" : "Start Loop"} onClick={onToggleLoop} />
