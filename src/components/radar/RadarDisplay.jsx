@@ -76,8 +76,15 @@ const fetchLatestRainViewerTileUrl = async () => {
   return getRainViewerTileUrl(latestPath);
 };
 const invalidateMapSize = (map) => {
-  requestAnimationFrame(() => map.invalidateSize());
-  setTimeout(() => map.invalidateSize(), 150);
+  requestAnimationFrame(() => {
+    if (!map || !map.getContainer?.() || !map._loaded) return;
+    map.invalidateSize({ pan: false, animate: false });
+  });
+
+  setTimeout(() => {
+    if (!map || !map.getContainer?.() || !map._loaded) return;
+    map.invalidateSize({ pan: false, animate: false });
+  }, 150);
 };
 const applyLeafletControlAccessibility = (container) => {
   const zoomInButton = container?.querySelector?.(".leaflet-control-zoom-in");
@@ -171,8 +178,10 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
       subdomains: "abcd", maxZoom: 20, crossOrigin: "anonymous"
     }).addTo(leafletMap.current);
-    baseLayer.once("load", () => setIsMapReady(true));
-    invalidateMapSize(leafletMap.current);
+    baseLayer.once("load", () => {
+      setIsMapReady(true);
+      invalidateMapSize(leafletMap.current);
+    });
     requestAnimationFrame(() => applyLeafletControlAccessibility(mapRef.current));
     return () => {
       if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
@@ -185,7 +194,11 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       loopLayersRef.current.forEach((l) => { if (leafletMap.current?.hasLayer(l)) leafletMap.current.removeLayer(l); });
       loopLayersRef.current = [];
       setIsMapReady(false);
-      if (leafletMap.current) { leafletMap.current.remove(); leafletMap.current = null; }
+      if (leafletMap.current) {
+        const mapInstance = leafletMap.current;
+        leafletMap.current = null;
+        mapInstance.remove();
+      }
     };
   }, [settings.station]);
 
