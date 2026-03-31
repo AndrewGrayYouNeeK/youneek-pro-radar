@@ -144,6 +144,11 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [isMapReady, setIsMapReady] = useState(false);
   const [showQuickControls, setShowQuickControls] = useState(false);
   const [inspector, setInspector] = useState({ active: false, lat: "--", lon: "--", bearing: "--", range: "--" });
+  const [stormReports, setStormReports] = useState([]);
+  const [isStale, setIsStale] = useState(false);
+  const stormMarkerGroupRef = useRef(null);
+  const lastRadarUpdateRef = useRef(Date.now());
+  const staleTimerRef = useRef(null);
 
   const activeProduct = useMemo(() => getRadarProduct(settings.radarProduct), [settings.radarProduct]);
   const mapCenter = leafletMap.current?.getCenter();
@@ -436,6 +441,92 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     };
   }, [isLooping, loopFrames]);
 
+  // ── Storm cell / LSR fetcher ────────────────────────────────────────────
+  useEffect(() => {
+    if (!isMapReady || !leafletMap.current) return;
+
+    const STORM_ICON = (type) => {
+      const colors = { TORNADO: '#ef4444', HAIL: '#3b82f6', WIND: '#f59e0b', TSTM: '#f97316' };
+      const emojis = { TORNADO: '🌪️', HAIL: '🌨️', WIND: '💨', TSTM: '⛈️' };
+      const color = colors[type] || '#94a3b8';
+      const emoji = emojis[type] || '⚡';
+      return L.divIcon({
+        className: '',
+        html: `<div style="
+          background:${color}22;
+          border:2px solid ${color};
+          border-radius:50%;
+          width:28px;height:28px;
+          display:flex;align-items:center;justify-content:center;
+          font-size:14px;
+          box-shadow:0 0 8px ${color}88;
+          cursor:pointer;
+        ">${emoji}</div>`,
+        iconSize: [28, 28],
+        iconAnchor: [14, 14],
+      });
+    };
+
+    const fetchStormReports = () => {
+      // NWS Local Storm Reports (LSR) via Iowa State Mesonet GeoJSON
+      fetch('https://mesonet.agron.iastate.edu/geojson/lsr.php?hours=3&wfo=all')
+        .then(r => r.json())
+        .then(data => {
+          if (!leafletMap.current) return;
+          // Clear old markers
+          if (stormMarkerGroupRef.current) {
+            leafletMap.current.removeLayer(stormMarkerGroupRef.current);
+          }
+          const group = L.layerGroup();
+          const reports = [];
+          (data?.features || []).forEach(feature => {
+            const props = feature?.properties || {};
+            const coords = feature?.geometry?.coordinates;
+            if (!coords) return;
+            const [lon, lat] = coords;
+            const type = (props.type || '').toUpperCase().includes('TORNADO') ? 'TORNADO'
+              : (props.type || '').toUpperCase().includes('HAIL') ? 'HAIL'
+              : (props.type || '').toUpperCase().includes('WIND') ? 'WIND'
+              : 'TSTM';
+            const marker = L.marker([lat, lon], { icon: STORM_ICON(type), zIndexOffset: 500 });
+            const time = props.valid ? new Date(props.valid).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
+            const mag = props.magnitude ? ` — ${props.magnitude}` : '';
+            marker.bindPopup(`<div style="font-family:sans-serif;min-width:160px">
+              <strong style="color:#f97316">${type}</strong>${mag}<br/>
+              <span style="font-size:11px;color:#888">${props.city || ''} ${props.state || ''}</span><br/>
+              <span style="font-size:11px;color:#aaa">${time}</span>
+            </div>`);
+            marker.addTo(group);
+            reports.push({ type, lat, lon, city: props.city, state: props.state, time });
+          });
+          group.addTo(leafletMap.current);
+          stormMarkerGroupRef.current = group;
+          setStormReports(reports);
+          // Mark radar as fresh
+          lastRadarUpdateRef.current = Date.now();
+          setIsStale(false);
+        })
+        .catch(() => {}); // silently ignore network errors
+    };
+
+    fetchStormReports();
+    const interval = setInterval(fetchStormReports, 5 * 60 * 1000);
+
+    // Stale data detector — flag if no update in 12 minutes
+    staleTimerRef.current = setInterval(() => {
+      const minutesSince = (Date.now() - lastRadarUpdateRef.current) / 60000;
+      setIsStale(minutesSince > 12);
+    }, 60 * 1000);
+
+    return () => {
+      clearInterval(interval);
+      if (staleTimerRef.current) clearInterval(staleTimerRef.current);
+      if (stormMarkerGroupRef.current && leafletMap.current) {
+        leafletMap.current.removeLayer(stormMarkerGroupRef.current);
+      }
+    };
+  }, [isMapReady]);
+
   const refreshWeatherData = () => {
     const tileUrl = settings.radarProduct === "reflectivity" ? getRadarTileUrl() : activeProduct.tileUrl;
     if (radarLayerRef.current?.setUrl) radarLayerRef.current.setUrl(tileUrl);
@@ -469,6 +560,17 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       {isRefreshing && (
         <div className="absolute left-1/2 z-[1200] -translate-x-1/2 rounded-full bg-slate-900/85 px-4 py-2 text-xs font-medium text-white shadow-lg backdrop-blur-sm" style={{ top: "calc(1rem + env(safe-area-inset-top))" }}>
           Refreshing radar...
+        </div>
+      )}
+      {isStale && (
+        <div className="absolute left-1/2 z-[1200] -translate-x-1/2 flex items-center gap-2 rounded-full border border-amber-500/40 bg-amber-950/90 px-4 py-2 text-xs font-semibold text-amber-300 shadow-lg backdrop-blur-sm" style={{ top: "calc(3.5rem + env(safe-area-inset-top))" }}>
+          <span className="inline-block h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+          Radar data may be stale — tap to refresh
+        </div>
+      )}
+      {stormReports.length > 0 && (
+        <div className="absolute z-[1000] flex items-center gap-1.5 rounded-full border border-orange-500/30 bg-slate-950/80 px-3 py-1.5 text-[11px] font-bold text-orange-300 shadow-lg backdrop-blur-sm" style={{ top: "calc(1rem + env(safe-area-inset-top))", right: "1rem" }}>
+          ⚡ {stormReports.length} storm report{stormReports.length !== 1 ? 's' : ''}
         </div>
       )}
       <RadarQuickActions
