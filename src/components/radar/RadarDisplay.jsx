@@ -11,7 +11,6 @@ import RadarInspectorPanel from "./RadarInspectorPanel";
 import RadarQuickActions from "./RadarQuickActions";
 import RadarStatusBar from "./RadarStatusBar";
 import RadarDataDock from "./RadarDataDock";
-import RadarChecklistPanel from "./RadarChecklistPanel";
 import { getRadarProduct } from "./radarProducts";
 import usePullToRefresh from "@/hooks/usePullToRefresh";
 import "leaflet/dist/leaflet.css";
@@ -163,13 +162,6 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
 
   const alertToggles = { tornado: showTornado, severe: showThunderstorm, flood: showFlood, winter: showWinter };
   const alertTogglesRef = useRef(alertToggles);
-  const checklistItems = [
-    { label: "Radar Feed", done: showNexrad },
-    { label: "Velocity Layer", done: showVelocityLocal },
-    { label: "Warning Stack", done: activeWarningsCount > 0 },
-    { label: "Range Rings", done: showRangeRings },
-    { label: "Loop Playback", done: isLooping },
-  ];
 
   useEffect(() => {
     if (leafletMap.current || !mapRef.current) return;
@@ -493,7 +485,6 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       />
       <ProLegend productLabel={activeProduct.label} />
       <RadarDataDock metrics={stormMetrics} productLabel={activeProduct.label} station={settings.station} />
-      <RadarChecklistPanel items={checklistItems} />
       <RadarInspectorPanel inspector={inspector} productLabel={activeProduct.label} />
       <button onClick={handleLocateMe} className="absolute z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700" style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))", right: "calc(1.25rem + env(safe-area-inset-right))" }} aria-label="Center radar on my location">
         <LocateFixed size={24} aria-hidden="true" />
