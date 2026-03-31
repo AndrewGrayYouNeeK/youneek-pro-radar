@@ -15,29 +15,40 @@ function loadContacts() {
 export default function ShelterAlert({ activeTornadoWarning, activeTornadoWatch }) {
   const [sent, setSent] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
+  const [currentContactIndex, setCurrentContactIndex] = useState(0);
   const sendTimerRef = useRef(null);
   const contacts = loadContacts();
 
   if (!contacts.length) return null;
 
   const handleShelter = (messagePrefix = "⚠️ TORNADO WARNING") => {
-    const openSmsDraft = (phone, body) => {
+    const uniquePhones = [...new Set(contacts.map((c) => c.phone).filter(Boolean))];
+    if (!uniquePhones.length) return;
+
+    const buildBody = (locationLine) =>
+      encodeURIComponent(
+        `${messagePrefix} — I'm safe and sheltering.\n${locationLine}\n— sent via YouNeeK Pro Radar`
+      );
+
+    const openNext = (phones, locationLine, index) => {
+      if (index >= phones.length) return;
       const separator = /iPad|iPhone|iPod/.test(navigator.userAgent) ? "&" : "?";
-      window.location.href = `sms:${phone}${separator}body=${body}`;
+      window.open(`sms:${phones[index]}${separator}body=${buildBody(locationLine)}`, '_blank');
+      setCurrentContactIndex(index + 1);
+      // Stagger each subsequent contact by 1.5 seconds so the user can send before the next opens
+      if (index + 1 < phones.length) {
+        setTimeout(() => openNext(phones, locationLine, index + 1), 1500);
+      }
     };
 
     const send = (locationLine) => {
-      const body = encodeURIComponent(
-        `${messagePrefix} — I'm safe and sheltering.\n${locationLine}\n— sent via YouNeeK Pro Radar`
-      );
-      const uniquePhones = [...new Set(contacts.map((c) => c.phone).filter(Boolean))];
-      if (!uniquePhones.length) return;
-      openSmsDraft(uniquePhones[0], body);
+      openNext(uniquePhones, locationLine, 0);
       setSent(true);
       if (sendTimerRef.current) window.clearTimeout(sendTimerRef.current);
       sendTimerRef.current = window.setTimeout(() => {
         setSent(false);
         setIsTesting(false);
+        setCurrentContactIndex(0);
       }, 8000);
     };
 
@@ -72,8 +83,15 @@ export default function ShelterAlert({ activeTornadoWarning, activeTornadoWatch 
             <div className="flex items-center gap-3">
               <div className="text-2xl">✅</div>
               <div>
-                <p className="text-sm font-bold text-emerald-300">Message sent to {contacts.length} contact{contacts.length !== 1 ? 's' : ''}</p>
-                <p className="text-xs text-emerald-400/70 mt-0.5">{isTesting ? 'Test drafts are opening one by one for your saved contacts.' : 'Message drafts are opening one by one for your contacts.'}</p>
+                <p className="text-sm font-bold text-emerald-300">
+                  Sending to {contacts.length} contact{contacts.length !== 1 ? 's' : ''}{' '}
+                  {contacts.length > 1 && currentContactIndex > 0 ? `(${currentContactIndex}/${contacts.length})` : ''}
+                </p>
+                <p className="text-xs text-emerald-400/70 mt-0.5">
+                  {isTesting
+                    ? 'Test drafts are opening one by one — send each as it opens.'
+                    : 'Message drafts are opening one by one — send each as it opens.'}
+                </p>
               </div>
             </div>
           </motion.div>
@@ -109,7 +127,7 @@ export default function ShelterAlert({ activeTornadoWarning, activeTornadoWatch 
                   onClick={() => handleShelter(activeTornadoWarning ? "⚠️ TORNADO WARNING" : "🟡 TORNADO WATCH")}
                   className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-bold text-slate-950 shadow-[0_0_30px_rgba(74,222,128,0.3)] transition-colors hover:bg-emerald-400 active:scale-[0.98]"
                 >
-                  {activeTornadoWarning ? "🏠 I'm Sheltering — Alert Contacts" : "🟡 Heads Up — Alert Contacts"}
+                  {activeTornadoWarning ? "🏠 I'm Sheltering — Alert All Contacts" : "🟡 Heads Up — Alert All Contacts"}
                 </button>
               )}
 
