@@ -19,7 +19,7 @@ export default function ShelterAlert({ activeTornadoWarning, activeTornadoWatch 
   const sendTimerRef = useRef(null);
   const contacts = loadContacts();
 
-  if (!contacts.length) return null;
+  if (!contacts.length || !activeTornadoWarning) return null;
 
   const handleShelter = (messagePrefix = '⚠️ TORNADO WARNING') => {
     const uniquePhones = [...new Set(contacts.map((c) => c.phone).filter(Boolean))];
