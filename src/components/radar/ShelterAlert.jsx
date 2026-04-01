@@ -129,16 +129,6 @@ export default function ShelterAlert({ activeTornadoWarning, activeTornadoWatch 
                 </button>
               )}
 
-              <button
-                aria-label="Test emergency text to all contacts"
-                onClick={() => {
-                  setIsTesting(true);
-                  handleShelter('🧪 TEST MESSAGE');
-                }}
-                className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/15 active:scale-[0.98]"
-              >
-                🧪 Test Emergency Text
-              </button>
             </div>
           </motion.div>
         )}
