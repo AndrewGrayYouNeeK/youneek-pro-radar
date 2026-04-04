@@ -1,4 +1,4 @@
-export default function LiveCompass({ bearing = 0 }) {
+export default function LiveCompass({ bearing = 0, followMode = false, onToggleFollow }) {
   const normalizedBearing = Number.isFinite(bearing) ? ((bearing % 360) + 360) % 360 : 0;
   const direction = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"][Math.round(normalizedBearing / 45) % 8];
 
@@ -23,6 +23,13 @@ export default function LiveCompass({ bearing = 0 }) {
           <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">Compass</div>
           <div className="mt-1 text-lg font-bold leading-none text-white">{Math.round(normalizedBearing)}°</div>
           <div className="mt-1 text-xs font-medium text-slate-300">{direction}</div>
+          <button
+            type="button"
+            onClick={onToggleFollow}
+            className={`mt-2 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-colors ${followMode ? "bg-cyan-500 text-slate-950" : "bg-white/10 text-slate-200 hover:bg-white/15"}`}
+          >
+            {followMode ? "Compass Follow On" : "Compass Follow Off"}
+          </button>
         </div>
       </div>
     </div>

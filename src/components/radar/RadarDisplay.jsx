@@ -145,6 +145,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [isMapReady, setIsMapReady] = useState(false);
   const [showQuickControls, setShowQuickControls] = useState(false);
   const [compassBearing, setCompassBearing] = useState(0);
+  const [compassFollowMode, setCompassFollowMode] = useState(false);
   const [inspector, setInspector] = useState({ active: false, lat: "--", lon: "--", bearing: "--", range: "--" });
 
   const activeProduct = useMemo(() => getRadarProduct(settings.radarProduct), [settings.radarProduct]);
@@ -240,6 +241,13 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       leafletMap.current?.off("zoom", updateCompass);
     };
   }, [settings.station, isMapReady]);
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+    mapRef.current.style.transform = compassFollowMode ? `rotate(${-compassBearing}deg)` : "rotate(0deg)";
+    mapRef.current.style.transformOrigin = "center center";
+    mapRef.current.style.transition = "transform 200ms linear";
+  }, [compassBearing, compassFollowMode]);
 
   useEffect(() => { setShowVelocityLocal(settings.showVelocity); }, [settings.showVelocity]);
   useEffect(() => { alertTogglesRef.current = alertToggles; }, [alertToggles]);
@@ -502,7 +510,11 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         onToggleLoop={handleLoopToggle}
         isLooping={isLooping}
       />
-      <LiveCompass bearing={compassBearing} />
+      <LiveCompass
+        bearing={compassBearing}
+        followMode={compassFollowMode}
+        onToggleFollow={() => setCompassFollowMode((value) => !value)}
+      />
       {isLooping && loopFrames.length > 0 && (
         <div className="absolute left-3 bottom-24 z-[1000] rounded-2xl border border-white/10 bg-slate-950/78 px-3 py-2 text-xs font-medium text-slate-200 shadow-lg backdrop-blur-sm">
           Frame {loopFrameIndex + 1}/{loopFrames.length}
