@@ -144,7 +144,8 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [activeTornadoWarning, setActiveTornadoWarning] = useState(true);
   const [activeTornadoWatch, setActiveTornadoWatch] = useState(false);
   const [isMapReady, setIsMapReady] = useState(false);
-  const [showQuickControls, setShowQuickControls] = useState(true);
+  const [showQuickControls, setShowQuickControls] = useState(false);
+  const [showCompass, setShowCompass] = useState(false);
   const [compassBearing, setCompassBearing] = useState(0);
   const [compassFollowMode, setCompassFollowMode] = useState(false);
   const [inspector, setInspector] = useState({ active: false, lat: "--", lon: "--", bearing: "--", range: "--" });
@@ -516,12 +517,16 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         onConus={handleConusView}
         onToggleLoop={handleLoopToggle}
         isLooping={isLooping}
+        showCompass={showCompass}
+        onToggleCompass={() => setShowCompass((value) => !value)}
       />
-      <LiveCompass
-        bearing={compassBearing}
-        followMode={compassFollowMode}
-        onToggleFollow={() => setCompassFollowMode((value) => !value)}
-      />
+      {showCompass && (
+        <LiveCompass
+          bearing={compassBearing}
+          followMode={compassFollowMode}
+          onToggleFollow={() => setCompassFollowMode((value) => !value)}
+        />
+      )}
       {isLooping && loopFrames.length > 0 && (
         <div className="absolute left-3 bottom-24 z-[1000] rounded-2xl border border-white/10 bg-slate-950/78 px-3 py-2 text-xs font-medium text-slate-200 shadow-lg backdrop-blur-sm">
           Frame {loopFrameIndex + 1}/{loopFrames.length}
