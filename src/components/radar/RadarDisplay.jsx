@@ -143,7 +143,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [activeTornadoWarning, setActiveTornadoWarning] = useState(true);
   const [activeTornadoWatch, setActiveTornadoWatch] = useState(false);
   const [isMapReady, setIsMapReady] = useState(false);
-  const [showQuickControls, setShowQuickControls] = useState(false);
+  const [showQuickControls, setShowQuickControls] = useState(true);
   const [compassBearing, setCompassBearing] = useState(0);
   const [compassFollowMode, setCompassFollowMode] = useState(false);
   const [inspector, setInspector] = useState({ active: false, lat: "--", lon: "--", bearing: "--", range: "--" });

@@ -25,13 +25,6 @@ export default function RadarQuickActions({
       className="absolute z-[1000]"
       style={{ top: 'calc(0.75rem + env(safe-area-inset-top))', right: 'calc(3.75rem + env(safe-area-inset-right))' }}
     >
-      <button
-        onClick={onToggleShow}
-        className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-900/80 text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90"
-        aria-label={show ? "Close tools menu" : "Open tools menu"}
-      >
-        <span className="text-xl" aria-hidden="true">🧰</span>
-      </button>
       {show && (
         <div className="mt-2 w-[min(14rem,calc(100vw-1.5rem))] space-y-2 rounded-2xl border border-white/10 bg-slate-950/74 p-2 shadow-2xl backdrop-blur-xl">
           <button
