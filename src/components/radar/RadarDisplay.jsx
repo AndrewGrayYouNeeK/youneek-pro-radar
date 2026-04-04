@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
 import { LocateFixed } from "lucide-react";
 import RadarLayersMenu from "./RadarLayersMenu";
+import LiveCompass from "./LiveCompass";
 import ShelterAlert from "./ShelterAlert";
 import StormAnalysisStrip from "./StormAnalysisStrip";
 import ProLegend from "./ProLegend";
@@ -143,6 +144,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [activeTornadoWatch, setActiveTornadoWatch] = useState(false);
   const [isMapReady, setIsMapReady] = useState(false);
   const [showQuickControls, setShowQuickControls] = useState(false);
+  const [compassBearing, setCompassBearing] = useState(0);
   const [inspector, setInspector] = useState({ active: false, lat: "--", lon: "--", bearing: "--", range: "--" });
 
   const activeProduct = useMemo(() => getRadarProduct(settings.radarProduct), [settings.radarProduct]);
@@ -216,6 +218,23 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   useEffect(() => {
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition((p) => setUserLocation({ lat: p.coords.latitude, lon: p.coords.longitude }));
+  }, []);
+
+  useEffect(() => {
+    if (!window.DeviceOrientationEvent) return;
+
+    const handleOrientation = (event) => {
+      if (typeof event.webkitCompassHeading === "number") {
+        setCompassBearing(event.webkitCompassHeading);
+        return;
+      }
+      if (typeof event.alpha === "number") {
+        setCompassBearing((360 - event.alpha) % 360);
+      }
+    };
+
+    window.addEventListener("deviceorientation", handleOrientation, true);
+    return () => window.removeEventListener("deviceorientation", handleOrientation, true);
   }, []);
 
   useEffect(() => { setShowVelocityLocal(settings.showVelocity); }, [settings.showVelocity]);
@@ -479,6 +498,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         onToggleLoop={handleLoopToggle}
         isLooping={isLooping}
       />
+      <LiveCompass bearing={compassBearing} />
       {isLooping && loopFrames.length > 0 && (
         <div className="absolute left-3 bottom-24 z-[1000] rounded-2xl border border-white/10 bg-slate-950/78 px-3 py-2 text-xs font-medium text-slate-200 shadow-lg backdrop-blur-sm">
           Frame {loopFrameIndex + 1}/{loopFrames.length}
