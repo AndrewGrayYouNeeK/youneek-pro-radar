@@ -130,6 +130,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const prevLoopLayerRef = useRef(null);
   const userLocationMarkerRef = useRef(null);
   const radarLoadStatsRef = useRef({ errors: 0, loaded: 0, usingFallback: false });
+  const compassHeadingRef = useRef(0);
 
   const [showVelocityLocal, setShowVelocityLocal] = useState(settings.showVelocity);
   const [showTornado, setShowTornado] = useState(true);
@@ -222,31 +223,37 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   }, []);
 
   useEffect(() => {
-    if (!leafletMap.current) return;
+    if (!window.DeviceOrientationEvent) return;
 
-    const updateCompass = () => {
-      const center = leafletMap.current.getCenter();
-      const station = STATION_COORDS[settings.station] || [37.8, -85.5];
-      const latDiff = center.lat - station[0];
-      const lonDiff = center.lng - station[1];
-      const heading = (Math.atan2(lonDiff, latDiff) * 180 / Math.PI + 360) % 360;
-      setCompassBearing(Math.round(heading));
+    const updateHeading = (nextHeading) => {
+      const normalizedHeading = ((nextHeading % 360) + 360) % 360;
+      const previousHeading = compassHeadingRef.current;
+      const delta = ((normalizedHeading - previousHeading + 540) % 360) - 180;
+      const smoothedHeading = (previousHeading + delta * 0.55 + 360) % 360;
+      compassHeadingRef.current = smoothedHeading;
+      setCompassBearing(Math.round(smoothedHeading));
     };
 
-    updateCompass();
-    leafletMap.current.on("move", updateCompass);
-    leafletMap.current.on("zoom", updateCompass);
-    return () => {
-      leafletMap.current?.off("move", updateCompass);
-      leafletMap.current?.off("zoom", updateCompass);
+    const handleOrientation = (event) => {
+      if (typeof event.webkitCompassHeading === "number") {
+        updateHeading(event.webkitCompassHeading);
+        return;
+      }
+
+      if (typeof event.alpha === "number") {
+        updateHeading(360 - event.alpha);
+      }
     };
-  }, [settings.station, isMapReady]);
+
+    window.addEventListener("deviceorientation", handleOrientation, true);
+    return () => window.removeEventListener("deviceorientation", handleOrientation, true);
+  }, []);
 
   useEffect(() => {
     if (!mapRef.current) return;
     mapRef.current.style.transform = compassFollowMode ? `rotate(${-compassBearing}deg)` : "rotate(0deg)";
     mapRef.current.style.transformOrigin = "center center";
-    mapRef.current.style.transition = "transform 200ms linear";
+    mapRef.current.style.transition = "transform 80ms linear";
   }, [compassBearing, compassFollowMode]);
 
   useEffect(() => { setShowVelocityLocal(settings.showVelocity); }, [settings.showVelocity]);
