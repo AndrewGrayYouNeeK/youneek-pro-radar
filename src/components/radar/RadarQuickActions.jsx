@@ -25,7 +25,7 @@ export default function RadarQuickActions({
   return (
     <div
       className="absolute z-[1000]"
-      style={{ top: 'calc(0.75rem + env(safe-area-inset-top))', right: 'calc(3.75rem + env(safe-area-inset-right))' }}
+      style={{ top: 'calc(5.5rem + env(safe-area-inset-top))', right: 'calc(3.75rem + env(safe-area-inset-right))' }}
     >
       <button
         onClick={onToggleShow}
