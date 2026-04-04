@@ -221,21 +221,25 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   }, []);
 
   useEffect(() => {
-    if (!window.DeviceOrientationEvent) return;
+    if (!leafletMap.current) return;
 
-    const handleOrientation = (event) => {
-      if (typeof event.webkitCompassHeading === "number") {
-        setCompassBearing(event.webkitCompassHeading);
-        return;
-      }
-      if (typeof event.alpha === "number") {
-        setCompassBearing((360 - event.alpha) % 360);
-      }
+    const updateCompass = () => {
+      const center = leafletMap.current.getCenter();
+      const station = STATION_COORDS[settings.station] || [37.8, -85.5];
+      const latDiff = center.lat - station[0];
+      const lonDiff = center.lng - station[1];
+      const heading = (Math.atan2(lonDiff, latDiff) * 180 / Math.PI + 360) % 360;
+      setCompassBearing(Math.round(heading));
     };
 
-    window.addEventListener("deviceorientation", handleOrientation, true);
-    return () => window.removeEventListener("deviceorientation", handleOrientation, true);
-  }, []);
+    updateCompass();
+    leafletMap.current.on("move", updateCompass);
+    leafletMap.current.on("zoom", updateCompass);
+    return () => {
+      leafletMap.current?.off("move", updateCompass);
+      leafletMap.current?.off("zoom", updateCompass);
+    };
+  }, [settings.station, isMapReady]);
 
   useEffect(() => { setShowVelocityLocal(settings.showVelocity); }, [settings.showVelocity]);
   useEffect(() => { alertTogglesRef.current = alertToggles; }, [alertToggles]);

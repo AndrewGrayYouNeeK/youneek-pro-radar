@@ -1,5 +1,5 @@
 export default function LiveCompass({ bearing = 0 }) {
-  const normalizedBearing = ((bearing % 360) + 360) % 360;
+  const normalizedBearing = Number.isFinite(bearing) ? ((bearing % 360) + 360) % 360 : 0;
   const direction = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"][Math.round(normalizedBearing / 45) % 8];
 
   return (
@@ -14,7 +14,7 @@ export default function LiveCompass({ bearing = 0 }) {
           <div className="absolute text-[10px] font-semibold text-slate-300" style={{ bottom: 4 }}>S</div>
           <div className="absolute text-[10px] font-semibold text-slate-300" style={{ left: 6 }}>W</div>
           <div
-            className="absolute h-6 w-1 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.6)] origin-bottom"
+            className="absolute h-6 w-1 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.6)] origin-bottom transition-transform duration-200"
             style={{ transform: `translateY(-6px) rotate(${normalizedBearing}deg)` }}
           />
           <div className="h-2.5 w-2.5 rounded-full bg-white" />
