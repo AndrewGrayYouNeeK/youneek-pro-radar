@@ -68,11 +68,7 @@ const getRainViewerTileUrl = (path) => {
   const normalizedPath = path.startsWith("/v2/radar/") ? path : `/v2/radar/${path}`;
   return `https://tilecache.rainviewer.com${normalizedPath}/256/{z}/{x}/{y}/2/1_1.png`;
 };
-const fetchLatestRainViewerTileUrl = async () => {
-  const data = await (await fetch("https://api.rainviewer.com/public/weather-maps.json")).json();
-  const latestPath = data?.radar?.past?.[data?.radar?.past?.length - 1]?.path;
-  return getRainViewerTileUrl(latestPath);
-};
+
 const invalidateMapSize = (map) => {
   requestAnimationFrame(() => {
     if (!map || !map.getContainer?.() || !map._loaded) return;
@@ -149,6 +145,8 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [compassBearing, setCompassBearing] = useState(0);
   const [compassFollowMode, setCompassFollowMode] = useState(false);
   const [inspector, setInspector] = useState({ active: false, lat: "--", lon: "--", bearing: "--", range: "--" });
+  const [locationError, setLocationError] = useState(null);
+  const locationErrorTimerRef = useRef(null);
 
   const activeProduct = useMemo(() => getRadarProduct(settings.radarProduct), [settings.radarProduct]);
   const mapCenter = leafletMap.current?.getCenter();
@@ -166,7 +164,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     warnings: activeWarningsCount,
     inspectorStatus: inspector.active ? "Tracking" : "Standby",
     stormMode: activeTornadoWarning ? "Tornado Warning" : activeTornadoWatch ? "Tornado Watch" : "Monitor",
-  }), [mapCenter, isLooping, activeWarningsCount, activeTornadoWarning, activeTornadoWatch]);
+  }), [mapCenter, isLooping, activeWarningsCount, activeTornadoWarning, activeTornadoWatch, inspector]);
 
   const alertToggles = { tornado: showTornado, severe: showThunderstorm, flood: showFlood, winter: showWinter };
   const alertTogglesRef = useRef(alertToggles);
@@ -197,6 +195,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
       if (loopTimerRef.current) clearTimeout(loopTimerRef.current);
       if (loopFadeRef.current) clearInterval(loopFadeRef.current);
+      if (locationErrorTimerRef.current) clearTimeout(locationErrorTimerRef.current);
       [radarLayerRef, velLayerRef, tornadoLayerRef, thunderLayerRef, floodLayerRef, winterLayerRef, userLocationMarkerRef, prevLoopLayerRef, loopLayerRef].forEach((r) => {
         if (r.current && leafletMap.current?.hasLayer(r.current)) leafletMap.current.removeLayer(r.current);
         r.current = null;
@@ -213,18 +212,12 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   }, [settings.station]);
 
   useEffect(() => {
-    if (!leafletMap.current) return;
-    const coords = STATION_COORDS[settings.station];
-    if (coords) leafletMap.current.setView(coords, leafletMap.current.getZoom());
-  }, [settings.station]);
-
-  useEffect(() => {
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition((p) => setUserLocation({ lat: p.coords.latitude, lon: p.coords.longitude }));
   }, []);
 
   useEffect(() => {
-    if (!window.DeviceOrientationEvent) return;
+    if (!showCompass || !window.DeviceOrientationEvent) return;
 
     const updateHeading = (nextHeading) => {
       const normalizedHeading = ((nextHeading % 360) + 360) % 360;
@@ -248,7 +241,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
 
     window.addEventListener("deviceorientation", handleOrientation, true);
     return () => window.removeEventListener("deviceorientation", handleOrientation, true);
-  }, []);
+  }, [showCompass]);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -260,21 +253,6 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   useEffect(() => { setShowVelocityLocal(settings.showVelocity); }, [settings.showVelocity]);
   useEffect(() => { alertTogglesRef.current = alertToggles; }, [alertToggles]);
 
-  useEffect(() => {
-    if (!document.getElementById("leaflet-velocity-css")) {
-      const link = document.createElement("link");
-      link.id = "leaflet-velocity-css";
-      link.rel = "stylesheet";
-      link.href = "https://cdn.jsdelivr.net/npm/leaflet-velocity@1.9.2/dist/leaflet-velocity.css";
-      document.head.appendChild(link);
-    }
-    if (!document.getElementById("leaflet-velocity-js")) {
-      const script = document.createElement("script");
-      script.id = "leaflet-velocity-js";
-      script.src = "https://cdn.jsdelivr.net/npm/leaflet-velocity@1.9.2/dist/leaflet-velocity.js";
-      document.head.appendChild(script);
-    }
-  }, []);
 
   useEffect(() => {
     if (!leafletMap.current) return;
@@ -443,7 +421,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     };
     leafletMap.current.on("mousemove", updateInspector);
     return () => leafletMap.current?.off("mousemove", updateInspector);
-  }, [leafletMap.current]);
+  }, [isMapReady]);
 
   useEffect(() => {
     if (!leafletMap.current || !isLooping || !loopFrames.length || !loopLayersRef.current.length) return;
@@ -481,8 +459,14 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     if (velLayerRef.current?.redraw) velLayerRef.current.redraw();
   };
   const { isRefreshing, pullToRefreshHandlers } = usePullToRefresh({ onRefresh: refreshWeatherData });
+  const showLocationError = (msg) => {
+    if (locationErrorTimerRef.current) clearTimeout(locationErrorTimerRef.current);
+    setLocationError(msg);
+    locationErrorTimerRef.current = setTimeout(() => setLocationError(null), 4000);
+  };
+
   const handleLocateMe = () => {
-    if (!navigator.geolocation) { alert("Browser won't let me find you—turn on location."); return; }
+    if (!navigator.geolocation) { showLocationError("Location services not supported."); return; }
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
@@ -491,7 +475,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         if (userLocationMarkerRef.current) leafletMap.current.removeLayer(userLocationMarkerRef.current);
         userLocationMarkerRef.current = L.marker([latitude, longitude]).addTo(leafletMap.current).bindPopup("You're here!").openPopup();
       },
-      () => alert("Couldn't get location—check permissions.")
+      () => showLocationError("Couldn't get location—check permissions.")
     );
   };
 
@@ -544,6 +528,11 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       <button onClick={handleLocateMe} className="absolute z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700" style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))", right: "calc(1.25rem + env(safe-area-inset-right))" }} aria-label="Center radar on my location">
         <LocateFixed size={24} aria-hidden="true" />
       </button>
+      {locationError && (
+        <div className="absolute z-[1001] rounded-xl bg-red-900/90 px-3 py-1.5 text-xs font-medium text-red-200 shadow-lg backdrop-blur-sm" style={{ bottom: "calc(7.5rem + env(safe-area-inset-bottom))", right: "calc(0.5rem + env(safe-area-inset-right))" }}>
+          {locationError}
+        </div>
+      )}
       <div ref={mapRef} className="absolute inset-0 h-full min-h-[400px] w-full" role="application" aria-label="Interactive weather radar" />
       <div style={{ position: "absolute", bottom: "10px", left: "10px", zIndex: 999, color: "rgba(255,255,255,0.35)", fontSize: "13px", fontWeight: "600", letterSpacing: "1px", pointerEvents: "none", userSelect: "none" }}>
         YouNeeK Pro Radar — by Andrew Gray

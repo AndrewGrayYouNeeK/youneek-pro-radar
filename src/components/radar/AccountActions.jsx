@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import {
   Drawer,

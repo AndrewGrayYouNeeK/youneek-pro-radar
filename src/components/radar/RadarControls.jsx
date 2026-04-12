@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { RefreshCw, Wifi, WifiOff, LocateFixed } from "lucide-react";
+import { Wifi, WifiOff } from "lucide-react";
 
 const THEMES = [
   { id: "green", label: "GRN", color: "bg-green-500" },

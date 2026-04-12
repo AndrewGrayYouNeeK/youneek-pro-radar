@@ -3,6 +3,7 @@ import { ChevronUp, Compass, Map, Play, Radar } from "lucide-react";
 function ActionButton({ icon: IconComponent, label, onClick }) {
   return (
     <button
+      type="button"
       onClick={onClick}
       className="flex w-full items-center gap-2 rounded-xl border border-white/10 bg-slate-950/82 px-3 py-2.5 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-900/90"
     >

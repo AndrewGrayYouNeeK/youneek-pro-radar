@@ -1,4 +1,3 @@
-import { Database, Gauge, MapPinned, ScanLine } from "lucide-react";
 
 function DockItem({ icon: Icon, label, value, accent = "text-cyan-300" }) {
   return (

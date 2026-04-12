@@ -86,15 +86,10 @@ export default function RadioPlayer() {
 
   useEffect(() => {
     if (!audioRef.current) return;
+    audioRef.current.pause();
+    setIsPlaying(false);
     audioRef.current.src = station.streamUrl;
-
-    if (isPlaying) {
-      const playPromise = audioRef.current.play();
-      if (playPromise?.then) {
-        playPromise.then(() => setIsPlaying(true));
-      }
-    }
-  }, [station, isPlaying]);
+  }, [station]);
 
   useEffect(() => {
     return () => {

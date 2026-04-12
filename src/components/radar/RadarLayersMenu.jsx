@@ -40,8 +40,7 @@ export default function RadarLayersMenu({
         onClick={() => setIsOpen((open) => !open)}
         className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-900/80 text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90"
         aria-label={isOpen ? "Close layers menu" : "Open layers menu"}
-        aria-description="Opens radar, warning, and radio controls"
-        aria-hidden="false"
+        title="Opens radar, warning, and radio controls"
       >
         <span className="text-xl" aria-hidden="true">🗂️</span>
       </button>
