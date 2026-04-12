@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronRight, Activity, Bell, Radio, Users } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 const SLIDES = [
   {

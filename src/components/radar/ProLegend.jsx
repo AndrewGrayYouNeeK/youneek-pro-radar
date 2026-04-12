@@ -1,4 +1,3 @@
-import { CloudRain, Tornado, Waves, Snowflake, Wind } from "lucide-react";
 
 function LegendItem({ icon: Icon, label, tone }) {
   return (

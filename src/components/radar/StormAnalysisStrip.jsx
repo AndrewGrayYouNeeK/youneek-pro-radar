@@ -1,4 +1,3 @@
-import { Activity, AlertTriangle, Compass, Orbit } from "lucide-react";
 
 function AnalysisPill({ icon: Icon, label, value, tone = "text-cyan-300" }) {
   return (

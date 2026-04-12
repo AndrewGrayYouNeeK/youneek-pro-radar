@@ -1,4 +1,3 @@
-import { Crosshair, Gauge, Navigation, ScanSearch, Radar, Timer, MapPinned, ShieldAlert, Expand, CircleDot } from "lucide-react";
 
 function ToolChip({ icon: IconComponent, label, value, accent = "text-cyan-300" }) {
   return (

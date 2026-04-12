@@ -1,4 +1,3 @@
-import { Crosshair, MapPinned, Ruler, ScanSearch } from "lucide-react";
 
 function InspectorRow({ icon: Icon, label, value, accent = "text-cyan-300" }) {
   return (

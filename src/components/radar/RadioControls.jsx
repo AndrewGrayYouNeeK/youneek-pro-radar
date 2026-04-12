@@ -51,16 +51,12 @@ export default function RadioControls({ showRadio, onShowRadioChange }) {
 
   useEffect(() => {
     if (!audioRef.current) return;
+    // Stop playback when station changes so the user explicitly presses play for the new stream
+    audioRef.current.pause();
+    setIsPlaying(false);
+    setIsBuffering(false);
     audioRef.current.src = station.streamUrl;
-
-    if (isPlaying) {
-      setIsBuffering(true);
-      const playPromise = audioRef.current.play();
-      if (playPromise?.then) {
-        playPromise.then(() => setIsPlaying(true)).finally(() => setIsBuffering(false));
-      }
-    }
-  }, [station, isPlaying]);
+  }, [station]);
 
   useEffect(() => {
     if (!showRadio && audioRef.current) {
