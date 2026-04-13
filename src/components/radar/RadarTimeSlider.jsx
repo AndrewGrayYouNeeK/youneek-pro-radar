@@ -53,7 +53,7 @@ export default function RadarTimeSlider({ frames, frameIndex, isPlaying, onSeek,
               className={`text-[9px] leading-none transition-colors ${
                 i === frameIndex ? "font-bold text-cyan-300" : "text-slate-500 hover:text-slate-300"
               }`}
-              aria-label={`Jump to frame ${i + 1}: ${f.label}`}
+              aria-label={`Jump to frame ${i + 1}${f.label ? `: ${f.label}` : ""}`}
             >
               {f.label ? f.label.replace(/ (AM|PM)/, "") : `F${i + 1}`}
             </button>

@@ -65,6 +65,8 @@ const STATION_COORDS = {
 const getCacheBust = () => Math.floor(Date.now() / 120000);
 const getRadarTileUrl = () => `${WORKER_BASE}/radar/{z}/{x}/{y}.png?_cb=${getCacheBust()}`;
 const getAlertUrl = (type) => `${WORKER_BASE}/alerts?type=${type}`;
+const TYPICAL_STORM_SPEED_MPH = 30;
+const getAlertUrl = (type) => `${WORKER_BASE}/alerts?type=${type}`;
 const getRainViewerTileUrl = (path) => {
   if (!path) return null;
   const normalizedPath = path.startsWith("/v2/radar/") ? path : `/v2/radar/${path}`;
@@ -392,7 +394,15 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         loadNext(0);
       });
   };
-  const handleLoopToggle = () => { if (isLooping) { setIsLooping(false); setIsLoopPlaying(true); clearLoopLayers(); return; } fetchLoopFrames(); };
+  const handleLoopToggle = () => {
+    if (isLooping) {
+      setIsLooping(false);
+      setIsLoopPlaying(true);
+      clearLoopLayers();
+      return;
+    }
+    fetchLoopFrames();
+  };
 
   const seekToFrame = useCallback((index) => {
     if (!loopLayersRef.current.length) return;
@@ -453,7 +463,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       const latDiff = userLocation.lat - point.lat;
       const lonDiff = userLocation.lon - point.lng;
       const bearing = (Math.atan2(lonDiff, latDiff) * 180 / Math.PI + 360) % 360;
-      const speedMph = 30; // typical severe storm speed
+      const speedMph = TYPICAL_STORM_SPEED_MPH;
       const etaMinutes = Math.round((distanceMi / speedMph) * 60);
       setStormData({ bearing: Math.round(bearing), distanceMi, speedMph, etaMinutes });
     };
