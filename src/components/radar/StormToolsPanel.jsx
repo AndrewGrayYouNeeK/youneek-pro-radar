@@ -40,7 +40,7 @@ function getStormInfo(storm, userLocation) {
       const avgLat = coords.reduce((s, [, lat]) => s + lat, 0) / coords.length;
       const distKm = haversineKm(avgLat, avgLon, userLocation.lat, userLocation.lon);
       distanceMi = Math.round(distKm * 0.621371);
-      if (speedMph) {
+      if (speedMph > 1) {
         etaMinutes = Math.max(1, Math.round((distanceMi / speedMph) * 60));
       }
     }

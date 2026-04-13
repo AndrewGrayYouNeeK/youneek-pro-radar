@@ -55,10 +55,10 @@ export default function RadarLayersMenu({
               <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Radar</div>
               <div className="flex gap-1.5">
                 {[
-                  { id: "reflectivity", label: "🌧️ Rain" },
-                  { id: "snow", label: "❄️ Snow" },
-                  { id: "temperature", label: "🌡️ Temp" },
-                ].map(({ id, label }) => (
+                  { id: "reflectivity", label: "Rain", emoji: "🌧️" },
+                  { id: "snow", label: "Snow", emoji: "❄️" },
+                  { id: "temperature", label: "Temp", emoji: "🌡️" },
+                ].map(({ id, label, emoji }) => (
                   <button
                     key={id}
                     type="button"
@@ -71,7 +71,7 @@ export default function RadarLayersMenu({
                     aria-pressed={radarProduct === id}
                     aria-label={`Switch to ${label} layer`}
                   >
-                    {label}
+                    <span aria-hidden="true">{emoji} </span>{label}
                   </button>
                 ))}
               </div>
