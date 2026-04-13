@@ -1,5 +1,7 @@
 import { Clock, Navigation, Wind, X, Zap } from "lucide-react";
 
+const STORM_SPEED_HINT_MPH = 30;
+
 function ToolChip({ icon: IconComponent, label, value, accent = "text-cyan-300" }) {
   return (
     <div className="rounded-2xl border border-cyan-400/15 bg-slate-950/82 px-3.5 py-3 shadow-[0_10px_30px_rgba(2,6,23,0.45)] backdrop-blur-md">
@@ -58,7 +60,7 @@ export default function StormToolsPanel({ stormTrack, onDismiss }) {
         </div>
       )}
       <div className="text-[10px] text-slate-500">
-        Tap any storm cell on the radar to track it. ETA assumes ~30 mph storm motion.
+        Tap any storm cell on the radar to track it. ETA assumes ~{STORM_SPEED_HINT_MPH} mph storm motion.
       </div>
     </div>
   );

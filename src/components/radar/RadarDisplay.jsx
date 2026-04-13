@@ -64,6 +64,7 @@ const STATION_COORDS = {
 
 const getCacheBust = () => Math.floor(Date.now() / 120000);
 const getRadarTileUrl = () => `${WORKER_BASE}/radar/{z}/{x}/{y}.png?_cb=${getCacheBust()}`;
+const ASSUMED_STORM_SPEED_MPH = 30;
 const getAlertUrl = (type) => `${WORKER_BASE}/alerts?type=${type}`;
 const getRainViewerTileUrl = (path) => {
   if (!path) return null;
@@ -438,7 +439,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       const latDiff = lat - userLocation.lat;
       const lonDiff = lng - userLocation.lon;
       const bearing = Math.round((Math.atan2(lonDiff, latDiff) * 180 / Math.PI + 360) % 360);
-      const etaMin = Math.max(1, Math.round((distanceMi / 30) * 60));
+      const etaMin = Math.max(1, Math.round((distanceMi / ASSUMED_STORM_SPEED_MPH) * 60));
       setStormTrack({ bearing, distanceMi, etaMin, lat: lat.toFixed(2), lon: lng.toFixed(2) });
     };
     leafletMap.current.on("click", handleMapClick);
