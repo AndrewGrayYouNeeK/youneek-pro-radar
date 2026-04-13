@@ -22,6 +22,9 @@ export default function RadarQuickActions({
   isLooping,
   showCompass,
   onToggleCompass,
+  showDataDock,
+  onToggleDataDock,
+  showHookZones,
 }) {
   return (
     <div
@@ -40,7 +43,8 @@ export default function RadarQuickActions({
             <ChevronUp className="h-4 w-4" aria-hidden="true" />
           </button>
           <ActionButton icon={Compass} label={showCompass ? "Hide Compass" : "Show Compass"} onClick={onToggleCompass} />
-          <ActionButton icon={Radar} label="Hook Zone" onClick={onHookZone} />
+          <ActionButton icon={Radar} label={showHookZones ? "Hide Hook Zones" : "Show Hook Zones"} onClick={onHookZone} />
+          <ActionButton icon={Map} label={showDataDock ? "Hide Data Panel" : "Show Data Panel"} onClick={onToggleDataDock} />
           <ActionButton icon={Map} label="CONUS" onClick={onConus} />
           <ActionButton icon={Play} label={isLooping ? "Stop Loop" : "Start Loop"} onClick={onToggleLoop} />
         </div>
