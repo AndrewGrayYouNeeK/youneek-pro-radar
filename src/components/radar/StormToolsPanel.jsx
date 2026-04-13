@@ -31,7 +31,7 @@ export default function StormToolsPanel({ stormData, onClose }) {
   return (
     <div
       className="absolute left-3 right-3 z-[1050]"
-      style={{ top: "calc(5.5rem + env(safe-area-inset-top))" }}
+      style={{ bottom: "calc(11rem + env(safe-area-inset-bottom))" }}
       role="dialog"
       aria-label="Storm tracking panel"
     >

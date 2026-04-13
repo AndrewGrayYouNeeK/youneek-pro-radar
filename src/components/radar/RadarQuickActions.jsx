@@ -26,18 +26,12 @@ export default function RadarQuickActions({
   return (
     <div
       className="absolute z-[1000]"
-      style={{ top: 'calc(5.5rem + env(safe-area-inset-top))', right: 'calc(3.75rem + env(safe-area-inset-right))' }}
+      style={{ bottom: 'calc(10rem + env(safe-area-inset-bottom))', right: 'calc(1.25rem + env(safe-area-inset-right))' }}
     >
-      <button
-        onClick={onToggleShow}
-        className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-900/80 text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90"
-        aria-label={show ? "Close tools menu" : "Open tools menu"}
-      >
-        <span className="text-xl" aria-hidden="true">🧰</span>
-      </button>
       {show && (
-        <div className="mt-2 w-[min(14rem,calc(100vw-1.5rem))] space-y-2 rounded-2xl border border-white/10 bg-slate-950/74 p-2 shadow-2xl backdrop-blur-xl">
+        <div className="absolute bottom-full mb-2 right-0 w-[min(14rem,calc(100vw-1.5rem))] space-y-2 rounded-2xl border border-white/10 bg-slate-950/90 p-2 shadow-2xl backdrop-blur-xl">
           <button
+            type="button"
             onClick={onToggleShow}
             className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-300 transition-colors hover:bg-white/10"
             aria-label="Hide toolbox"
@@ -51,6 +45,13 @@ export default function RadarQuickActions({
           <ActionButton icon={Play} label={isLooping ? "Stop Loop" : "Start Loop"} onClick={onToggleLoop} />
         </div>
       )}
+      <button
+        onClick={onToggleShow}
+        className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-900/80 text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90"
+        aria-label={show ? "Close tools menu" : "Open tools menu"}
+      >
+        <span className="text-xl" aria-hidden="true">🧰</span>
+      </button>
     </div>
   );
 }

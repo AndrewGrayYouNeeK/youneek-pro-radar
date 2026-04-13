@@ -24,7 +24,7 @@ export default function ProLegend({ productLabel }) {
   return (
     <div
       className="pointer-events-none absolute z-[1000] flex flex-col gap-0.5"
-      style={{ bottom: "calc(14.5rem + env(safe-area-inset-bottom))", left: "0.75rem" }}
+      style={{ bottom: "calc(14.5rem + env(safe-area-inset-bottom))", right: "0.75rem" }}
       aria-label="Radar color legend"
     >
       <div className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
