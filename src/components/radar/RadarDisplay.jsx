@@ -9,6 +9,8 @@ import ProLegend from "./ProLegend";
 import RadarInspectorPanel from "./RadarInspectorPanel";
 import RadarQuickActions from "./RadarQuickActions";
 import RadarDataDock from "./RadarDataDock";
+import RadarLoopSlider from "./RadarLoopSlider";
+import StormToolsPanel from "./StormToolsPanel";
 import { getRadarProduct } from "./radarProducts";
 import usePullToRefresh from "@/hooks/usePullToRefresh";
 import "leaflet/dist/leaflet.css";
@@ -146,6 +148,9 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [compassFollowMode, setCompassFollowMode] = useState(false);
   const [inspector, setInspector] = useState({ active: false, lat: "--", lon: "--", bearing: "--", range: "--" });
   const [locationError, setLocationError] = useState(null);
+  const [stormTrack, setStormTrack] = useState(null);
+  const [loopPaused, setLoopPaused] = useState(false);
+  const loopPausedRef = useRef(false);
   const locationErrorTimerRef = useRef(null);
 
   const activeProduct = useMemo(() => getRadarProduct(settings.radarProduct), [settings.radarProduct]);
@@ -424,10 +429,31 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   }, [isMapReady]);
 
   useEffect(() => {
+    if (!isMapReady || !leafletMap.current) return;
+    const handleMapClick = (event) => {
+      const { lat, lng } = event.latlng;
+      if (!userLocation) return;
+      const distanceKm = haversineKm(userLocation.lat, userLocation.lon, lat, lng);
+      const distanceMi = distanceKm * 0.621371;
+      const latDiff = lat - userLocation.lat;
+      const lonDiff = lng - userLocation.lon;
+      const bearing = Math.round((Math.atan2(lonDiff, latDiff) * 180 / Math.PI + 360) % 360);
+      const etaMin = Math.max(1, Math.round((distanceMi / 30) * 60));
+      setStormTrack({ bearing, distanceMi, etaMin, lat: lat.toFixed(2), lon: lng.toFixed(2) });
+    };
+    leafletMap.current.on("click", handleMapClick);
+    return () => leafletMap.current?.off("click", handleMapClick);
+  }, [isMapReady, userLocation]);
+
+  useEffect(() => {
     if (!leafletMap.current || !isLooping || !loopFrames.length || !loopLayersRef.current.length) return;
     if (radarLayerRef.current?.setOpacity) radarLayerRef.current.setOpacity(0);
     if (velLayerRef.current?.setOpacity) velLayerRef.current.setOpacity(0);
     const animateToNextFrame = () => {
+      if (loopPausedRef.current) {
+        loopTimerRef.current = setTimeout(animateToNextFrame, 300);
+        return;
+      }
       const currentIndex = loopIndexRef.current;
       const nextIndex = (currentIndex + 1) % loopLayersRef.current.length;
       const outgoing = loopLayersRef.current[currentIndex];
@@ -457,6 +483,18 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     const tileUrl = settings.radarProduct === "reflectivity" ? getRadarTileUrl() : activeProduct.tileUrl;
     if (radarLayerRef.current?.setUrl) radarLayerRef.current.setUrl(tileUrl);
     if (velLayerRef.current?.redraw) velLayerRef.current.redraw();
+  };
+  const handleLoopSliderChange = (index) => {
+    if (!loopLayersRef.current.length) return;
+    const clampedIndex = Math.max(0, Math.min(index, loopLayersRef.current.length - 1));
+    loopLayersRef.current.forEach((l, i) => l.setOpacity(i === clampedIndex ? 0.7 : 0));
+    loopIndexRef.current = clampedIndex;
+    setLoopFrameIndex(clampedIndex);
+  };
+  const handleLoopTogglePause = () => {
+    const next = !loopPaused;
+    loopPausedRef.current = next;
+    setLoopPaused(next);
   };
   const { isRefreshing, pullToRefreshHandlers } = usePullToRefresh({ onRefresh: refreshWeatherData });
   const showLocationError = (msg) => {
@@ -512,12 +550,15 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         />
       )}
       {isLooping && loopFrames.length > 0 && (
-        <div className="absolute left-3 bottom-24 z-[1000] rounded-2xl border border-white/10 bg-slate-950/78 px-3 py-2 text-xs font-medium text-slate-200 shadow-lg backdrop-blur-sm">
-          Frame {loopFrameIndex + 1}/{loopFrames.length}
-          <div className="mt-1 text-[11px] text-slate-200">{loopFrames[loopFrameIndex]?.typeLabel}</div>
-          <div className="mt-1 text-[11px] text-slate-300">{loopFrames[loopFrameIndex]?.label}</div>
-        </div>
+        <RadarLoopSlider
+          frames={loopFrames}
+          frameIndex={loopFrameIndex}
+          isPlaying={!loopPaused}
+          onFrameChange={handleLoopSliderChange}
+          onTogglePlay={handleLoopTogglePause}
+        />
       )}
+      <StormToolsPanel stormTrack={stormTrack} onDismiss={() => setStormTrack(null)} />
       <RadarLayersMenu showNexrad={showNexrad} showVelocity={showVelocityLocal} showRadio={showRadio} nexradStation={settings.station} radarProduct={settings.radarProduct} alertToggles={alertToggles} onShowNexradChange={handleShowNexradChange} onShowVelocityChange={handleShowVelocityChange} onShowRadioChange={onToggleRadio} onAlertToggleChange={handleAlertToggleChange} onRadarProductChange={handleRadarProductChange} />
       <>
         <StormAnalysisStrip metrics={stormMetrics} />

@@ -47,6 +47,22 @@ export const RADAR_PRODUCTS = [
     opacity: 0.66,
     maxNativeZoom: 12,
   },
+  {
+    id: "snow",
+    label: "Hydrometeor Type",
+    description: "Precipitation type — rain, snow, hail, ice",
+    tileUrl: "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::USCOMP-N0H-0/{z}/{x}/{y}.png",
+    opacity: 0.72,
+    maxNativeZoom: 12,
+  },
+  {
+    id: "temperature",
+    label: "Surface Temperature",
+    description: "IEMRE surface temperature analysis",
+    tileUrl: "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/iemre::daily_high_tmpf/{z}/{x}/{y}.png",
+    opacity: 0.65,
+    maxNativeZoom: 8,
+  },
 ];
 
 export function getRadarProduct(productId) {
