@@ -1,5 +1,5 @@
 
-import { Compass, MapPin, Navigation, Ruler } from "lucide-react";
+import { Compass, MapPin, Ruler } from "lucide-react";
 
 function InspectorRow({ icon: Icon, label, value, accent = "text-cyan-300" }) {
   return (

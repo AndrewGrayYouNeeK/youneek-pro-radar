@@ -66,7 +66,6 @@ const getCacheBust = () => Math.floor(Date.now() / 120000);
 const getRadarTileUrl = () => `${WORKER_BASE}/radar/{z}/{x}/{y}.png?_cb=${getCacheBust()}`;
 const getAlertUrl = (type) => `${WORKER_BASE}/alerts?type=${type}`;
 const TYPICAL_STORM_SPEED_MPH = 30;
-const getAlertUrl = (type) => `${WORKER_BASE}/alerts?type=${type}`;
 const getRainViewerTileUrl = (path) => {
   if (!path) return null;
   const normalizedPath = path.startsWith("/v2/radar/") ? path : `/v2/radar/${path}`;
@@ -564,9 +563,6 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
           onToggleFollow={() => setCompassFollowMode((value) => !value)}
         />
       )}
-      {stormData && (
-        <StormToolsPanel stormData={stormData} onClose={() => setStormData(null)} />
-      )}
       {isLooping && loopFrames.length > 0 && (
         <RadarTimeSlider
           frames={loopFrames}
@@ -576,14 +572,33 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
           onTogglePlay={handleLoopPlayToggle}
         />
       )}
-      <RadarLayersMenu showNexrad={showNexrad} showVelocity={showVelocityLocal} showRadio={showRadio} nexradStation={settings.station} radarProduct={settings.radarProduct} alertToggles={alertToggles} onShowNexradChange={handleShowNexradChange} onShowVelocityChange={handleShowVelocityChange} onShowRadioChange={onToggleRadio} onAlertToggleChange={handleAlertToggleChange} onRadarProductChange={handleRadarProductChange} />
-      <>
-        <StormAnalysisStrip metrics={stormMetrics} />
-        <ProLegend productLabel={activeProduct.label} />
+      <RadarLayersMenu
+        showNexrad={showNexrad}
+        showVelocity={showVelocityLocal}
+        showRadio={showRadio}
+        nexradStation={settings.station}
+        radarProduct={settings.radarProduct}
+        alertToggles={alertToggles}
+        onShowNexradChange={handleShowNexradChange}
+        onShowVelocityChange={handleShowVelocityChange}
+        onShowRadioChange={onToggleRadio}
+        onAlertToggleChange={handleAlertToggleChange}
+        onRadarProductChange={handleRadarProductChange}
+      />
+      <StormAnalysisStrip metrics={stormMetrics} />
+      <ProLegend productLabel={activeProduct.label} />
+      {stormData ? (
+        <StormToolsPanel stormData={stormData} onClose={() => setStormData(null)} />
+      ) : (
         <RadarDataDock metrics={stormMetrics} productLabel={activeProduct.label} station={settings.station} />
-        <RadarInspectorPanel inspector={inspector} productLabel={activeProduct.label} />
-      </>
-      <button onClick={handleLocateMe} className="absolute z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700" style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))", right: "calc(1.25rem + env(safe-area-inset-right))" }} aria-label="Center radar on my location">
+      )}
+      <RadarInspectorPanel inspector={inspector} productLabel={activeProduct.label} />
+      <button
+        onClick={handleLocateMe}
+        className="absolute z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700"
+        style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))", right: "calc(1.25rem + env(safe-area-inset-right))" }}
+        aria-label="Center radar on my location"
+      >
         <LocateFixed size={24} aria-hidden="true" />
       </button>
       {locationError && (

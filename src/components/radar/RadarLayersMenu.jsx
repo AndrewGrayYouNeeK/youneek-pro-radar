@@ -89,12 +89,14 @@ export default function RadarLayersMenu({
                 onCheckedChange={onShowNexradChange}
                 ariaLabel="Toggle live NEXRAD radar layer"
               />
-              <ToggleRow
-                label="🌀 Velocity"
-                checked={showVelocity}
-                onCheckedChange={onShowVelocityChange}
-                ariaLabel="Switch to velocity mode"
-              />
+              {showNexrad && (
+                <ToggleRow
+                  label="🌀 Velocity"
+                  checked={showVelocity}
+                  onCheckedChange={onShowVelocityChange}
+                  ariaLabel="Switch to velocity mode"
+                />
+              )}
               <MobileSelect
                 label="Radar Product"
                 value={radarProduct}
