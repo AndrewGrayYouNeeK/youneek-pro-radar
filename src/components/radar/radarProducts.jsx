@@ -16,6 +16,22 @@ export const RADAR_PRODUCTS = [
     maxNativeZoom: 12,
   },
   {
+    id: "snow",
+    label: "Snow / Ice",
+    description: "Dual-pol correlation — distinguishes ice and snow from rain",
+    tileUrl: "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::USCOMP-N0C-0/{z}/{x}/{y}.png",
+    opacity: 0.68,
+    maxNativeZoom: 12,
+  },
+  {
+    id: "temperature",
+    label: "Temperature",
+    description: "Real-time surface temperature analysis (°F)",
+    tileUrl: "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/iemre_hourly::tmpf_avg/{z}/{x}/{y}.png",
+    opacity: 0.65,
+    maxNativeZoom: 8,
+  },
+  {
     id: "correlation",
     label: "Correlation Coefficient",
     description: "Debris and hydrometeor structure look",
