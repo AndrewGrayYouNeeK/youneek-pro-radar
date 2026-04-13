@@ -53,6 +53,28 @@ export default function RadarLayersMenu({
           <div className="space-y-3">
             <div className="space-y-2 rounded-xl border border-white/10 bg-white/5 p-3">
               <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Radar</div>
+              <div className="flex gap-1.5">
+                {[
+                  { id: "reflectivity", label: "🌧️ Rain" },
+                  { id: "snow", label: "❄️ Snow" },
+                  { id: "temperature", label: "🌡️ Temp" },
+                ].map(({ id, label }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => onRadarProductChange(id)}
+                    className={`flex-1 rounded-xl border px-2 py-1.5 text-[11px] font-semibold transition-colors ${
+                      radarProduct === id
+                        ? "border-cyan-400/50 bg-cyan-500/20 text-cyan-300"
+                        : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
+                    }`}
+                    aria-pressed={radarProduct === id}
+                    aria-label={`Switch to ${label} layer`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
               <ToggleRow
                 label="📡 Live NEXRAD"
                 checked={showNexrad}

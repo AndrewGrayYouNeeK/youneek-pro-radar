@@ -47,6 +47,22 @@ export const RADAR_PRODUCTS = [
     opacity: 0.66,
     maxNativeZoom: 12,
   },
+  {
+    id: "snow",
+    label: "Snow",
+    description: "Estimated snow accumulation overlay",
+    tileUrl: "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/mrms::conus-Snow1HourAccum-0/{z}/{x}/{y}.png",
+    opacity: 0.70,
+    maxNativeZoom: 8,
+  },
+  {
+    id: "temperature",
+    label: "Temperature",
+    description: "Surface temperature analysis",
+    tileUrl: "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/hrrr::conus-tmp2m-0/{z}/{x}/{y}.png",
+    opacity: 0.60,
+    maxNativeZoom: 8,
+  },
 ];
 
 export function getRadarProduct(productId) {

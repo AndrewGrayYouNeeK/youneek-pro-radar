@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
-import { LocateFixed } from "lucide-react";
+import { LocateFixed, Pause, Play } from "lucide-react";
 import RadarLayersMenu from "./RadarLayersMenu";
 import LiveCompass from "./LiveCompass";
 import ShelterAlert from "./ShelterAlert";
@@ -9,8 +9,10 @@ import ProLegend from "./ProLegend";
 import RadarInspectorPanel from "./RadarInspectorPanel";
 import RadarQuickActions from "./RadarQuickActions";
 import RadarDataDock from "./RadarDataDock";
+import StormToolsPanel from "./StormToolsPanel";
 import { getRadarProduct } from "./radarProducts";
 import usePullToRefresh from "@/hooks/usePullToRefresh";
+import { Slider } from "@/components/ui/slider";
 import "leaflet/dist/leaflet.css";
 
 delete L.Icon.Default.prototype._getIconUrl;
@@ -146,6 +148,8 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [compassFollowMode, setCompassFollowMode] = useState(false);
   const [inspector, setInspector] = useState({ active: false, lat: "--", lon: "--", bearing: "--", range: "--" });
   const [locationError, setLocationError] = useState(null);
+  const [isLoopPlaying, setIsLoopPlaying] = useState(true);
+  const [selectedStorm, setSelectedStorm] = useState(null);
   const locationErrorTimerRef = useRef(null);
 
   const activeProduct = useMemo(() => getRadarProduct(settings.radarProduct), [settings.radarProduct]);
@@ -287,7 +291,10 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
           }
           if (!alertTogglesRef.current[toggleKey]) return;
           layerRef.current = L.geoJSON(data, {
-            style: { color, weight: 2, opacity: 0.95, fillColor: color, fillOpacity: 0.18 }
+            style: { color, weight: 2, opacity: 0.95, fillColor: color, fillOpacity: 0.18 },
+            onEachFeature: (feature, layer) => {
+              layer.on("click", () => setSelectedStorm(feature));
+            },
           }).addTo(leafletMap.current);
         });
     };
@@ -378,6 +385,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
             loopLayerRef.current = layers[0] || null; prevLoopLayerRef.current = null;
             if (radarLayerRef.current?.setOpacity) radarLayerRef.current.setOpacity(0);
             if (velLayerRef.current?.setOpacity) velLayerRef.current.setOpacity(0);
+            setIsLoopPlaying(true);
             setIsLooping(true); return;
           }
           const layer = L.tileLayer(getRainViewerTileUrl(frames[index].path), { opacity: 0, maxZoom: 16, maxNativeZoom: 12, crossOrigin: "anonymous", keepBuffer: 1 });
@@ -388,7 +396,17 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         loadNext(0);
       });
   };
-  const handleLoopToggle = () => { if (isLooping) { setIsLooping(false); clearLoopLayers(); return; } fetchLoopFrames(); };
+  const handleLoopToggle = () => { if (isLooping) { setIsLooping(false); setIsLoopPlaying(true); clearLoopLayers(); return; } fetchLoopFrames(); };
+  const handleLoopFrameChange = (newIndex) => {
+    if (!isLooping || !loopLayersRef.current.length) return;
+    if (loopTimerRef.current) { clearTimeout(loopTimerRef.current); loopTimerRef.current = null; }
+    if (loopFadeRef.current) { clearInterval(loopFadeRef.current); loopFadeRef.current = null; }
+    loopLayersRef.current.forEach((l, i) => l.setOpacity(i === newIndex ? 0.7 : 0));
+    loopIndexRef.current = newIndex;
+    setLoopFrameIndex(newIndex);
+    setIsLoopPlaying(false);
+  };
+  const handleLoopPlayPause = () => { setIsLoopPlaying((prev) => !prev); };
   const handleShowNexradChange = (value) => onSettingsChange({ ...settings, showNexrad: value });
   const handleShowVelocityChange = (value) => { setShowVelocityLocal(value); onSettingsChange({ ...settings, showVelocity: value }); };
   const handleRadarProductChange = (value) => {
@@ -424,7 +442,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   }, [isMapReady]);
 
   useEffect(() => {
-    if (!leafletMap.current || !isLooping || !loopFrames.length || !loopLayersRef.current.length) return;
+    if (!leafletMap.current || !isLooping || !isLoopPlaying || !loopFrames.length || !loopLayersRef.current.length) return;
     if (radarLayerRef.current?.setOpacity) radarLayerRef.current.setOpacity(0);
     if (velLayerRef.current?.setOpacity) velLayerRef.current.setOpacity(0);
     const animateToNextFrame = () => {
@@ -451,7 +469,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       if (loopTimerRef.current) { clearTimeout(loopTimerRef.current); loopTimerRef.current = null; }
       if (loopFadeRef.current) { clearInterval(loopFadeRef.current); loopFadeRef.current = null; }
     };
-  }, [isLooping, loopFrames]);
+  }, [isLooping, isLoopPlaying, loopFrames]);
 
   const refreshWeatherData = () => {
     const tileUrl = settings.radarProduct === "reflectivity" ? getRadarTileUrl() : activeProduct.tileUrl;
@@ -512,18 +530,50 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         />
       )}
       {isLooping && loopFrames.length > 0 && (
-        <div className="absolute left-3 bottom-24 z-[1000] rounded-2xl border border-white/10 bg-slate-950/78 px-3 py-2 text-xs font-medium text-slate-200 shadow-lg backdrop-blur-sm">
-          Frame {loopFrameIndex + 1}/{loopFrames.length}
-          <div className="mt-1 text-[11px] text-slate-200">{loopFrames[loopFrameIndex]?.typeLabel}</div>
-          <div className="mt-1 text-[11px] text-slate-300">{loopFrames[loopFrameIndex]?.label}</div>
+        <div
+          className="absolute left-3 z-[1000] w-[min(16rem,calc(100vw-5rem))] rounded-2xl border border-white/10 bg-slate-950/85 p-3 shadow-xl backdrop-blur-md"
+          style={{ bottom: "calc(6.25rem + env(safe-area-inset-bottom))" }}
+        >
+          <div className="mb-2 flex items-center justify-between">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Past Radar</div>
+            <div className="text-xs font-medium text-slate-300">{loopFrames[loopFrameIndex]?.label}</div>
+          </div>
+          <Slider
+            min={0}
+            max={loopFrames.length - 1}
+            step={1}
+            value={[loopFrameIndex]}
+            onValueChange={([index]) => handleLoopFrameChange(index)}
+            className="mb-2.5"
+            aria-label="Past radar timeline"
+          />
+          <div className="flex items-center justify-between">
+            <div className="text-[11px] text-slate-400">
+              {loopFrameIndex + 1} / {loopFrames.length} frames
+            </div>
+            <button
+              type="button"
+              onClick={handleLoopPlayPause}
+              className="flex items-center gap-1 rounded-lg bg-cyan-600/20 px-2.5 py-1 text-[11px] font-semibold text-cyan-300 hover:bg-cyan-600/30"
+              aria-label={isLoopPlaying ? "Pause radar loop" : "Play radar loop"}
+            >
+              {isLoopPlaying
+                ? <><Pause className="h-3 w-3" aria-hidden="true" /> Pause</>
+                : <><Play className="h-3 w-3" aria-hidden="true" /> Play</>
+              }
+            </button>
+          </div>
         </div>
       )}
       <RadarLayersMenu showNexrad={showNexrad} showVelocity={showVelocityLocal} showRadio={showRadio} nexradStation={settings.station} radarProduct={settings.radarProduct} alertToggles={alertToggles} onShowNexradChange={handleShowNexradChange} onShowVelocityChange={handleShowVelocityChange} onShowRadioChange={onToggleRadio} onAlertToggleChange={handleAlertToggleChange} onRadarProductChange={handleRadarProductChange} />
+      <StormToolsPanel storm={selectedStorm} userLocation={userLocation} onClose={() => setSelectedStorm(null)} />
       <>
         <StormAnalysisStrip metrics={stormMetrics} />
         <ProLegend productLabel={activeProduct.label} />
-        <RadarDataDock metrics={stormMetrics} productLabel={activeProduct.label} station={settings.station} />
-        <RadarInspectorPanel inspector={inspector} productLabel={activeProduct.label} />
+        {inspector.active
+          ? <RadarInspectorPanel inspector={inspector} productLabel={activeProduct.label} />
+          : <RadarDataDock metrics={stormMetrics} productLabel={activeProduct.label} station={settings.station} />
+        }
       </>
       <button onClick={handleLocateMe} className="absolute z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700" style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))", right: "calc(1.25rem + env(safe-area-inset-right))" }} aria-label="Center radar on my location">
         <LocateFixed size={24} aria-hidden="true" />
