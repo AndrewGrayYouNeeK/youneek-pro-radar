@@ -4,7 +4,8 @@ import { LocateFixed } from "lucide-react";
 import RadarLayersMenu from "./RadarLayersMenu";
 import LiveCompass from "./LiveCompass";
 import ShelterAlert from "./ShelterAlert";
-import StormAnalysisStrip from "./StormAnalysisStrip";
+// StormAnalysisStrip hidden per UX feedback — Status/Feed labels removed
+// import StormAnalysisStrip from "./StormAnalysisStrip";
 import ProLegend from "./ProLegend";
 import RadarInspectorPanel from "./RadarInspectorPanel";
 import RadarQuickActions from "./RadarQuickActions";
@@ -66,6 +67,11 @@ const getCacheBust = () => Math.floor(Date.now() / 120000);
 const getRadarTileUrl = () => `${WORKER_BASE}/radar/{z}/{x}/{y}.png?_cb=${getCacheBust()}`;
 const getAlertUrl = (type) => `${WORKER_BASE}/alerts?type=${type}`;
 const TYPICAL_STORM_SPEED_MPH = 30;
+// Hook zone circle radii (metres)
+const EXAMPLE_HOOK_ZONE_RADIUS_M = 25000;
+const ACTIVE_HOOK_ZONE_RADIUS_M = 30000;
+// Demonstration hook zone locations shown when no active tornado warnings
+const EXAMPLE_HOOK_ZONE_LOCATIONS = [[36.8, -87.3], [35.5, -97.5], [33.4, -86.8]];
 const getRainViewerTileUrl = (path) => {
   if (!path) return null;
   const normalizedPath = path.startsWith("/v2/radar/") ? path : `/v2/radar/${path}`;
@@ -130,6 +136,8 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const userLocationMarkerRef = useRef(null);
   const radarLoadStatsRef = useRef({ errors: 0, loaded: 0, usingFallback: false });
   const compassHeadingRef = useRef(0);
+  const lightningLayerRef = useRef(null);
+  const hookZoneLayerRef = useRef(null);
 
   const [showVelocityLocal, setShowVelocityLocal] = useState(settings.showVelocity);
   const [showTornado, setShowTornado] = useState(true);
@@ -145,6 +153,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [activeTornadoWatch, setActiveTornadoWatch] = useState(false);
   const [isMapReady, setIsMapReady] = useState(false);
   const [showQuickControls, setShowQuickControls] = useState(false);
+  const [isLayersMenuOpen, setIsLayersMenuOpen] = useState(false);
   const [showCompass, setShowCompass] = useState(false);
   const [compassBearing, setCompassBearing] = useState(0);
   const [compassFollowMode, setCompassFollowMode] = useState(false);
@@ -152,6 +161,10 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [locationError, setLocationError] = useState(null);
   const locationErrorTimerRef = useRef(null);
   const [stormData, setStormData] = useState(null);
+  const [showDataDock, setShowDataDock] = useState(true);
+  const [showLightning, setShowLightning] = useState(false);
+  const [showHookZones, setShowHookZones] = useState(false);
+  const [velocityError, setVelocityError] = useState(false);
 
   const activeProduct = useMemo(() => getRadarProduct(settings.radarProduct), [settings.radarProduct]);
   const mapCenter = leafletMap.current?.getCenter();
@@ -201,7 +214,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       if (loopTimerRef.current) clearTimeout(loopTimerRef.current);
       if (loopFadeRef.current) clearInterval(loopFadeRef.current);
       if (locationErrorTimerRef.current) clearTimeout(locationErrorTimerRef.current);
-      [radarLayerRef, velLayerRef, tornadoLayerRef, thunderLayerRef, floodLayerRef, winterLayerRef, userLocationMarkerRef, prevLoopLayerRef, loopLayerRef].forEach((r) => {
+      [radarLayerRef, velLayerRef, tornadoLayerRef, thunderLayerRef, floodLayerRef, winterLayerRef, userLocationMarkerRef, prevLoopLayerRef, loopLayerRef, lightningLayerRef, hookZoneLayerRef].forEach((r) => {
         if (r.current && leafletMap.current?.hasLayer(r.current)) leafletMap.current.removeLayer(r.current);
         r.current = null;
       });
@@ -273,10 +286,19 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     const addVelocityLayer = () => {
       if (velLayerRef.current) { leafletMap.current.removeLayer(velLayerRef.current); velLayerRef.current = null; }
       if (!showVelocityLocal || !leafletMap.current || settings.radarProduct === "velocity") return;
+      setVelocityError(false);
+      let tileErrorCount = 0;
       velLayerRef.current = L.tileLayer(
         "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::USCOMP-N0U-0/{z}/{x}/{y}.png",
-        { opacity: 0.35, transparent: true, crossOrigin: true, tileSize: 256, maxZoom: 16, maxNativeZoom: 12, attribution: "NEXRAD Velocity © Iowa Mesonet" }
+        { opacity: 0.55, transparent: true, crossOrigin: "anonymous", tileSize: 256, maxZoom: 16, maxNativeZoom: 12, attribution: "NEXRAD Velocity © Iowa Mesonet" }
       ).addTo(leafletMap.current);
+      velLayerRef.current.on("tileerror", () => {
+        tileErrorCount++;
+        if (tileErrorCount >= 4) setVelocityError(true);
+      });
+      velLayerRef.current.on("load", () => {
+        if (tileErrorCount < 4) setVelocityError(false);
+      });
     };
 
     const refreshAlertLayer = (layerRef, toggleKey, alertType, color) => {
@@ -350,7 +372,10 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const handleHookZoneView = () => {
     if (!leafletMap.current) return;
     if (isLooping) { setIsLooping(false); clearLoopLayers(); }
-    leafletMap.current.setView([36.8, -87.3], 9);
+    setShowHookZones((prev) => {
+      if (!prev) leafletMap.current.setView([36.8, -87.3], 8);
+      return !prev;
+    });
   };
   const handleConusView = () => {
     if (!leafletMap.current) return;
@@ -435,6 +460,117 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     if (key === "flood") setShowFlood(value);
     if (key === "winter") setShowWinter(value);
   };
+
+  const handleLayersMenuToggle = () => {
+    setIsLayersMenuOpen((prev) => {
+      if (!prev) setShowQuickControls(false);
+      return !prev;
+    });
+  };
+  const handleQuickActionsToggle = () => {
+    setShowQuickControls((prev) => {
+      if (!prev) setIsLayersMenuOpen(false);
+      return !prev;
+    });
+  };
+
+  // Lightning strike layer
+  useEffect(() => {
+    if (!isMapReady || !leafletMap.current) return;
+    if (!showLightning) {
+      if (lightningLayerRef.current && leafletMap.current.hasLayer(lightningLayerRef.current)) {
+        leafletMap.current.removeLayer(lightningLayerRef.current);
+      }
+      lightningLayerRef.current = null;
+      return;
+    }
+    const group = L.layerGroup().addTo(leafletMap.current);
+    lightningLayerRef.current = group;
+    const loadLightning = () => {
+      group.clearLayers();
+      fetch("https://mesonet.agron.iastate.edu/geojson/lsr.geojson?sts=-3hours&enh=1&type=L")
+        .then((r) => r.json())
+        .then((data) => {
+          if (!leafletMap.current || lightningLayerRef.current !== group) return;
+          (data.features || []).forEach((f) => {
+            const [lon, lat] = f.geometry.coordinates;
+            const icon = L.divIcon({
+              html: '<span aria-hidden="true" style="font-size:18px;line-height:1;filter:drop-shadow(0 0 5px #f59e0b)">⚡</span>',
+              className: "",
+              iconSize: [22, 22],
+              iconAnchor: [11, 11],
+            });
+            const time = f.properties?.utc_valid ? new Date(f.properties.utc_valid).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
+            L.marker([lat, lon], { icon })
+              .bindPopup(`<b>⚡ Lightning Strike</b>${time ? `<br>${time}` : ""}`)
+              .addTo(group);
+          });
+        })
+        .catch(() => {});
+    };
+    loadLightning();
+    const timer = setInterval(loadLightning, 5 * 60 * 1000);
+    return () => {
+      clearInterval(timer);
+      if (lightningLayerRef.current && leafletMap.current?.hasLayer(lightningLayerRef.current)) {
+        leafletMap.current.removeLayer(lightningLayerRef.current);
+      }
+      lightningLayerRef.current = null;
+    };
+  }, [showLightning, isMapReady]);
+
+  // Hook zone overlay
+  useEffect(() => {
+    if (!isMapReady || !leafletMap.current) return;
+    if (hookZoneLayerRef.current) {
+      if (leafletMap.current.hasLayer(hookZoneLayerRef.current)) leafletMap.current.removeLayer(hookZoneLayerRef.current);
+      hookZoneLayerRef.current = null;
+    }
+    if (!showHookZones) return;
+    const group = L.layerGroup().addTo(leafletMap.current);
+    hookZoneLayerRef.current = group;
+    fetch(getAlertUrl("tornado"))
+      .then((r) => r.json())
+      .then((data) => {
+        if (!leafletMap.current || hookZoneLayerRef.current !== group) return;
+        const features = data?.features || [];
+        if (features.length === 0) {
+          // Show example hook zones when no active warnings
+          EXAMPLE_HOOK_ZONE_LOCATIONS.forEach(([lat, lon]) => {
+            L.circle([lat, lon], {
+              radius: EXAMPLE_HOOK_ZONE_RADIUS_M,
+              color: "#f97316",
+              fillColor: "#f97316",
+              fillOpacity: 0.12,
+              weight: 2,
+              dashArray: "6 3",
+            }).bindPopup("<b>🌀 Hook Zone</b><br>Example location").addTo(group);
+          });
+          return;
+        }
+        features.forEach((f) => {
+          const points = getGeometryPoints(f.geometry);
+          if (points.length === 0) return;
+          const avgLat = points.reduce((s, [, lat]) => s + lat, 0) / points.length;
+          const avgLon = points.reduce((s, [lon]) => s + lon, 0) / points.length;
+          L.circle([avgLat, avgLon], {
+            radius: ACTIVE_HOOK_ZONE_RADIUS_M,
+            color: "#ef4444",
+            fillColor: "#ef4444",
+            fillOpacity: 0.15,
+            weight: 2,
+            dashArray: "8 4",
+          }).bindPopup("<b>⚠️ Hook Zone</b><br>Potential hook echo — tornado warning active").addTo(group);
+        });
+      })
+      .catch(() => {});
+    return () => {
+      if (hookZoneLayerRef.current && leafletMap.current?.hasLayer(hookZoneLayerRef.current)) {
+        leafletMap.current.removeLayer(hookZoneLayerRef.current);
+      }
+      hookZoneLayerRef.current = null;
+    };
+  }, [showHookZones, isMapReady]);
 
   useEffect(() => {
     if (!leafletMap.current) return;
@@ -548,13 +684,16 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       )}
       <RadarQuickActions
         show={showQuickControls}
-        onToggleShow={() => setShowQuickControls((value) => !value)}
+        onToggleShow={handleQuickActionsToggle}
         onHookZone={handleHookZoneView}
         onConus={handleConusView}
         onToggleLoop={handleLoopToggle}
         isLooping={isLooping}
         showCompass={showCompass}
         onToggleCompass={() => setShowCompass((value) => !value)}
+        showDataDock={showDataDock}
+        onToggleDataDock={() => setShowDataDock((value) => !value)}
+        showHookZones={showHookZones}
       />
       {showCompass && (
         <LiveCompass
@@ -573,6 +712,8 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         />
       )}
       <RadarLayersMenu
+        isOpen={isLayersMenuOpen}
+        onToggle={handleLayersMenuToggle}
         showNexrad={showNexrad}
         showVelocity={showVelocityLocal}
         showRadio={showRadio}
@@ -584,15 +725,28 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         onShowRadioChange={onToggleRadio}
         onAlertToggleChange={handleAlertToggleChange}
         onRadarProductChange={handleRadarProductChange}
+        showLightning={showLightning}
+        showHookZones={showHookZones}
+        onShowLightningChange={setShowLightning}
+        onShowHookZonesChange={setShowHookZones}
       />
-      <StormAnalysisStrip metrics={stormMetrics} />
+      {/* StormAnalysisStrip hidden — Status/Feed/Monitor/Live Feed labels removed per UX feedback */}
+      {/* <StormAnalysisStrip metrics={stormMetrics} /> */}
       <ProLegend productLabel={activeProduct.label} />
       {stormData ? (
         <StormToolsPanel stormData={stormData} onClose={() => setStormData(null)} />
       ) : (
-        <RadarDataDock metrics={stormMetrics} productLabel={activeProduct.label} station={settings.station} />
+        showDataDock && <RadarDataDock metrics={stormMetrics} productLabel={activeProduct.label} station={settings.station} />
       )}
       <RadarInspectorPanel inspector={inspector} productLabel={activeProduct.label} />
+      {velocityError && (
+        <div
+          className="absolute z-[1002] rounded-xl border border-amber-500/30 bg-amber-900/80 px-3 py-1.5 text-xs font-medium text-amber-200 shadow-lg backdrop-blur-sm"
+          style={{ top: "calc(4.5rem + env(safe-area-inset-top))", left: "0.75rem" }}
+        >
+          ⚠️ Velocity data unavailable — check connection
+        </div>
+      )}
       <button
         onClick={handleLocateMe}
         className="absolute z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700"

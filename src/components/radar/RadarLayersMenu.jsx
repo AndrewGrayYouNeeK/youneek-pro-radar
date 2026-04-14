@@ -22,6 +22,8 @@ function ToggleRow({ label, checked, onCheckedChange, ariaLabel }) {
 }
 
 export default function RadarLayersMenu({
+  isOpen,
+  onToggle,
   showNexrad,
   showVelocity,
   showRadio,
@@ -33,8 +35,11 @@ export default function RadarLayersMenu({
   onShowRadioChange,
   onAlertToggleChange,
   onRadarProductChange,
+  showLightning,
+  showHookZones,
+  onShowLightningChange,
+  onShowHookZonesChange,
 }) {
-  const [isOpen, setIsOpen] = useState(false);
   const [showAlerts, setShowAlerts] = useState(false);
 
   return (
@@ -43,7 +48,7 @@ export default function RadarLayersMenu({
       style={{ top: 'calc(0.75rem + env(safe-area-inset-top))', right: 'calc(0.75rem + env(safe-area-inset-right))' }}
     >
       <button
-        onClick={() => setIsOpen((open) => !open)}
+        onClick={onToggle}
         className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-900/80 text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90"
         aria-label={isOpen ? "Close layers menu" : "Open layers menu"}
         title="Opens radar, warning, and radio controls"
@@ -103,6 +108,22 @@ export default function RadarLayersMenu({
                 onChange={onRadarProductChange}
                 options={RADAR_PRODUCTS.map((product) => ({ value: product.id, label: product.label }))}
                 placeholder="Choose product"
+              />
+            </div>
+
+            <div className="space-y-2 rounded-xl border border-white/10 bg-white/5 p-3">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Overlays</div>
+              <ToggleRow
+                label="⚡ Lightning Strikes"
+                checked={showLightning}
+                onCheckedChange={onShowLightningChange}
+                ariaLabel="Toggle lightning strike layer"
+              />
+              <ToggleRow
+                label="🌀 Hook Zones"
+                checked={showHookZones}
+                onCheckedChange={onShowHookZonesChange}
+                ariaLabel="Toggle hook zone overlay"
               />
             </div>
 
