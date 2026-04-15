@@ -4,10 +4,7 @@ import { LocateFixed } from "lucide-react";
 import RadarLayersMenu from "./RadarLayersMenu";
 import LiveCompass from "./LiveCompass";
 import ShelterAlert from "./ShelterAlert";
-import ProLegend from "./ProLegend";
-import RadarInspectorPanel from "./RadarInspectorPanel";
 import RadarQuickActions from "./RadarQuickActions";
-import RadarDataDock from "./RadarDataDock";
 import StormToolsPanel from "./StormToolsPanel";
 import { getRadarProduct } from "./radarProducts";
 import usePullToRefresh from "@/hooks/usePullToRefresh";
@@ -127,28 +124,12 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [showCompass, setShowCompass] = useState(false);
   const [compassBearing, setCompassBearing] = useState(0);
   const [compassFollowMode, setCompassFollowMode] = useState(false);
-  const [inspector, setInspector] = useState({ active: false, lat: "--", lon: "--", bearing: "--", range: "--" });
   const [locationError, setLocationError] = useState(null);
   const locationErrorTimerRef = useRef(null);
   const [stormData, setStormData] = useState(null);
-  const [showDataDock, setShowDataDock] = useState(true);
 
   const mapCenter = leafletMap.current?.getCenter();
   const activeWarningsCount = [showTornado, showThunderstorm, showFlood, showWinter].filter(Boolean).length;
-  const stormMetrics = useMemo(() => ({
-    bearing: Math.round((((mapCenter?.lng || -87.3) + 180) % 360 + 360) % 360),
-    range: Math.max(8, Math.round((leafletMap.current?.getZoom() || 8) * 4.5)),
-    focus: leafletMap.current?.getZoom() >= 10 ? "Tight" : leafletMap.current?.getZoom() >= 7 ? "Regional" : "Wide",
-    refreshLabel: "Live Feed",
-    latitude: mapCenter ? Math.abs(mapCenter.lat).toFixed(2) : "--",
-    longitude: mapCenter ? Math.abs(mapCenter.lng).toFixed(2) : "--",
-    latHemisphere: mapCenter?.lat >= 0 ? "N" : "S",
-    lonHemisphere: mapCenter?.lng >= 0 ? "E" : "W",
-    zoom: (leafletMap.current?.getZoom() || 8).toFixed(1),
-    warnings: activeWarningsCount,
-    inspectorStatus: inspector.active ? "Tracking" : "Standby",
-    stormMode: activeTornadoWarning ? "Tornado Warning" : activeTornadoWatch ? "Tornado Watch" : "Monitor",
-  }), [mapCenter, activeWarningsCount, activeTornadoWarning, activeTornadoWatch, inspector]);
 
   const alertToggles = { tornado: showTornado, severe: showThunderstorm, flood: showFlood, winter: showWinter };
   const alertTogglesRef = useRef(alertToggles);
@@ -311,22 +292,6 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
 
   useEffect(() => {
     if (!leafletMap.current) return;
-    const updateInspector = (event) => {
-      const center = leafletMap.current.getCenter();
-      const point = event.latlng;
-      const latDiff = point.lat - center.lat;
-      const lonDiff = point.lng - center.lng;
-      const distance = haversineKm(center.lat, center.lng, point.lat, point.lng) * 0.621371;
-      const bearing = (Math.atan2(lonDiff, latDiff) * 180 / Math.PI + 360) % 360;
-      setInspector({
-        active: true,
-        lat: point.lat.toFixed(2),
-        lon: point.lng.toFixed(2),
-        bearing: Math.round(bearing),
-        range: Math.max(1, Math.round(distance)),
-      });
-    };
-
     const handleMapClick = (event) => {
       if (!userLocation) return;
       const point = event.latlng;
@@ -339,10 +304,8 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       setStormData({ bearing: Math.round(bearing), distanceMi, speedMph, etaMinutes });
     };
 
-    leafletMap.current.on("mousemove", updateInspector);
     leafletMap.current.on("click", handleMapClick);
     return () => {
-      leafletMap.current?.off("mousemove", updateInspector);
       leafletMap.current?.off("click", handleMapClick);
     };
   }, [isMapReady, userLocation]);
@@ -414,8 +377,6 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         onConus={handleConusView}
         showCompass={showCompass}
         onToggleCompass={() => setShowCompass((value) => !value)}
-        showDataDock={showDataDock}
-        onToggleDataDock={() => setShowDataDock((value) => !value)}
       />
       {showCompass && (
         <LiveCompass
@@ -434,13 +395,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         onShowRadioChange={onToggleRadio}
         onAlertToggleChange={handleAlertToggleChange}
       />
-      <ProLegend productLabel={ACTIVE_PRODUCT.label} />
-      {stormData ? (
-        <StormToolsPanel stormData={stormData} onClose={() => setStormData(null)} />
-      ) : (
-        showDataDock && <RadarDataDock metrics={stormMetrics} productLabel={ACTIVE_PRODUCT.label} station={settings.station} />
-      )}
-      <RadarInspectorPanel inspector={inspector} productLabel={ACTIVE_PRODUCT.label} />
+      {stormData && <StormToolsPanel stormData={stormData} onClose={() => setStormData(null)} />}
       <button
         onClick={handleLocateMe}
         className="absolute z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700"

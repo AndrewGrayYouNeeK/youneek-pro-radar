@@ -19,8 +19,6 @@ export default function RadarQuickActions({
   onConus,
   showCompass,
   onToggleCompass,
-  showDataDock,
-  onToggleDataDock,
 }) {
   return (
     <div
@@ -39,7 +37,6 @@ export default function RadarQuickActions({
             <ChevronUp className="h-4 w-4" aria-hidden="true" />
           </button>
           <ActionButton icon={Compass} label={showCompass ? "Hide Compass" : "Show Compass"} onClick={onToggleCompass} />
-          <ActionButton icon={Map} label={showDataDock ? "Hide Data Panel" : "Show Data Panel"} onClick={onToggleDataDock} />
           <ActionButton icon={Map} label="CONUS" onClick={onConus} />
         </div>
       )}
