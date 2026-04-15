@@ -10,7 +10,7 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import { NavigationStackProvider } from "@/lib/NavigationStack";
 import OnboardingModal from "@/components/radar/OnboardingModal";
 
-const RadarScope = lazy(() => import("./pages/RadarScope"));
+const Radar    = lazy(() => import("./pages/Radar"));
 const Contacts   = lazy(() => import("./pages/Contacts"));
 const Settings   = lazy(() => import("./pages/Settings"));
 
@@ -48,8 +48,8 @@ const AuthenticatedApp = () => {
         >
           <Suspense fallback={<Spinner />}>
             <Routes location={location}>
-              <Route path="/"           element={<Navigate to="/RadarScope" replace />} />
-              <Route path="/RadarScope" element={<RadarScope />} />
+              <Route path="/"        element={<Navigate to="/Radar" replace />} />
+              <Route path="/Radar"   element={<Radar />} />
               <Route path="/Contacts"   element={<Contacts />} />
               <Route path="/Settings"   element={<Settings />} />
               <Route path="*"           element={<PageNotFound />} />

@@ -5,7 +5,7 @@ const NavigationStackContext = createContext(null);
 const TAB_STATE_STORAGE_KEY = "navigation-tab-state";
 
 const DEFAULT_TABS = {
-  Radar: { path: "/RadarScope", search: "", scrollY: 0 },
+  Radar: { path: "/Radar", search: "", scrollY: 0 },
   Contacts: { path: "/Contacts", search: "", scrollY: 0 },
   Settings: { path: "/Settings", search: "", scrollY: 0 },
 };
@@ -94,7 +94,7 @@ export function NavigationStackProvider({ children }) {
   }, [tabState]);
 
   const value = useMemo(() => ({
-    goBack: (fallbackPath = "/RadarScope") => {
+    goBack: (fallbackPath = "/Radar") => {
       const stack = routeStackRef.current;
       if (stack.length > 1) {
         stack.pop();

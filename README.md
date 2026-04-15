@@ -9,16 +9,13 @@ YouNeeK Pro Radar is a professional-grade weather radar application featuring li
 ## Features
 
 - **Live NEXRAD Radar** — Iowa Mesonet base reflectivity mosaics, auto-refreshing every 5 minutes
-- **Velocity Mode** — Toggle between reflectivity and velocity radar data
-- **Radar Loop** — Animated 6-frame loop showing storm movement over time
 - **NWS Alert Overlays** — Real-time GeoJSON polygons for:
   - 🔴 Tornado Warnings
   - 🟠 Severe Thunderstorm Warnings
   - 🔵 Flood Warnings
   - ❄️ Winter Storm Advisories
 - **NOAA Weather Radio** — 130 stations nationwide with auto-select by GPS location
-- **I'M SHELTERING Button** — One-tap emergency SMS to up to 3 contacts with GPS coordinates and Google Maps link
-- **Hook Echo Detection** — Zoom and pan to identify rotation signatures
+- **I'M SHELTERING Button** — One-tap emergency SMS to up to 5 contacts with GPS coordinates and Google Maps link
 - **Dark Tactical UI** — PPI scope aesthetic, phosphor on black
 
 ## Running Locally

@@ -1,14 +1,14 @@
-import RadarScope from './pages/RadarScope';
+import Radar from './pages/Radar';
 import Contacts from './pages/Contacts';
 import Settings from './pages/Settings';
 
 export const PAGES = {
-    "RadarScope": RadarScope,
+    "Radar": Radar,
     "Contacts": Contacts,
     "Settings": Settings,
 }
 
 export const pagesConfig = {
-    mainPage: "RadarScope",
+    mainPage: "Radar",
     Pages: PAGES,
 };

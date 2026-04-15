@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import { useNavigationStack } from "@/lib/NavigationStack";
 
 const TABS = [
-  { label: "Radar", path: "/RadarScope", icon: Activity },
+  { label: "Radar", path: "/Radar", icon: Activity },
   { label: "Contacts", path: "/Contacts", icon: Users },
   { label: "Settings", path: "/Settings", icon: Settings },
 ];
