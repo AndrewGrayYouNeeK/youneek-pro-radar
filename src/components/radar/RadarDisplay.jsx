@@ -127,12 +127,29 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [locationError, setLocationError] = useState(null);
   const locationErrorTimerRef = useRef(null);
   const [stormData, setStormData] = useState(null);
+  const [initialLocationSet, setInitialLocationSet] = useState(false);
 
   const mapCenter = leafletMap.current?.getCenter();
   const activeWarningsCount = [showTornado, showThunderstorm, showFlood, showWinter].filter(Boolean).length;
 
   const alertToggles = { tornado: showTornado, severe: showThunderstorm, flood: showFlood, winter: showWinter };
   const alertTogglesRef = useRef(alertToggles);
+
+  // Helper function to find nearest NEXRAD station
+  const findNearestStation = (lat, lon) => {
+    let nearestStation = 'KJKL';
+    let minDistance = Infinity;
+
+    Object.entries(STATION_COORDS).forEach(([stationId, [stationLat, stationLon]]) => {
+      const distance = haversineKm(lat, lon, stationLat, stationLon);
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearestStation = stationId;
+      }
+    });
+
+    return nearestStation;
+  };
 
   useEffect(() => {
     if (leafletMap.current || !mapRef.current) return;
@@ -172,10 +189,37 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     };
   }, [settings.station]);
 
+  // Auto-center on user's GPS location when app loads
   useEffect(() => {
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition((p) => setUserLocation({ lat: p.coords.latitude, lon: p.coords.longitude }));
-  }, []);
+    if (!navigator.geolocation || initialLocationSet) return;
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        const userLoc = { lat: latitude, lon: longitude };
+        setUserLocation(userLoc);
+
+        // Find nearest NEXRAD station
+        const nearestStation = findNearestStation(latitude, longitude);
+
+        // Update settings with nearest station
+        if (onSettingsChange && nearestStation !== settings.station) {
+          onSettingsChange({ ...settings, station: nearestStation });
+        }
+
+        // Center map on user's location with good zoom level
+        if (leafletMap.current && !initialLocationSet) {
+          leafletMap.current.setView([latitude, longitude], 10);
+          setInitialLocationSet(true);
+        }
+      },
+      (error) => {
+        console.warn('Could not get initial location:', error);
+        setInitialLocationSet(true);
+      },
+      { timeout: 10000, enableHighAccuracy: false }
+    );
+  }, [initialLocationSet, settings, onSettingsChange]);
 
   useEffect(() => {
     if (!showCompass || !window.DeviceOrientationEvent) return;
