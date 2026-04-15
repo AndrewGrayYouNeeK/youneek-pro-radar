@@ -1,16 +1,8 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import MobileSelect from "@/components/mobile/MobileSelect";
 import AccountActions from "./AccountActions";
 import RadioControls from "./RadioControls";
-import { RADAR_PRODUCTS } from "./radarProducts";
-
-const QUICK_LAYERS = [
-  { id: "reflectivity", emoji: "🌧", label: "Rain" },
-  { id: "snow",         emoji: "❄️",  label: "Snow" },
-  { id: "temperature",  emoji: "🌡",  label: "Temp" },
-];
 
 function ToggleRow({ label, checked, onCheckedChange, ariaLabel }) {
   return (
@@ -25,20 +17,11 @@ export default function RadarLayersMenu({
   isOpen,
   onToggle,
   showNexrad,
-  showVelocity,
   showRadio,
-  nexradStation,
-  radarProduct,
   alertToggles,
   onShowNexradChange,
-  onShowVelocityChange,
   onShowRadioChange,
   onAlertToggleChange,
-  onRadarProductChange,
-  showLightning,
-  showHookZones,
-  onShowLightningChange,
-  onShowHookZonesChange,
 }) {
   const [showAlerts, setShowAlerts] = useState(false);
 
@@ -62,30 +45,6 @@ export default function RadarLayersMenu({
             Layers
           </div>
           <div className="space-y-3">
-            {/* Quick layer toggle buttons (issue #7) */}
-            <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-              <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Quick Layers</div>
-              <div className="flex gap-2">
-                {QUICK_LAYERS.map(({ id, emoji, label }) => (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => onRadarProductChange(id)}
-                    className={`flex flex-1 flex-col items-center gap-1 rounded-xl border px-2 py-2 text-xs font-medium transition-colors ${
-                      radarProduct === id
-                        ? "border-cyan-400/50 bg-cyan-500/20 text-cyan-200"
-                        : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
-                    }`}
-                    aria-label={`Switch to ${label} layer`}
-                    aria-pressed={radarProduct === id}
-                  >
-                    <span className="text-base" aria-hidden="true">{emoji}</span>
-                    <span>{label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
             <div className="space-y-2 rounded-xl border border-white/10 bg-white/5 p-3">
               <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Radar</div>
               <ToggleRow
@@ -94,37 +53,7 @@ export default function RadarLayersMenu({
                 onCheckedChange={onShowNexradChange}
                 ariaLabel="Toggle live NEXRAD radar layer"
               />
-              {showNexrad && (
-                <ToggleRow
-                  label="🌀 Velocity"
-                  checked={showVelocity}
-                  onCheckedChange={onShowVelocityChange}
-                  ariaLabel="Switch to velocity mode"
-                />
-              )}
-              <MobileSelect
-                label="Radar Product"
-                value={radarProduct}
-                onChange={onRadarProductChange}
-                options={RADAR_PRODUCTS.map((product) => ({ value: product.id, label: product.label }))}
-                placeholder="Choose product"
-              />
-            </div>
-
-            <div className="space-y-2 rounded-xl border border-white/10 bg-white/5 p-3">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Overlays</div>
-              <ToggleRow
-                label="⚡ Lightning Strikes"
-                checked={showLightning}
-                onCheckedChange={onShowLightningChange}
-                ariaLabel="Toggle lightning strike layer"
-              />
-              <ToggleRow
-                label="🌀 Hook Zones"
-                checked={showHookZones}
-                onCheckedChange={onShowHookZonesChange}
-                ariaLabel="Toggle hook zone overlay"
-              />
+              <div className="text-[11px] text-slate-500">Reflectivity only</div>
             </div>
 
             <div className="rounded-xl border border-white/10 bg-white/5 p-3">

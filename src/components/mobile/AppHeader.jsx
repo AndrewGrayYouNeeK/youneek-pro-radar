@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import { useNavigationStack } from "@/lib/NavigationStack";
 
 const TITLES = {
-  "/RadarScope": "Radar",
+  "/Radar": "Radar",
   "/Contacts": "Contacts",
   "/Settings": "Settings",
 };
@@ -12,7 +12,7 @@ export default function AppHeader({ title }) {
   const location = useLocation();
   const { goBack } = useNavigationStack();
   const resolvedTitle = title || TITLES[location.pathname] || "YouNeeK Pro Radar";
-  const showBack = location.pathname !== "/RadarScope" && location.pathname !== "/";
+  const showBack = location.pathname !== "/Radar" && location.pathname !== "/";
 
   return (
     <div
