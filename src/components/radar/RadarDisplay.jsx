@@ -100,6 +100,8 @@ function isFeatureNearLocation(feature, userLocation, maxDistanceKm = 150) {
   return points.some(([lon, lat]) => haversineKm(lat, lon, userLocation.lat, userLocation.lon) <= maxDistanceKm);
 }
 
+const ACTIVE_PRODUCT = getRadarProduct("reflectivity");
+
 export default function RadarDisplay({ settings, showNexrad, onSettingsChange, showRadio, onToggleRadio }) {
   const mapRef = useRef(null);
   const leafletMap = useRef(null);
@@ -131,7 +133,6 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [stormData, setStormData] = useState(null);
   const [showDataDock, setShowDataDock] = useState(true);
 
-  const activeProduct = useMemo(() => getRadarProduct("reflectivity"), []);
   const mapCenter = leafletMap.current?.getCenter();
   const activeWarningsCount = [showTornado, showThunderstorm, showFlood, showWinter].filter(Boolean).length;
   const stormMetrics = useMemo(() => ({
@@ -279,9 +280,9 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       }
       radarLayerRef.current = L.tileLayer(tileUrl, {
         attribution: "Radar data © Iowa Mesonet / RainViewer",
-        opacity: activeProduct.opacity,
+        opacity: ACTIVE_PRODUCT.opacity,
         maxZoom: 16,
-        maxNativeZoom: activeProduct.maxNativeZoom || 12,
+        maxNativeZoom: ACTIVE_PRODUCT.maxNativeZoom || 12,
         crossOrigin: "anonymous",
       }).addTo(leafletMap.current);
     };
@@ -301,7 +302,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         r.current = null;
       });
     };
-  }, [showNexrad, settings.station, showTornado, showThunderstorm, showFlood, showWinter, userLocation, activeProduct]);
+  }, [showNexrad, settings.station, showTornado, showThunderstorm, showFlood, showWinter, userLocation]);
 
   const handleConusView = () => {
     if (!leafletMap.current) return;
@@ -433,13 +434,13 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         onShowRadioChange={onToggleRadio}
         onAlertToggleChange={handleAlertToggleChange}
       />
-      <ProLegend productLabel={activeProduct.label} />
+      <ProLegend productLabel={ACTIVE_PRODUCT.label} />
       {stormData ? (
         <StormToolsPanel stormData={stormData} onClose={() => setStormData(null)} />
       ) : (
-        showDataDock && <RadarDataDock metrics={stormMetrics} productLabel={activeProduct.label} station={settings.station} />
+        showDataDock && <RadarDataDock metrics={stormMetrics} productLabel={ACTIVE_PRODUCT.label} station={settings.station} />
       )}
-      <RadarInspectorPanel inspector={inspector} productLabel={activeProduct.label} />
+      <RadarInspectorPanel inspector={inspector} productLabel={ACTIVE_PRODUCT.label} />
       <button
         onClick={handleLocateMe}
         className="absolute z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700"
