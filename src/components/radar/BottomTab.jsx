@@ -1,4 +1,4 @@
-import { Activity, Settings, Users } from "lucide-react";
+import { Activity, Settings, Users, Layers } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { useNavigationStack } from "@/lib/NavigationStack";
 
@@ -8,9 +8,10 @@ const TABS = [
   { label: "Settings", path: "/Settings", icon: Settings },
 ];
 
-export default function BottomTab() {
+export default function BottomTab({ onToolsClick, showTools }) {
   const location = useLocation();
   const { navigateToTab, resetTab } = useNavigationStack();
+  const isRadarPage = location.pathname === "/Radar" || location.pathname === "/";
 
   return (
     <div
@@ -41,6 +42,19 @@ export default function BottomTab() {
             </button>
           );
         })}
+        {isRadarPage && (
+          <button
+            type="button"
+            onClick={onToolsClick}
+            aria-label="Open radar tools"
+            className={`flex min-w-20 flex-col items-center gap-1 rounded-xl px-3 py-2 text-xs font-medium transition-colors ${
+              showTools ? "bg-white/10 text-white" : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <Layers className="h-5 w-5" aria-hidden="true" />
+            <span>Tools</span>
+          </button>
+        )}
       </div>
     </div>
   );

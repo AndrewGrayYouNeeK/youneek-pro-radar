@@ -90,7 +90,7 @@ function isFeatureNearLocation(feature, userLocation, maxDistanceKm = 150) {
 
 const ACTIVE_PRODUCT = getRadarProduct("reflectivity");
 
-export default function RadarDisplay({ settings, showNexrad, onSettingsChange, showRadio, onToggleRadio }) {
+export default function RadarDisplay({ settings, showNexrad, onSettingsChange, showRadio, onToggleRadio, showTools, onToolsToggle }) {
   const mapRef = useRef(null);
   const leafletMap = useRef(null);
   const radarLayerRef = useRef(null);
@@ -109,7 +109,6 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [activeTornadoWarning, setActiveTornadoWarning] = useState(true);
   const [activeTornadoWatch, setActiveTornadoWatch] = useState(false);
   const [isMapReady, setIsMapReady] = useState(false);
-  const [showQuickControls, setShowQuickControls] = useState(false);
   const [isLayersMenuOpen, setIsLayersMenuOpen] = useState(false);
   const [locationError, setLocationError] = useState(null);
   const locationErrorTimerRef = useRef(null);
@@ -381,16 +380,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   };
 
   const handleLayersMenuToggle = () => {
-    setIsLayersMenuOpen((prev) => {
-      if (!prev) setShowQuickControls(false);
-      return !prev;
-    });
-  };
-  const handleQuickActionsToggle = () => {
-    setShowQuickControls((prev) => {
-      if (!prev) setIsLayersMenuOpen(false);
-      return !prev;
-    });
+    setIsLayersMenuOpen((prev) => !prev);
   };
 
   return (
@@ -409,10 +399,10 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         </div>
       )}
       <RadarQuickActions
-        show={showQuickControls}
-        onToggleShow={handleQuickActionsToggle}
+        show={showTools}
         onConus={handleConusView}
         onToggleLayers={handleLayersMenuToggle}
+        onClose={onToolsToggle}
       />
       <RadarLayersMenu
         isOpen={isLayersMenuOpen}

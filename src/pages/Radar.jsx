@@ -30,6 +30,7 @@ export default function Radar() {
   });
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [showRadio, setShowRadio] = useState(true);
+  const [showTools, setShowTools] = useState(false);
 
   const urlParams = new URLSearchParams(location.search);
   const dialogMode = urlParams.get("dialog");
@@ -128,6 +129,10 @@ export default function Radar() {
     }
   }, [goBack, navigate, location.pathname, location.search]);
 
+  const handleToolsToggle = useCallback(() => {
+    setShowTools((prev) => !prev);
+  }, []);
+
   return (
     <div className="safe-screen h-screen bg-gray-950 overflow-hidden pb-24">
       <AppHeader title="Radar" />
@@ -146,11 +151,13 @@ export default function Radar() {
             onSettingsChange={setSettings}
             showRadio={showRadio}
             onToggleRadio={setShowRadio}
+            showTools={showTools}
+            onToolsToggle={handleToolsToggle}
           />
         </Suspense>
       </div>
 
-      <BottomTab />
+      <BottomTab onToolsClick={handleToolsToggle} showTools={showTools} />
 
       {/* Dialogs */}
       {dialogMode === "create" && pendingClick && (
