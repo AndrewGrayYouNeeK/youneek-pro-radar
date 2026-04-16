@@ -20,13 +20,17 @@ export default function ShelterAlert({ activeTornadoWarning, activeTornadoWatch 
   const sendTimerRef = useRef(null);
   const contacts = loadContacts();
 
-  // Only show for active tornado warnings, not watches
-  if (!contacts.length || !activeTornadoWarning) return null;
+  // Show for active tornado warnings OR watches
+  const isActive = activeTornadoWarning || activeTornadoWatch;
+  if (!contacts.length || !isActive) return null;
 
-  const handleShelter = (messagePrefix = '⚠️ TORNADO WARNING') => {
+  const handleShelter = () => {
     const uniquePhones = [...new Set(contacts.map((c) => c.phone).filter(Boolean))];
     if (!uniquePhones.length) return;
     setRecipientCount(uniquePhones.length);
+
+    // Use appropriate message prefix based on alert type
+    const messagePrefix = activeTornadoWarning ? '⚠️ TORNADO WARNING' : '⚠️ TORNADO WATCH';
 
     const buildBody = (locationLine) =>
       encodeURIComponent(
@@ -121,7 +125,7 @@ export default function ShelterAlert({ activeTornadoWarning, activeTornadoWatch 
             <div className="mb-2 flex items-center justify-between">
               <div className="inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-red-300">
                 <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-red-400" />
-                Tornado Warning Active
+                {activeTornadoWarning ? 'Tornado Warning Active' : 'Tornado Watch Active'}
               </div>
               <div className="text-[11px] font-medium text-slate-400">
                 {contacts.length} contact{contacts.length !== 1 ? 's' : ''}
@@ -136,7 +140,7 @@ export default function ShelterAlert({ activeTornadoWarning, activeTornadoWatch 
             <div className="space-y-2">
               <button
                 aria-label="Send shelter alert to all contacts"
-                onClick={() => handleShelter('⚠️ TORNADO WARNING')}
+                onClick={() => handleShelter()}
                 className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-bold text-slate-950 shadow-[0_0_30px_rgba(74,222,128,0.3)] transition-colors hover:bg-emerald-400 active:scale-[0.98]"
               >
                 🏠 I'm Safe — Alert All Contacts
