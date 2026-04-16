@@ -20,7 +20,8 @@ export default function ShelterAlert({ activeTornadoWarning, activeTornadoWatch 
   const sendTimerRef = useRef(null);
   const contacts = loadContacts();
 
-  if (!contacts.length || (!activeTornadoWarning && !activeTornadoWatch)) return null;
+  // Only show for active tornado warnings, not watches
+  if (!contacts.length || !activeTornadoWarning) return null;
 
   const handleShelter = (messagePrefix = '⚠️ TORNADO WARNING') => {
     const uniquePhones = [...new Set(contacts.map((c) => c.phone).filter(Boolean))];
@@ -107,9 +108,9 @@ export default function ShelterAlert({ activeTornadoWarning, activeTornadoWatch 
             className="pointer-events-auto w-full max-w-md rounded-2xl border border-red-500/30 bg-slate-950/95 p-3 shadow-2xl backdrop-blur-xl"
           >
             <div className="mb-2 flex items-center justify-between">
-              <div className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] ${activeTornadoWarning ? 'border border-red-500/30 bg-red-500/10 text-red-300' : 'border border-amber-500/30 bg-amber-500/10 text-amber-300'}`}>
-                <span className={`inline-block h-1.5 w-1.5 rounded-full animate-pulse ${activeTornadoWarning ? 'bg-red-400' : 'bg-amber-400'}`} />
-                {activeTornadoWarning ? 'Tornado Warning Active' : 'Tornado Watch Active'}
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-red-300">
+                <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-red-400" />
+                Tornado Warning Active
               </div>
               <div className="text-[11px] font-medium text-slate-400">
                 {contacts.length} contact{contacts.length !== 1 ? 's' : ''}
@@ -122,16 +123,13 @@ export default function ShelterAlert({ activeTornadoWarning, activeTornadoWatch 
             </p>
 
             <div className="space-y-2">
-              {activeTornadoWarning && (
-                <button
-                  aria-label="Send shelter alert to all contacts"
-                  onClick={() => handleShelter('⚠️ TORNADO WARNING')}
-                  className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-bold text-slate-950 shadow-[0_0_30px_rgba(74,222,128,0.3)] transition-colors hover:bg-emerald-400 active:scale-[0.98]"
-                >
-                  🏠 I’m Safe — Alert All Contacts
-                </button>
-              )}
-
+              <button
+                aria-label="Send shelter alert to all contacts"
+                onClick={() => handleShelter('⚠️ TORNADO WARNING')}
+                className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-bold text-slate-950 shadow-[0_0_30px_rgba(74,222,128,0.3)] transition-colors hover:bg-emerald-400 active:scale-[0.98]"
+              >
+                🏠 I'm Safe — Alert All Contacts
+              </button>
             </div>
           </motion.div>
         )}
