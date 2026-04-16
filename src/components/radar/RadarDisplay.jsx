@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import { LocateFixed } from "lucide-react";
 import RadarLayersMenu from "./RadarLayersMenu";
-import LiveCompass from "./LiveCompass";
 import ShelterAlert from "./ShelterAlert";
 import RadarQuickActions from "./RadarQuickActions";
 import StormToolsPanel from "./StormToolsPanel";
@@ -109,7 +108,6 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const winterLayerRef = useRef(null);
   const refreshTimerRef = useRef(null);
   const userLocationMarkerRef = useRef(null);
-  const compassHeadingRef = useRef(0);
 
   const [showTornado, setShowTornado] = useState(true);
   const [showThunderstorm, setShowThunderstorm] = useState(true);
@@ -121,9 +119,6 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [isMapReady, setIsMapReady] = useState(false);
   const [showQuickControls, setShowQuickControls] = useState(false);
   const [isLayersMenuOpen, setIsLayersMenuOpen] = useState(false);
-  const [showCompass, setShowCompass] = useState(false);
-  const [compassBearing, setCompassBearing] = useState(0);
-  const [compassFollowMode, setCompassFollowMode] = useState(false);
   const [locationError, setLocationError] = useState(null);
   const locationErrorTimerRef = useRef(null);
   const [stormData, setStormData] = useState(null);
@@ -220,40 +215,6 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       { timeout: 10000, enableHighAccuracy: false }
     );
   }, [initialLocationSet, settings, onSettingsChange]);
-
-  useEffect(() => {
-    if (!showCompass || !window.DeviceOrientationEvent) return;
-
-    const updateHeading = (nextHeading) => {
-      const normalizedHeading = ((nextHeading % 360) + 360) % 360;
-      const previousHeading = compassHeadingRef.current;
-      const delta = ((normalizedHeading - previousHeading + 540) % 360) - 180;
-      const smoothedHeading = (previousHeading + delta * 0.55 + 360) % 360;
-      compassHeadingRef.current = smoothedHeading;
-      setCompassBearing(Math.round(smoothedHeading));
-    };
-
-    const handleOrientation = (event) => {
-      if (typeof event.webkitCompassHeading === "number") {
-        updateHeading(event.webkitCompassHeading);
-        return;
-      }
-
-      if (typeof event.alpha === "number") {
-        updateHeading(360 - event.alpha);
-      }
-    };
-
-    window.addEventListener("deviceorientation", handleOrientation, true);
-    return () => window.removeEventListener("deviceorientation", handleOrientation, true);
-  }, [showCompass]);
-
-  useEffect(() => {
-    if (!mapRef.current) return;
-    mapRef.current.style.transform = compassFollowMode ? `rotate(${-compassBearing}deg)` : "rotate(0deg)";
-    mapRef.current.style.transformOrigin = "center center";
-    mapRef.current.style.transition = "transform 80ms linear";
-  }, [compassBearing, compassFollowMode]);
 
   useEffect(() => { alertTogglesRef.current = alertToggles; }, [alertToggles]);
 
@@ -419,16 +380,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         show={showQuickControls}
         onToggleShow={handleQuickActionsToggle}
         onConus={handleConusView}
-        showCompass={showCompass}
-        onToggleCompass={() => setShowCompass((value) => !value)}
       />
-      {showCompass && (
-        <LiveCompass
-          bearing={compassBearing}
-          followMode={compassFollowMode}
-          onToggleFollow={() => setCompassFollowMode((value) => !value)}
-        />
-      )}
       <RadarLayersMenu
         isOpen={isLayersMenuOpen}
         onToggle={handleLayersMenuToggle}

@@ -1,4 +1,4 @@
-import { ChevronUp, Compass, Map } from "lucide-react";
+import { ChevronUp, Map } from "lucide-react";
 
 function ActionButton({ icon: IconComponent, label, onClick }) {
   return (
@@ -17,8 +17,6 @@ export default function RadarQuickActions({
   show,
   onToggleShow,
   onConus,
-  showCompass,
-  onToggleCompass,
 }) {
   return (
     <div
@@ -36,7 +34,6 @@ export default function RadarQuickActions({
             <span>Toolbox</span>
             <ChevronUp className="h-4 w-4" aria-hidden="true" />
           </button>
-          <ActionButton icon={Compass} label={showCompass ? "Hide Compass" : "Show Compass"} onClick={onToggleCompass} />
           <ActionButton icon={Map} label="CONUS" onClick={onConus} />
         </div>
       )}
