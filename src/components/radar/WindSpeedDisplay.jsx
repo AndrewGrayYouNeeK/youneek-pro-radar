@@ -2,7 +2,7 @@ import { Wind } from "lucide-react";
 
 const CARDINAL_DIRS = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
 function degreesToCardinal(deg) {
-  if (deg == null || isNaN(deg)) return "";
+  if (deg === null || deg === undefined || isNaN(deg)) return "";
   return CARDINAL_DIRS[Math.round(((deg % 360) + 360) % 360 / 22.5) % 16];
 }
 
@@ -11,8 +11,8 @@ export default function WindSpeedDisplay({ windData }) {
 
   const { speedMph, directionDeg, gustMph, stationName } = windData;
   const cardinal = degreesToCardinal(directionDeg);
-  const speedLabel = speedMph != null ? `${Math.round(speedMph)}` : "--";
-  const gustLabel = gustMph != null && gustMph > speedMph ? ` (G${Math.round(gustMph)})` : "";
+  const speedLabel = speedMph !== null && speedMph !== undefined ? `${Math.round(speedMph)}` : "--";
+  const gustLabel = gustMph !== null && gustMph !== undefined && gustMph > speedMph ? ` (G${Math.round(gustMph)})` : "";
 
   return (
     <div

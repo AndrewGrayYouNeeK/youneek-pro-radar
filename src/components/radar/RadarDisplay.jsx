@@ -60,6 +60,7 @@ const getAlertUrl = (type) => `${WORKER_BASE}/alerts?type=${type}`;
 
 const AERIS_CLIENT_ID = import.meta.env.VITE_AERIS_CLIENT_ID;
 const AERIS_CLIENT_SECRET = import.meta.env.VITE_AERIS_CLIENT_SECRET;
+const WIND_FETCH_DEBOUNCE_MS = 800;
 
 const invalidateMapSize = (map) => {
   requestAnimationFrame(() => {
@@ -367,7 +368,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         if (windFetchTimerRef.current) clearTimeout(windFetchTimerRef.current);
         windFetchTimerRef.current = setTimeout(() => {
           fetchWindSpeed(center.lat, center.lng);
-        }, 800);
+        }, WIND_FETCH_DEBOUNCE_MS);
       }
     };
 
