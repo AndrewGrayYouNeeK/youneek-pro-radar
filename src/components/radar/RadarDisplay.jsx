@@ -238,7 +238,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
 
     // Create and add NEXRAD radar layer
     radarLayerRef.current = L.tileLayer(tileUrl, {
-      attribution: "Radar data © Iowa Environmental Mesonet",
+      attribution: "NEXRAD data from Iowa Environmental Mesonet",
       opacity: ACTIVE_PRODUCT.opacity,
       minZoom: 4,
       maxZoom: 12,
@@ -349,7 +349,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     if (leafletMap.current && showNexrad) {
       const tileUrl = 'https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::USCOMP-N0Q-0/{z}/{x}/{y}.png';
       radarLayerRef.current = L.tileLayer(tileUrl, {
-        attribution: "Radar data © Iowa Environmental Mesonet",
+        attribution: "NEXRAD data from Iowa Environmental Mesonet",
         opacity: ACTIVE_PRODUCT.opacity,
         minZoom: 4,
         maxZoom: 12,
