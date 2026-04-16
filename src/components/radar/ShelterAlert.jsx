@@ -33,19 +33,29 @@ export default function ShelterAlert({ activeTornadoWarning, activeTornadoWatch 
         `${messagePrefix} — I'm safe and sheltering.\n${locationLine}\n— sent via YouNeeK Pro Radar`
       );
 
-    const openNext = (phones, locationLine, index) => {
-      if (index >= phones.length) return;
+    const sendToAllContacts = async (phones, locationLine) => {
       const separator = /iPad|iPhone|iPod/.test(navigator.userAgent) ? '&' : '?';
-      window.open(`sms:${phones[index]}${separator}body=${buildBody(locationLine)}`, '_blank');
-      setCurrentContactIndex(index + 1);
-      if (index + 1 < phones.length) {
-        setTimeout(() => openNext(phones, locationLine, index + 1), 1500);
-      }
+      const body = buildBody(locationLine);
+
+      // Send SMS to all contacts using Promise.all for parallel processing
+      const sendPromises = phones.map((phone, index) => {
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            window.open(`sms:${phone}${separator}body=${body}`, '_blank');
+            setCurrentContactIndex(index + 1);
+            resolve();
+          }, index * 1500); // Stagger by 1.5 seconds each
+        });
+      });
+
+      // Wait for all SMS drafts to open
+      await Promise.all(sendPromises);
     };
 
-    const send = (locationLine) => {
-      openNext(uniquePhones, locationLine, 0);
+    const send = async (locationLine) => {
       setSent(true);
+      await sendToAllContacts(uniquePhones, locationLine);
+
       if (sendTimerRef.current) window.clearTimeout(sendTimerRef.current);
       sendTimerRef.current = window.setTimeout(() => {
         setSent(false);
@@ -87,8 +97,9 @@ export default function ShelterAlert({ activeTornadoWarning, activeTornadoWatch 
               <div className="text-2xl">✅</div>
               <div>
                 <p className="text-sm font-bold text-emerald-300">
-                  Sending to {recipientCount} contact{recipientCount !== 1 ? 's' : ''}{' '}
-                  {recipientCount > 1 && currentContactIndex > 0 ? `(${currentContactIndex}/${recipientCount})` : ''}
+                  {currentContactIndex === recipientCount
+                    ? `Sent to ${recipientCount === 1 ? '1 contact' : `all ${recipientCount} contacts`}`
+                    : `Sending to ${recipientCount} contact${recipientCount !== 1 ? 's' : ''} (${currentContactIndex}/${recipientCount})`}
                 </p>
                 <p className="mt-0.5 text-xs text-emerald-400/70">
                   {isTesting
