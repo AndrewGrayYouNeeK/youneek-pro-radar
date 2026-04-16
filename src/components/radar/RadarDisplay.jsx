@@ -251,6 +251,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   useEffect(() => {
     if (!leafletMap.current || !showNexrad) {
       setActiveTornadoWarning(false);
+      setActiveTornadoWatch(false);
       return;
     }
 
