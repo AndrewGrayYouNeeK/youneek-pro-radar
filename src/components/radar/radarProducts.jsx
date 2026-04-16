@@ -4,7 +4,7 @@ export const RADAR_PRODUCTS = [
     label: "Reflectivity",
     description: "NEXRAD base reflectivity (N0Q)",
     tileUrl: "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::USCOMP-N0Q-0/{z}/{x}/{y}.png",
-    opacity: 0.72,
+    opacity: 0.8,
     maxNativeZoom: 12,
   },
 ];
