@@ -156,7 +156,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       bounceAtZoomLimits: false,
       minZoom: 4,
       maxZoom: 16,
-    }).setView(coords, 8);
+    }).setView(coords, 7);
     const baseLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
       attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
       subdomains: "abcd", maxZoom: 20, crossOrigin: "anonymous"
@@ -202,7 +202,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
 
         // Center map on user's location with good zoom level
         if (leafletMap.current && !initialLocationSet) {
-          leafletMap.current.setView([latitude, longitude], 10);
+          leafletMap.current.setView([latitude, longitude], 8);
           setInitialLocationSet(true);
         }
       },
@@ -249,6 +249,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
           radarLayerRef.current = L.tileLayer(tileUrl, {
             attribution: "Radar data © Iowa Mesonet / RainViewer",
             opacity: ACTIVE_PRODUCT.opacity,
+            minZoom: 4,
             maxZoom: 16,
             maxNativeZoom: ACTIVE_PRODUCT.maxNativeZoom || 12,
             crossOrigin: "anonymous",
@@ -377,6 +378,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
           radarLayerRef.current = L.tileLayer(tileUrl, {
             attribution: "Radar data © Iowa Mesonet / RainViewer",
             opacity: ACTIVE_PRODUCT.opacity,
+            minZoom: 4,
             maxZoom: 16,
             maxNativeZoom: ACTIVE_PRODUCT.maxNativeZoom || 12,
             crossOrigin: "anonymous",
