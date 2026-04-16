@@ -108,7 +108,6 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const userLocationMarkerRef = useRef(null);
   const animationFrameRef = useRef(null);
   const animationIntervalRef = useRef(null);
-  const radarTimestampsRef = useRef([]);
   const currentFrameIndexRef = useRef(0);
   const isAnimatingRef = useRef(false);
 
@@ -128,6 +127,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [initialLocationSet, setInitialLocationSet] = useState(false);
   const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
   const [isLooping, setIsLooping] = useState(false);
+  const [radarTimestamps, setRadarTimestamps] = useState([]);
 
   const mapCenter = leafletMap.current?.getCenter();
   const activeWarningsCount = [showTornado, showThunderstorm, showFlood, showWinter].filter(Boolean).length;
@@ -237,13 +237,13 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         if (data?.radar?.past && data.radar.past.length > 0) {
           // Get last 10 frames (past radar scans)
           const timestamps = data.radar.past.slice(-10).map(item => item.time);
-          radarTimestampsRef.current = timestamps;
+          setRadarTimestamps(timestamps);
           currentFrameIndexRef.current = timestamps.length - 1; // Start at most recent
           setCurrentFrameIndex(timestamps.length - 1);
         }
       } catch (error) {
         console.warn('Could not fetch radar timestamps:', error);
-        radarTimestampsRef.current = [];
+        setRadarTimestamps([]);
       }
     };
 
@@ -259,7 +259,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
 
   // Animation loop effect
   useEffect(() => {
-    if (!leafletMap.current || !showNexrad || radarTimestampsRef.current.length === 0) {
+    if (!leafletMap.current || !showNexrad || radarTimestamps.length === 0) {
       setIsLooping(false);
       // Clean up radar layer when animation is disabled
       if (radarLayerRef.current && leafletMap.current) {
@@ -286,7 +286,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     const updateRadarFrame = () => {
       if (!leafletMap.current || !isAnimatingRef.current) return;
 
-      const timestamps = radarTimestampsRef.current;
+      const timestamps = radarTimestamps;
       if (timestamps.length === 0) return;
 
       // Get current frame timestamp
@@ -322,7 +322,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       if (!isAnimatingRef.current) return;
 
       // Move to next frame (loop back to start)
-      currentFrameIndexRef.current = (currentFrameIndexRef.current + 1) % radarTimestampsRef.current.length;
+      currentFrameIndexRef.current = (currentFrameIndexRef.current + 1) % radarTimestamps.length;
 
       // Use requestAnimationFrame for smooth updates that don't fight with map events
       animationFrameRef.current = requestAnimationFrame(updateRadarFrame);
@@ -344,7 +344,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         radarLayerRef.current = null;
       }
     };
-  }, [showNexrad, radarTimestampsRef.current.length]);
+  }, [showNexrad, radarTimestamps]);
 
   // Separate effect for alerts (unchanged logic)
   useEffect(() => {
@@ -438,7 +438,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
 
       if (data?.radar?.past && data.radar.past.length > 0) {
         const timestamps = data.radar.past.slice(-10).map(item => item.time);
-        radarTimestampsRef.current = timestamps;
+        setRadarTimestamps(timestamps);
         currentFrameIndexRef.current = timestamps.length - 1;
         setCurrentFrameIndex(timestamps.length - 1);
       }
