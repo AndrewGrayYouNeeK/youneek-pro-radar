@@ -2,8 +2,8 @@ export const RADAR_PRODUCTS = [
   {
     id: "reflectivity",
     label: "Reflectivity",
-    description: "Base radar precipitation view",
-    tileUrl: "https://tilecache.rainviewer.com/v2/radar/nowcast_0/256/{z}/{x}/{y}/2/1_1.png",
+    description: "NEXRAD base reflectivity (N0Q)",
+    tileUrl: "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::USCOMP-N0Q-0/{z}/{x}/{y}.png",
     opacity: 0.72,
     maxNativeZoom: 12,
   },

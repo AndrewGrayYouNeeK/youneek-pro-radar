@@ -146,7 +146,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
 
   useEffect(() => {
     if (leafletMap.current || !mapRef.current) return;
-    const coords = STATION_COORDS[settings.station] || [37.8, -85.5];
+    const coords = STATION_COORDS[settings.station] || [39.5, -98.35]; // US center fallback
     leafletMap.current = L.map(mapRef.current, {
       zoomControl: true,
       attributionControl: true,
@@ -155,7 +155,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       touchZoom: true,
       bounceAtZoomLimits: false,
       minZoom: 4,
-      maxZoom: 16,
+      maxZoom: 12,
     }).setView(coords, 7);
     const baseLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
       attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
@@ -216,7 +216,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
 
   useEffect(() => { alertTogglesRef.current = alertToggles; }, [alertToggles]);
 
-  // Load single most recent reflectivity radar frame
+  // Load NEXRAD reflectivity radar layer
   useEffect(() => {
     if (!leafletMap.current || !showNexrad) {
       // Clean up radar layer when disabled
@@ -227,46 +227,26 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       return;
     }
 
-    const loadRadarFrame = async () => {
-      try {
-        const response = await fetch('https://api.rainviewer.com/public/weather-maps.json');
-        const data = await response.json();
+    // Iowa Mesonet NEXRAD basic reflectivity tile URL
+    const tileUrl = 'https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::USCOMP-N0Q-0/{z}/{x}/{y}.png';
 
-        if (data?.radar?.past && data.radar.past.length > 0) {
-          // Get the most recent timestamp
-          const latestTimestamp = data.radar.past[data.radar.past.length - 1].time;
+    // Remove existing radar layer if present
+    if (radarLayerRef.current && leafletMap.current) {
+      leafletMap.current.removeLayer(radarLayerRef.current);
+      radarLayerRef.current = null;
+    }
 
-          // Build tile URL for the latest frame
-          const tileUrl = `https://tilecache.rainviewer.com/v2/radar/${latestTimestamp}/256/{z}/{x}/{y}/2/1_1.png`;
-
-          // Remove existing radar layer if present
-          if (radarLayerRef.current && leafletMap.current) {
-            leafletMap.current.removeLayer(radarLayerRef.current);
-            radarLayerRef.current = null;
-          }
-
-          // Create and add new radar layer
-          radarLayerRef.current = L.tileLayer(tileUrl, {
-            attribution: "Radar data © Iowa Mesonet / RainViewer",
-            opacity: ACTIVE_PRODUCT.opacity,
-            minZoom: 4,
-            maxZoom: 16,
-            maxNativeZoom: ACTIVE_PRODUCT.maxNativeZoom || 12,
-            crossOrigin: "anonymous",
-          }).addTo(leafletMap.current);
-        }
-      } catch (error) {
-        console.warn('Could not load radar data:', error);
-      }
-    };
-
-    loadRadarFrame();
-
-    // Refresh radar every 5 minutes
-    const radarRefreshInterval = setInterval(loadRadarFrame, 5 * 60 * 1000);
+    // Create and add NEXRAD radar layer
+    radarLayerRef.current = L.tileLayer(tileUrl, {
+      attribution: "Radar data © Iowa Environmental Mesonet",
+      opacity: ACTIVE_PRODUCT.opacity,
+      minZoom: 4,
+      maxZoom: 12,
+      maxNativeZoom: 12,
+      crossOrigin: "anonymous",
+    }).addTo(leafletMap.current);
 
     return () => {
-      clearInterval(radarRefreshInterval);
       // Clean up radar layer on unmount
       if (radarLayerRef.current && leafletMap.current) {
         leafletMap.current.removeLayer(radarLayerRef.current);
@@ -360,33 +340,22 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   }, [isMapReady, userLocation]);
 
   const refreshWeatherData = async () => {
-    // Refresh radar to get latest data
-    try {
-      const response = await fetch('https://api.rainviewer.com/public/weather-maps.json');
-      const data = await response.json();
+    // Force refresh NEXRAD radar layer
+    if (radarLayerRef.current && leafletMap.current) {
+      leafletMap.current.removeLayer(radarLayerRef.current);
+      radarLayerRef.current = null;
+    }
 
-      if (data?.radar?.past && data.radar.past.length > 0) {
-        const latestTimestamp = data.radar.past[data.radar.past.length - 1].time;
-        const tileUrl = `https://tilecache.rainviewer.com/v2/radar/${latestTimestamp}/256/{z}/{x}/{y}/2/1_1.png`;
-
-        if (radarLayerRef.current && leafletMap.current) {
-          leafletMap.current.removeLayer(radarLayerRef.current);
-          radarLayerRef.current = null;
-        }
-
-        if (leafletMap.current && showNexrad) {
-          radarLayerRef.current = L.tileLayer(tileUrl, {
-            attribution: "Radar data © Iowa Mesonet / RainViewer",
-            opacity: ACTIVE_PRODUCT.opacity,
-            minZoom: 4,
-            maxZoom: 16,
-            maxNativeZoom: ACTIVE_PRODUCT.maxNativeZoom || 12,
-            crossOrigin: "anonymous",
-          }).addTo(leafletMap.current);
-        }
-      }
-    } catch (error) {
-      console.warn('Could not refresh radar data:', error);
+    if (leafletMap.current && showNexrad) {
+      const tileUrl = 'https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::USCOMP-N0Q-0/{z}/{x}/{y}.png';
+      radarLayerRef.current = L.tileLayer(tileUrl, {
+        attribution: "Radar data © Iowa Environmental Mesonet",
+        opacity: ACTIVE_PRODUCT.opacity,
+        minZoom: 4,
+        maxZoom: 12,
+        maxNativeZoom: 12,
+        crossOrigin: "anonymous",
+      }).addTo(leafletMap.current);
     }
   };
   const { isRefreshing, pullToRefreshHandlers } = usePullToRefresh({ onRefresh: refreshWeatherData });
