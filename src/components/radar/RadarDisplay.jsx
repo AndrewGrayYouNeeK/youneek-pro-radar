@@ -70,12 +70,6 @@ const invalidateMapSize = (map) => {
     map.invalidateSize({ pan: false, animate: false });
   }, 150);
 };
-const applyLeafletControlAccessibility = (container) => {
-  const zoomInButton = container?.querySelector?.(".leaflet-control-zoom-in");
-  const zoomOutButton = container?.querySelector?.(".leaflet-control-zoom-out");
-  if (zoomInButton) { zoomInButton.setAttribute("aria-label", "Zoom in on radar"); zoomInButton.setAttribute("aria-description", "Double tap to enlarge the view"); }
-  if (zoomOutButton) { zoomOutButton.setAttribute("aria-label", "Zoom out on radar"); zoomOutButton.setAttribute("aria-description", "Double tap to reduce the view"); }
-};
 
 function haversineKm(lat1, lon1, lat2, lon2) {
   const R = 6371;
@@ -148,7 +142,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     if (leafletMap.current || !mapRef.current) return;
     const coords = STATION_COORDS[settings.station] || [39.5, -98.35]; // US center fallback
     leafletMap.current = L.map(mapRef.current, {
-      zoomControl: true,
+      zoomControl: false,
       attributionControl: true,
       zoomSnap: 0.5,
       zoomDelta: 0.5,
@@ -165,7 +159,6 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       setIsMapReady(true);
       invalidateMapSize(leafletMap.current);
     });
-    requestAnimationFrame(() => applyLeafletControlAccessibility(mapRef.current));
     return () => {
       if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
       if (locationErrorTimerRef.current) clearTimeout(locationErrorTimerRef.current);
@@ -419,6 +412,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         show={showQuickControls}
         onToggleShow={handleQuickActionsToggle}
         onConus={handleConusView}
+        onToggleLayers={handleLayersMenuToggle}
       />
       <RadarLayersMenu
         isOpen={isLayersMenuOpen}
@@ -433,11 +427,11 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       {stormData && <StormToolsPanel stormData={stormData} onClose={() => setStormData(null)} />}
       <button
         onClick={handleLocateMe}
-        className="absolute z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-colors hover:bg-blue-700"
-        style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))", right: "calc(1.25rem + env(safe-area-inset-right))" }}
+        className="absolute z-[1000] flex h-10 w-10 items-center justify-center rounded-full bg-blue-600/70 text-white shadow-md transition-colors hover:bg-blue-700"
+        style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))", right: "calc(1rem + env(safe-area-inset-right))" }}
         aria-label="Center radar on my location"
       >
-        <LocateFixed size={24} aria-hidden="true" />
+        <LocateFixed size={18} aria-hidden="true" />
       </button>
       {locationError && (
         <div className="absolute z-[1001] rounded-xl bg-red-900/90 px-3 py-1.5 text-xs font-medium text-red-200 shadow-lg backdrop-blur-sm" style={{ bottom: "calc(7.5rem + env(safe-area-inset-bottom))", right: "calc(0.5rem + env(safe-area-inset-right))" }}>

@@ -1,4 +1,4 @@
-import { ChevronUp, Map } from "lucide-react";
+import { ChevronUp, Map, Layers } from "lucide-react";
 
 function ActionButton({ icon: IconComponent, label, onClick }) {
   return (
@@ -17,6 +17,7 @@ export default function RadarQuickActions({
   show,
   onToggleShow,
   onConus,
+  onToggleLayers,
 }) {
   return (
     <div
@@ -34,6 +35,7 @@ export default function RadarQuickActions({
             <span>Toolbox</span>
             <ChevronUp className="h-4 w-4" aria-hidden="true" />
           </button>
+          <ActionButton icon={Layers} label="Radar Layers" onClick={onToggleLayers} />
           <ActionButton icon={Map} label="Reset View" onClick={onConus} />
         </div>
       )}

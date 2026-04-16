@@ -30,17 +30,8 @@ export default function RadarLayersMenu({
       className="absolute z-[1000]"
       style={{ top: 'calc(0.75rem + env(safe-area-inset-top))', right: 'calc(0.75rem + env(safe-area-inset-right))' }}
     >
-      <button
-        onClick={onToggle}
-        className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-900/80 text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-slate-800/90"
-        aria-label={isOpen ? "Close layers menu" : "Open layers menu"}
-        title="Opens radar, warning, and radio controls"
-      >
-        <span className="text-xl" aria-hidden="true">🗂️</span>
-      </button>
-
       {isOpen && (
-        <div className="mt-2 w-[min(18rem,calc(100vw-1.5rem))] max-h-[calc(100vh-7.5rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/85 p-3 shadow-2xl backdrop-blur-md">
+        <div className="w-[min(18rem,calc(100vw-1.5rem))] max-h-[calc(100vh-7.5rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/85 p-3 shadow-2xl backdrop-blur-md">
           <div className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">
             Layers
           </div>
