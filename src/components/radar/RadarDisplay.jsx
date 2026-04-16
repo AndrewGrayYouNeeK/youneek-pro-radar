@@ -56,8 +56,6 @@ const STATION_COORDS = {
   KMSX: [47.041, -113.986], KTFX: [47.46, -111.385], KCBX: [43.491, -116.236],
 };
 
-const getCacheBust = () => Math.floor(Date.now() / 120000);
-const getRadarTileUrl = () => `${WORKER_BASE}/radar/{z}/{x}/{y}.png?_cb=${getCacheBust()}`;
 const getAlertUrl = (type) => `${WORKER_BASE}/alerts?type=${type}`;
 const TYPICAL_STORM_SPEED_MPH = 30;
 
@@ -108,6 +106,11 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const winterLayerRef = useRef(null);
   const refreshTimerRef = useRef(null);
   const userLocationMarkerRef = useRef(null);
+  const animationFrameRef = useRef(null);
+  const animationIntervalRef = useRef(null);
+  const radarTimestampsRef = useRef([]);
+  const currentFrameIndexRef = useRef(0);
+  const isAnimatingRef = useRef(false);
 
   const [showTornado, setShowTornado] = useState(true);
   const [showThunderstorm, setShowThunderstorm] = useState(true);
@@ -123,6 +126,8 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const locationErrorTimerRef = useRef(null);
   const [stormData, setStormData] = useState(null);
   const [initialLocationSet, setInitialLocationSet] = useState(false);
+  const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
+  const [isLooping, setIsLooping] = useState(false);
 
   const mapCenter = leafletMap.current?.getCenter();
   const activeWarningsCount = [showTornado, showThunderstorm, showFlood, showWinter].filter(Boolean).length;
@@ -169,6 +174,8 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     });
     requestAnimationFrame(() => applyLeafletControlAccessibility(mapRef.current));
     return () => {
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+      if (animationIntervalRef.current) clearInterval(animationIntervalRef.current);
       if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
       if (locationErrorTimerRef.current) clearTimeout(locationErrorTimerRef.current);
       [radarLayerRef, tornadoLayerRef, thunderLayerRef, floodLayerRef, winterLayerRef, userLocationMarkerRef].forEach((r) => {
@@ -218,14 +225,139 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
 
   useEffect(() => { alertTogglesRef.current = alertToggles; }, [alertToggles]);
 
+  // Fetch radar timestamps and setup animation loop
   useEffect(() => {
-    if (!leafletMap.current) return;
-    if (radarLayerRef.current) { leafletMap.current.removeLayer(radarLayerRef.current); radarLayerRef.current = null; }
+    if (!leafletMap.current || !showNexrad) return;
+
+    const fetchRadarTimestamps = async () => {
+      try {
+        const response = await fetch('https://api.rainviewer.com/public/weather-maps.json');
+        const data = await response.json();
+
+        if (data?.radar?.past && data.radar.past.length > 0) {
+          // Get last 10 frames (past radar scans)
+          const timestamps = data.radar.past.slice(-10).map(item => item.time);
+          radarTimestampsRef.current = timestamps;
+          currentFrameIndexRef.current = timestamps.length - 1; // Start at most recent
+          setCurrentFrameIndex(timestamps.length - 1);
+        }
+      } catch (error) {
+        console.warn('Could not fetch radar timestamps:', error);
+        radarTimestampsRef.current = [];
+      }
+    };
+
+    fetchRadarTimestamps();
+
+    // Refresh timestamps every 10 minutes
+    const timestampRefreshInterval = setInterval(fetchRadarTimestamps, 10 * 60 * 1000);
+
+    return () => {
+      clearInterval(timestampRefreshInterval);
+    };
+  }, [showNexrad]);
+
+  // Animation loop effect
+  useEffect(() => {
+    if (!leafletMap.current || !showNexrad || radarTimestampsRef.current.length === 0) {
+      setIsLooping(false);
+      // Clean up radar layer when animation is disabled
+      if (radarLayerRef.current && leafletMap.current) {
+        leafletMap.current.removeLayer(radarLayerRef.current);
+        radarLayerRef.current = null;
+      }
+      return;
+    }
+
+    // Clean up any existing animation
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    if (animationIntervalRef.current) {
+      clearInterval(animationIntervalRef.current);
+      animationIntervalRef.current = null;
+    }
+
+    // Start animation automatically
+    isAnimatingRef.current = true;
+    setIsLooping(true);
+
+    const updateRadarFrame = () => {
+      if (!leafletMap.current || !isAnimatingRef.current) return;
+
+      const timestamps = radarTimestampsRef.current;
+      if (timestamps.length === 0) return;
+
+      // Get current frame timestamp
+      const timestamp = timestamps[currentFrameIndexRef.current];
+
+      // Build tile URL with timestamp
+      const tileUrl = `https://tilecache.rainviewer.com/v2/radar/${timestamp}/256/{z}/{x}/{y}/2/1_1.png`;
+
+      // Update or create radar layer
+      if (radarLayerRef.current) {
+        // Just update the URL on existing layer - this is smooth and doesn't fight with Leaflet
+        radarLayerRef.current.setUrl(tileUrl);
+      } else {
+        // Create initial layer
+        radarLayerRef.current = L.tileLayer(tileUrl, {
+          attribution: "Radar data © Iowa Mesonet / RainViewer",
+          opacity: ACTIVE_PRODUCT.opacity,
+          maxZoom: 16,
+          maxNativeZoom: ACTIVE_PRODUCT.maxNativeZoom || 12,
+          crossOrigin: "anonymous",
+        }).addTo(leafletMap.current);
+      }
+
+      // Update frame index state
+      setCurrentFrameIndex(currentFrameIndexRef.current);
+    };
+
+    // Initial frame
+    updateRadarFrame();
+
+    // Animate through frames at 500ms intervals
+    animationIntervalRef.current = setInterval(() => {
+      if (!isAnimatingRef.current) return;
+
+      // Move to next frame (loop back to start)
+      currentFrameIndexRef.current = (currentFrameIndexRef.current + 1) % radarTimestampsRef.current.length;
+
+      // Use requestAnimationFrame for smooth updates that don't fight with map events
+      animationFrameRef.current = requestAnimationFrame(updateRadarFrame);
+    }, 500);
+
+    return () => {
+      isAnimatingRef.current = false;
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      if (animationIntervalRef.current) {
+        clearInterval(animationIntervalRef.current);
+        animationIntervalRef.current = null;
+      }
+      // Clean up radar layer on unmount
+      if (radarLayerRef.current && leafletMap.current) {
+        leafletMap.current.removeLayer(radarLayerRef.current);
+        radarLayerRef.current = null;
+      }
+    };
+  }, [showNexrad, radarTimestampsRef.current.length]);
+
+  // Separate effect for alerts (unchanged logic)
+  useEffect(() => {
+    if (!leafletMap.current || !showNexrad) {
+      setActiveTornadoWarning(false);
+      return;
+    }
+
+    // Clean up existing alert layers
     [tornadoLayerRef, thunderLayerRef, floodLayerRef, winterLayerRef].forEach((r) => {
       if (r.current) { leafletMap.current.removeLayer(r.current); r.current = null; }
     });
     if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
-    if (!showNexrad) { setActiveTornadoWarning(false); return; }
 
     const refreshAlertLayer = (layerRef, toggleKey, alertType, color) => {
       if (layerRef.current) { leafletMap.current.removeLayer(layerRef.current); layerRef.current = null; }
@@ -258,32 +390,15 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
       refreshAlertLayer(winterLayerRef, "winter", "winter", "#a855f7");
     };
 
-    const refreshRadarLayer = () => {
-      const tileUrl = getRadarTileUrl();
-      if (radarLayerRef.current?.setUrl) {
-        radarLayerRef.current.setUrl(tileUrl);
-        return;
-      }
-      radarLayerRef.current = L.tileLayer(tileUrl, {
-        attribution: "Radar data © Iowa Mesonet / RainViewer",
-        opacity: ACTIVE_PRODUCT.opacity,
-        maxZoom: 16,
-        maxNativeZoom: ACTIVE_PRODUCT.maxNativeZoom || 12,
-        crossOrigin: "anonymous",
-      }).addTo(leafletMap.current);
-    };
-
-    refreshRadarLayer();
     refreshAlertLayers();
 
     refreshTimerRef.current = setInterval(() => {
-      refreshRadarLayer();
       refreshAlertLayers();
     }, 5 * 60 * 1000);
 
     return () => {
       clearInterval(refreshTimerRef.current);
-      [radarLayerRef, tornadoLayerRef, thunderLayerRef, floodLayerRef, winterLayerRef].forEach((r) => {
+      [tornadoLayerRef, thunderLayerRef, floodLayerRef, winterLayerRef].forEach((r) => {
         if (r.current && leafletMap.current?.hasLayer(r.current)) leafletMap.current.removeLayer(r.current);
         r.current = null;
       });
@@ -315,9 +430,21 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     };
   }, [isMapReady, userLocation]);
 
-  const refreshWeatherData = () => {
-    const tileUrl = getRadarTileUrl();
-    if (radarLayerRef.current?.setUrl) radarLayerRef.current.setUrl(tileUrl);
+  const refreshWeatherData = async () => {
+    // Refresh radar timestamps to get latest data
+    try {
+      const response = await fetch('https://api.rainviewer.com/public/weather-maps.json');
+      const data = await response.json();
+
+      if (data?.radar?.past && data.radar.past.length > 0) {
+        const timestamps = data.radar.past.slice(-10).map(item => item.time);
+        radarTimestampsRef.current = timestamps;
+        currentFrameIndexRef.current = timestamps.length - 1;
+        setCurrentFrameIndex(timestamps.length - 1);
+      }
+    } catch (error) {
+      console.warn('Could not refresh radar data:', error);
+    }
   };
   const { isRefreshing, pullToRefreshHandlers } = usePullToRefresh({ onRefresh: refreshWeatherData });
   const showLocationError = (msg) => {
