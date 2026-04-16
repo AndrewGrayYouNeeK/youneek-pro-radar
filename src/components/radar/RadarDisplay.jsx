@@ -210,7 +210,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
 
   // Load NEXRAD reflectivity radar layer
   useEffect(() => {
-    if (!leafletMap.current || !showNexrad) {
+    if (!leafletMap.current || !showNexrad || !isMapReady) {
       // Clean up radar layer when disabled
       if (radarLayerRef.current && leafletMap.current) {
         leafletMap.current.removeLayer(radarLayerRef.current);
@@ -245,11 +245,11 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         radarLayerRef.current = null;
       }
     };
-  }, [showNexrad]);
+  }, [showNexrad, isMapReady]);
 
   // Separate effect for alerts (unchanged logic)
   useEffect(() => {
-    if (!leafletMap.current || !showNexrad) {
+    if (!leafletMap.current || !showNexrad || !isMapReady) {
       setActiveTornadoWarning(false);
       setActiveTornadoWatch(false);
       return;
@@ -321,7 +321,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         r.current = null;
       });
     };
-  }, [showNexrad, settings.station, showTornado, showThunderstorm, showFlood, showWinter, userLocation]);
+  }, [showNexrad, settings.station, showTornado, showThunderstorm, showFlood, showWinter, userLocation, isMapReady]);
 
   const handleConusView = () => {
     if (!leafletMap.current) return;
