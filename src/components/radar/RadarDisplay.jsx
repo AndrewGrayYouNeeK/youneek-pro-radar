@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import { LocateFixed } from "lucide-react";
 import RadarLayersMenu from "./RadarLayersMenu";
 import ShelterAlert from "./ShelterAlert";
 import RadarQuickActions from "./RadarQuickActions";
-import StormToolsPanel from "./StormToolsPanel";
+import WindSpeedDisplay from "./WindSpeedDisplay";
 import { getRadarProduct } from "./radarProducts";
 import usePullToRefresh from "@/hooks/usePullToRefresh";
 import "leaflet/dist/leaflet.css";
@@ -57,7 +57,9 @@ const STATION_COORDS = {
 };
 
 const getAlertUrl = (type) => `${WORKER_BASE}/alerts?type=${type}`;
-const TYPICAL_STORM_SPEED_MPH = 30;
+
+const AERIS_CLIENT_ID = import.meta.env.VITE_AERIS_CLIENT_ID;
+const AERIS_CLIENT_SECRET = import.meta.env.VITE_AERIS_CLIENT_SECRET;
 
 const invalidateMapSize = (map) => {
   requestAnimationFrame(() => {
@@ -112,7 +114,8 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [isLayersMenuOpen, setIsLayersMenuOpen] = useState(false);
   const [locationError, setLocationError] = useState(null);
   const locationErrorTimerRef = useRef(null);
-  const [stormData, setStormData] = useState(null);
+  const [windData, setWindData] = useState(null);
+  const windFetchTimerRef = useRef(null);
   const [initialLocationSet, setInitialLocationSet] = useState(false);
 
   const mapCenter = leafletMap.current?.getCenter();
@@ -161,6 +164,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     return () => {
       if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
       if (locationErrorTimerRef.current) clearTimeout(locationErrorTimerRef.current);
+      if (windFetchTimerRef.current) clearTimeout(windFetchTimerRef.current);
       [radarLayerRef, tornadoLayerRef, thunderLayerRef, floodLayerRef, winterLayerRef, userLocationMarkerRef].forEach((r) => {
         if (r.current && leafletMap.current?.hasLayer(r.current)) leafletMap.current.removeLayer(r.current);
         r.current = null;
@@ -328,25 +332,55 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
     leafletMap.current.setView([39.5, -98.35], 5);
   };
 
+  // Fetch real-time wind speed from AerisWeather for the map center
+  const fetchWindSpeed = useCallback(async (lat, lon) => {
+    if (!AERIS_CLIENT_ID || !AERIS_CLIENT_SECRET) return;
+    try {
+      const url = `https://api.aerisapi.com/observations/closest?p=${lat},${lon}&client_id=${AERIS_CLIENT_ID}&client_secret=${AERIS_CLIENT_SECRET}&fields=ob.windMPH,ob.windDir,ob.windDirDEG,ob.windGustMPH,place.name,place.state`;
+      const response = await fetch(url);
+      if (!response.ok) return;
+      const data = await response.json();
+      if (data?.success && data.response?.length > 0) {
+        const obs = data.response[0];
+        const ob = obs.ob || {};
+        const place = obs.place || {};
+        setWindData({
+          speedMph: ob.windMPH,
+          directionDeg: ob.windDirDEG,
+          gustMph: ob.windGustMPH,
+          stationName: place.name ? `${place.name}${place.state ? `, ${place.state}` : ""}` : null,
+        });
+      }
+    } catch (err) {
+      console.warn("Wind speed fetch failed:", err);
+    }
+  }, []);
+
+  // Fetch wind data on map moveend and on initial load
   useEffect(() => {
-    if (!leafletMap.current) return;
-    const handleMapClick = (event) => {
-      if (!userLocation) return;
-      const point = event.latlng;
-      const distanceMi = Math.max(1, Math.round(haversineKm(userLocation.lat, userLocation.lon, point.lat, point.lng) * 0.621371));
-      const latDiff = userLocation.lat - point.lat;
-      const lonDiff = userLocation.lon - point.lng;
-      const bearing = (Math.atan2(lonDiff, latDiff) * 180 / Math.PI + 360) % 360;
-      const speedMph = TYPICAL_STORM_SPEED_MPH;
-      const etaMinutes = Math.round((distanceMi / speedMph) * 60);
-      setStormData({ bearing: Math.round(bearing), distanceMi, speedMph, etaMinutes });
+    if (!leafletMap.current || !isMapReady) return;
+
+    const handleMoveEnd = () => {
+      const center = leafletMap.current?.getCenter();
+      if (center) {
+        // Debounce: clear any pending fetch
+        if (windFetchTimerRef.current) clearTimeout(windFetchTimerRef.current);
+        windFetchTimerRef.current = setTimeout(() => {
+          fetchWindSpeed(center.lat, center.lng);
+        }, 800);
+      }
     };
 
-    leafletMap.current.on("click", handleMapClick);
+    // Fetch immediately for current position
+    const center = leafletMap.current.getCenter();
+    if (center) fetchWindSpeed(center.lat, center.lng);
+
+    leafletMap.current.on("moveend", handleMoveEnd);
     return () => {
-      leafletMap.current?.off("click", handleMapClick);
+      leafletMap.current?.off("moveend", handleMoveEnd);
+      if (windFetchTimerRef.current) clearTimeout(windFetchTimerRef.current);
     };
-  }, [isMapReady, userLocation]);
+  }, [isMapReady, fetchWindSpeed]);
 
   const refreshWeatherData = async () => {
     // Force refresh NEXRAD radar layer
@@ -431,7 +465,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         onShowRadioChange={onToggleRadio}
         onAlertToggleChange={handleAlertToggleChange}
       />
-      {stormData && <StormToolsPanel stormData={stormData} onClose={() => setStormData(null)} />}
+      <WindSpeedDisplay windData={windData} />
       <button
         onClick={handleLocateMe}
         className="absolute z-[1000] flex h-10 w-10 items-center justify-center rounded-full bg-blue-600/70 text-white shadow-md transition-colors hover:bg-blue-700"
