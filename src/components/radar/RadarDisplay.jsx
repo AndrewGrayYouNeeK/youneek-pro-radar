@@ -106,7 +106,7 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
   const [showFlood, setShowFlood] = useState(false);
   const [showWinter, setShowWinter] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
-  const [activeTornadoWarning, setActiveTornadoWarning] = useState(true);
+  const [activeTornadoWarning, setActiveTornadoWarning] = useState(false);
   const [activeTornadoWatch, setActiveTornadoWatch] = useState(false);
   const [isMapReady, setIsMapReady] = useState(false);
   const [isLayersMenuOpen, setIsLayersMenuOpen] = useState(false);
@@ -269,7 +269,15 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
           if (!leafletMap.current) return;
           if (toggleKey === "tornado") {
             const features = data?.features || [];
-            setActiveTornadoWarning(Boolean(userLocation) && features.some((f) => isFeatureNearLocation(f, userLocation, 150)));
+            // Only consider features with event "Tornado Warning" (not "Tornado Watch")
+            const tornadoWarnings = features.filter((f) => {
+              const event = f?.properties?.event || '';
+              return event === 'Tornado Warning';
+            });
+            setActiveTornadoWarning(
+              Boolean(userLocation) &&
+              tornadoWarnings.some((f) => isFeatureNearLocation(f, userLocation, 150))
+            );
           }
           if (!alertTogglesRef.current[toggleKey]) return;
           layerRef.current = L.geoJSON(data, {
@@ -284,7 +292,15 @@ export default function RadarDisplay({ settings, showNexrad, onSettingsChange, s
         .then((r) => r.json())
         .then((data) => {
           const features = data?.features || [];
-          setActiveTornadoWatch(Boolean(userLocation) && features.some((f) => isFeatureNearLocation(f, userLocation, 150)));
+          // Only consider features with event "Tornado Watch"
+          const tornadoWatches = features.filter((f) => {
+            const event = f?.properties?.event || '';
+            return event === 'Tornado Watch';
+          });
+          setActiveTornadoWatch(
+            Boolean(userLocation) &&
+            tornadoWatches.some((f) => isFeatureNearLocation(f, userLocation, 150))
+          );
         });
       refreshAlertLayer(thunderLayerRef, "severe", "thunderstorm", "#f97316");
       refreshAlertLayer(floodLayerRef, "flood", "flood", "#3b82f6");
