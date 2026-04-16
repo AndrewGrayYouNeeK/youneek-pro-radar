@@ -16,6 +16,7 @@ export default function ShelterAlert({ activeTornadoWarning, activeTornadoWatch 
   const [sent, setSent] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [currentContactIndex, setCurrentContactIndex] = useState(0);
+  const [recipientCount, setRecipientCount] = useState(0);
   const sendTimerRef = useRef(null);
   const contacts = loadContacts();
 
@@ -24,6 +25,7 @@ export default function ShelterAlert({ activeTornadoWarning, activeTornadoWatch 
   const handleShelter = (messagePrefix = '⚠️ TORNADO WARNING') => {
     const uniquePhones = [...new Set(contacts.map((c) => c.phone).filter(Boolean))];
     if (!uniquePhones.length) return;
+    setRecipientCount(uniquePhones.length);
 
     const buildBody = (locationLine) =>
       encodeURIComponent(
@@ -48,6 +50,7 @@ export default function ShelterAlert({ activeTornadoWarning, activeTornadoWatch 
         setSent(false);
         setIsTesting(false);
         setCurrentContactIndex(0);
+        setRecipientCount(0);
       }, 8000);
     };
 
@@ -83,8 +86,8 @@ export default function ShelterAlert({ activeTornadoWarning, activeTornadoWatch 
               <div className="text-2xl">✅</div>
               <div>
                 <p className="text-sm font-bold text-emerald-300">
-                  Sending to {contacts.length} contact{contacts.length !== 1 ? 's' : ''}{' '}
-                  {contacts.length > 1 && currentContactIndex > 0 ? `(${currentContactIndex}/${contacts.length})` : ''}
+                  Sending to {recipientCount} contact{recipientCount !== 1 ? 's' : ''}{' '}
+                  {recipientCount > 1 && currentContactIndex > 0 ? `(${currentContactIndex}/${recipientCount})` : ''}
                 </p>
                 <p className="mt-0.5 text-xs text-emerald-400/70">
                   {isTesting
