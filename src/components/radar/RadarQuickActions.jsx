@@ -34,7 +34,7 @@ export default function RadarQuickActions({
             <span>Toolbox</span>
             <ChevronUp className="h-4 w-4" aria-hidden="true" />
           </button>
-          <ActionButton icon={Map} label="CONUS" onClick={onConus} />
+          <ActionButton icon={Map} label="Reset View" onClick={onConus} />
         </div>
       )}
       <button
