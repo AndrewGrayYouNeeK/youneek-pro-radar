@@ -42,6 +42,19 @@ No API keys required — uses Iowa Mesonet public tiles and NWS public GeoJSON e
 - Iowa Mesonet XYZ tiles for radar
 - NWS GeoJSON API for live alerts
 - `sms:` URI scheme for emergency contacts
+- PWA-ready with multi-device icon support
+
+## Development
+
+### Regenerating Icons
+
+If you modify `public/icon.svg`, regenerate the PWA icons with:
+
+```bash
+npm run generate-icons
+```
+
+This creates PNG icons in sizes: 16×16, 32×32, 180×180 (Apple), 192×192, 512×512, and favicon.ico.
 
 ## Built By
 
