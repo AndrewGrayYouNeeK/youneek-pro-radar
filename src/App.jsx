@@ -5,8 +5,6 @@ import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import PageNotFound from './lib/PageNotFound';
-import { AuthProvider, useAuth } from '@/lib/AuthContext';
-import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import { NavigationStackProvider } from "@/lib/NavigationStack";
 import OnboardingModal from "@/components/radar/OnboardingModal";
 
@@ -20,17 +18,9 @@ const Spinner = () => (
   </div>
 );
 
-const AuthenticatedApp = () => {
+const AppRoutes = () => {
   const location = useLocation();
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem("onboarded_v1"));
-
-  if (isLoadingPublicSettings || isLoadingAuth) return <Spinner />;
-
-  if (authError) {
-    if (authError.type === 'user_not_registered') return <UserNotRegisteredError />;
-    if (authError.type === 'auth_required') { navigateToLogin(); return null; }
-  }
 
   return (
     <>
@@ -63,18 +53,16 @@ const AuthenticatedApp = () => {
 
 function App() {
   return (
-    <AuthProvider>
-      <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <NavigationStackProvider>
-            <div className="mx-auto h-screen w-full max-w-4xl overflow-hidden bg-slate-950 shadow-2xl">
-              <AuthenticatedApp />
-            </div>
-          </NavigationStackProvider>
-        </Router>
-        <Toaster />
-      </QueryClientProvider>
-    </AuthProvider>
+    <QueryClientProvider client={queryClientInstance}>
+      <Router>
+        <NavigationStackProvider>
+          <div className="mx-auto h-screen w-full max-w-4xl overflow-hidden bg-slate-950 shadow-2xl">
+            <AppRoutes />
+          </div>
+        </NavigationStackProvider>
+      </Router>
+      <Toaster />
+    </QueryClientProvider>
   );
 }
 

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { CloudRain, LoaderCircle, MapPin, X } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { fetchRainAlert } from "@/lib/rainAlert";
 
 function getAlertCopy(data) {
   if (!data) {
@@ -39,8 +39,10 @@ export default function RainArrivalAlert() {
   const [coords, setCoords] = useState(null);
   const [locationError, setLocationError] = useState("");
   const [dismissed, setDismissed] = useState(false);
+  const rainAlertsEnabled = localStorage.getItem("pref_notifyRain") !== "false";
 
   useEffect(() => {
+    if (!rainAlertsEnabled) return;
     if (!navigator.geolocation) {
       setLocationError("Turn on location services to get rain timing alerts.");
       return;
@@ -56,24 +58,34 @@ export default function RainArrivalAlert() {
       () => setLocationError("Allow location access to see rain timing for your area."),
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
     );
-  }, []);
+  }, [rainAlertsEnabled]);
 
-  const { data, isLoading, isFetching } = useQuery({
+  const { data, isLoading, isFetching, isError } = useQuery({
     queryKey: ["rainArrivalAlert", coords?.latitude, coords?.longitude],
-    enabled: Boolean(coords),
+    enabled: Boolean(coords) && rainAlertsEnabled,
     refetchInterval: 120000,
     staleTime: 90000,
-    queryFn: async () => {
-      const response = await base44.functions.invoke("getRainAlert", coords);
-      return response.data;
-    },
+    queryFn: () => fetchRainAlert(coords),
   });
 
-  const copy = useMemo(() => getAlertCopy(data), [data]);
+  const copy = useMemo(() => {
+    if (isError) {
+      return {
+        title: "Rain timing unavailable",
+        detail: "The forecast service did not respond. It will retry shortly.",
+        tone: "border-white/10 bg-slate-950/85 text-white",
+      };
+    }
+    return getAlertCopy(data);
+  }, [data, isError]);
 
   useEffect(() => {
     setDismissed(false);
   }, [data?.status, data?.minutesUntilRain]);
+
+  if (!rainAlertsEnabled) {
+    return null;
+  }
 
   if (!locationError && data?.status === "dry") {
     return null;
