@@ -33,6 +33,7 @@ No API keys required — uses Iowa Mesonet public tiles and NWS public GeoJSON e
 
 - **Radar:** [Iowa Environmental Mesonet](https://mesonet.agron.iastate.edu) — NEXRAD mosaics
 - **Alerts:** [NWS Weather API](https://api.weather.gov) — Active polygon warnings
+- **Rain timing:** [Open-Meteo](https://open-meteo.com) — 15-minute precipitation forecast, requested directly from the browser
 - **Radio:** NOAA Weather Radio station list (130 stations)
 
 ## Tech Stack

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { clearLocalAppData } from "@/lib/localData";
 import BottomTab from "@/components/radar/BottomTab";
 import AppHeader from "@/components/mobile/AppHeader";
 import useTabPageMemory from "@/hooks/useTabPageMemory";
@@ -50,7 +50,7 @@ function SettingRow({ icon: Icon, label, sublabel, right, onClick, danger }) {
 
 export default function Settings() {
   useTabPageMemory("Settings");
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [confirmingClear, setConfirmingClear] = useState(false);
   const [notifyRain, setNotifyRain] = useState(() => localStorage.getItem("pref_notifyRain") !== "false");
   const [notifyTornado, setNotifyTornado] = useState(() => localStorage.getItem("pref_notifyTornado") !== "false");
   const [autoTune, setAutoTune] = useState(() => localStorage.getItem("pref_autoTune") !== "false");
@@ -61,13 +61,14 @@ export default function Settings() {
     localStorage.setItem(key, String(val));
   };
 
-  const deleteAccountMutation = useMutation({
+  const clearDataMutation = useMutation({
     mutationFn: async () => {
-      const me = await base44.auth.me();
-      await base44.entities.User.delete(me.id);
-      await base44.auth.logout("/");
+      clearLocalAppData();
     },
-    onMutate: () => setConfirmingDelete(false),
+    onMutate: () => setConfirmingClear(false),
+    onSuccess: () => {
+      window.location.assign("/");
+    },
   });
 
   return (
@@ -152,34 +153,34 @@ export default function Settings() {
           />
         </Section>
 
-        {/* Account */}
-        <Section title="Account">
-          {!confirmingDelete ? (
+        {/* Local data */}
+        <Section title="This device">
+          {!confirmingClear ? (
             <SettingRow
               icon={Trash2}
-              label="Delete Account"
-              sublabel="Permanently removes your account and data"
-              onClick={() => setConfirmingDelete(true)}
+              label="Clear local data"
+              sublabel="Removes saved contacts, radar targets, and settings from this device"
+              onClick={() => setConfirmingClear(true)}
               danger
             />
           ) : (
             <div className="space-y-3 p-4">
-              <p className="text-sm text-red-200 leading-snug">This permanently deletes your account. There's no going back.</p>
+              <p className="text-sm text-red-200 leading-snug">This erases contacts, targets, and settings stored on this device. There's no going back.</p>
               <div className="flex gap-2">
                 <button
-                  onClick={() => setConfirmingDelete(false)}
-                  aria-label="Cancel account deletion"
+                  onClick={() => setConfirmingClear(false)}
+                  aria-label="Cancel clearing local data"
                   className="flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-sm text-white"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={() => deleteAccountMutation.mutate()}
-                  aria-label="Confirm account deletion"
-                  disabled={deleteAccountMutation.isPending}
+                  onClick={() => clearDataMutation.mutate()}
+                  aria-label="Confirm clearing local data"
+                  disabled={clearDataMutation.isPending}
                   className="flex-1 rounded-xl bg-red-600 px-3 py-3 text-sm font-bold text-white disabled:opacity-60"
                 >
-                  {deleteAccountMutation.isPending ? "Deleting…" : "Delete"}
+                  {clearDataMutation.isPending ? "Clearing…" : "Clear data"}
                 </button>
               </div>
             </div>
